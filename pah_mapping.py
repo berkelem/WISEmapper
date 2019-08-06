@@ -16,12 +16,21 @@ from astropy.io import fits
 from astropy import wcs
 import cPickle
 import healpy as hp
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from scipy import fftpack
+from scipy import stats
+import scipy as sp
+import psutil
 
 try:
     from mpi4py import MPI
     mpi_available = True
 except ImportError:
     mpi_available = False
+
+#import tf_gradient
 
 
 class File:
@@ -48,14 +57,16 @@ class File:
         .unc : ndarray
             Uncertainty data
         """
-        
         self.name = file_name
         self.basename = self.name.split("/")[-1]
         self.maskname = self.name.replace('int', 'msk')
         self.uncname = self.name.replace('int', 'unc')
         if read_header:
             self.header = fits.open(self.name)[0].header
-            self.header.rename_keyword('RADECSYS', 'RADESYS')
+            try:
+                self.header.rename_keyword('RADECSYS', 'RADESYS')
+            except:
+                pass
         #self.maskname = None
         self.mask = None
         #self.uncname = None
@@ -72,8 +83,15 @@ class File:
         wcs_file = wcs.WCS(self.header).wcs_pix2world(coord_array, 0,
                                                       ra_dec_order=True)
         return wcs_file
+    
+    def screen(self,data):
+        with open('params.pkl', 'rb') as p:
+            params = cPickle.load(p)
+        predict = tf_gradient.predict(np.array(data.flatten(), ndmin=2).T, params)
+        return predict
+        
 
-    def calibrate(self, bandcheck):
+    def calibrate(self, bandcheck, flatten=True):
         """Calibrate data using the magnitude zero point in the header.
         
         The conversion factor for each WISE frequency band is different, 
@@ -82,31 +100,42 @@ class File:
         following link:
         http://wise2.ipac.caltech.edu/docs/release/allsky/expsup/figures/sec4_4ht9.gif
         """
+        dn_data = fits.getdata(self.name).astype(float)
+        #gradient = self.screen(dn_data)
+        #print 'gradient', gradient
+        #if bool(gradient):
+        #    print '{} has strong gradient.'.format(self.name)
+        #    return
+        
         if self.header['BUNIT'].strip() != 'DN':
             raise TypeError("Wrong BUNIT %s" % self.header['BUNIT'])
         band = self.header['BAND']
         if int(band) != int(bandcheck):
             raise ValueError("Wrong band!")
         try:
-            self.mask = fits.getdata(self.maskname).astype(bool).flatten()
+            self.mask = fits.getdata(self.maskname).astype(bool)
         except IOError:
-            self.mask = fits.getdata(self.maskname+'.gz').astype(bool).flatten()
+            self.mask = fits.getdata(self.maskname+'.gz').astype(bool)
             
-        try:
-            dn_unc = fits.getdata(self.uncname).astype(float).flatten()
-        except IOError:
-            dn_unc = fits.getdata(self.uncname+'.gz').astype(float).flatten()
+        #try:
+        #    dn_unc = fits.getdata(self.uncname).astype(float)
+        #except IOError:
+        #    dn_unc = fits.getdata(self.uncname+'.gz').astype(float)
         
+        if flatten:
+            self.mask = self.mask.flatten()
+        #    dn_unc = dn_unc.flatten()
+            dn_data = dn_data.flatten()
         
-        dn_data = fits.getdata(self.name).astype(float).flatten()
         neg_mask = dn_data < 0.0
         nan_mask = np.isnan(dn_data)
-        nan_mask_unc = np.isnan(dn_unc)
-        self.mask += neg_mask + nan_mask + nan_mask_unc
+        #nan_mask_unc = np.isnan(dn_unc)
+        self.mask = reduce(np.add,[self.mask, neg_mask, nan_mask])#, nan_mask_unc])
         self.data = ma.array(dn_data, mask=self.mask)        
         
+        pixel_area = abs(self.header['WCDELT1'] * self.header['WCDELT2'])
         
-        self.unc = ma.array(dn_unc, mask=self.mask)
+        #self.unc = ma.array(dn_unc, mask=self.mask)
         
         magzp = self.header['MAGZP']
         
@@ -128,9 +157,12 @@ class File:
         #    4:  11.99  * 11.65* np.pi / (8*np.log(2)) / 206265.**2,
         #    }
         
-        self.data *= dn_to_jy[band] *10**(-0.4*magzp) #* 1e-6 / beam_area[band]
-        self.unc *= dn_to_jy[band] *10**(-0.4*magzp) #* 1e-6 / beam_area[band]
-        
+        self.data *= dn_to_jy[band] *10**(-0.4*magzp) * 1e-6 / pixel_area # units in MJy/sr
+        #self.unc *= dn_to_jy[band] *10**(-0.4*magzp) #* 1e-6 / beam_area[band]
+        #fits.writeto('test_data.fits', np.ma.copy(self.data).filled(0.0).reshape((1016,1016)), overwrite=True)
+        #self.filled_data = highpass_fft(np.ma.copy(self.data).filled(0.0).reshape((1016,1016)), 3)
+        if flatten:
+            self.data = self.data.flatten()
         return
 
 
@@ -139,7 +171,7 @@ class Mosaic:
 
     def __init__(self, filelist, deg_ppx, ra_span, dec_span,
                  lowerleft_ra, lowerleft_dec, path, region,
-                 band, parallel, adjust):
+                 band, parallel, adjust, grad_discard):
         """Create instance of a mosaic.
         
         Attributes
@@ -219,6 +251,13 @@ class Mosaic:
         self.center_coords = []
         self.possible_overlaps = {}
         self.adjust = adjust
+        self.discard_pile = 0
+        self.good_grad_star = []
+        self.good_grad_nostar = []
+        self.bad_grad = []
+        self.grad_discard = grad_discard
+        if self.grad_discard == True:
+            print 'Correcting for steep gradients.'
         if mpi_available:
             self.parallel = parallel
             if self.parallel == True:
@@ -227,6 +266,20 @@ class Mosaic:
                 self.rank = self.comm.Get_rank()
         else:
             self.parallel = False
+            
+        with open('keep_files_nostar.txt', 'rb') as f1:
+            split_lines = f1.read().splitlines()
+            self.keep_files_nostar = [x.split('/')[-1] for x in split_lines]
+        with open('keep_files_star.txt', 'rb') as f2:
+            split_lines = f2.read().splitlines()
+            self.keep_files_star = [x.split('/')[-1] for x in split_lines]
+        with open('discard_files.txt', 'rb') as f3:
+            split_lines = f3.read().splitlines()
+            self.discard_files = [x.split('/')[-1] for x in split_lines]
+        #self.filelist = [f for f in self.filelist if f.split('/')[-1] in self.discard_files]
+        #self.total_filelist = np.copy(self.filelist[2:])
+        #print self.filelist[0]
+        
 
     def position_tile(self,File):
         """Place file on mosaic grid.
@@ -240,8 +293,20 @@ class Mosaic:
         #File.image_pos = np.zeros(self.pixels, dtype=bool)
         File.image_val = np.zeros(self.pixels, dtype=float)
         File.image_unc = np.zeros(self.pixels, dtype=float)
+        count = np.zeros_like(File.image_val)
         File.calibrate(self.band)
-        wcs_file = File.wcs2px()[~File.data.mask]
+        File.steep_gradient = False
+        if self.grad_discard:
+            steep_gradient, grad = self.check_gradient(File)
+            File.steep_gradient = steep_gradient
+            #print grad, steep_gradient, File.name
+            if steep_gradient:
+                print '{} rejected.'.format(File.name)
+                self.discard_pile += 1
+                #self.bad_grad.append(abs_grad)
+                return False
+            #self.good_grad.append(abs_grad)
+        wcs_file = File.wcs2px()[~File.mask]
         File.data = File.data.compressed()
         File.unc = np.zeros_like(File.data)#File.unc.compressed()
         for i in xrange(len(wcs_file)):
@@ -252,10 +317,65 @@ class Mosaic:
                 file_dec_bin = int((dec-self.lldec)/self.deg_ppx)
                 mosaic_pixel = file_dec_bin*self.x_ax + file_ra_bin
                 #File.image_pos[mosaic_pixel] = True
-                File.image_val[mosaic_pixel] = File.data[i]
-                File.image_unc[mosaic_pixel] = File.unc[i]
-        return File.image_val, File.image_unc
+                #if File.steep_gradient:
+                #    File.image_val[mosaic_pixel] = 10e17
+                #    File.image_unc[mosaic_pixel] = 10e17
+                #else:
+                File.image_val[mosaic_pixel] += File.data[i]
+                File.image_unc[mosaic_pixel] += File.unc[i]
+                count[mosaic_pixel] += 1
+        multihits = count > 1
+        File.image_val[multihits] = File.image_val[multihits]/count[multihits]
+        return True#File.image_val, File.image_unc
 
+    def check_gradient(self, File, threshold_l=1.5e-8, threshold_u=1e-7):
+        
+        data = lowpass_fft(File, 10)
+        theta = regression_2d(data)
+        grad = np.sqrt(theta[1]**2 + theta[2]**2)
+        
+        if File.basename in self.keep_files_nostar:
+            self.good_grad_nostar.append(grad)
+            steep_grad = False
+        elif File.basename in self.keep_files_star:
+            self.good_grad_star.append(grad)
+            steep_grad = False
+        elif File.basename in self.discard_files:
+            self.bad_grad.append(grad)
+            steep_grad = True
+        else:
+            print '{} not classified.'.format(File.basename)
+            steep_grad = False
+        
+        '''        
+        data = File.data.reshape(File.header['NAXIS1'], File.header['NAXIS2'])
+        quad1 = data[:508, :508]
+        quad2 = data[:508, -508:]
+        quad3 = data[-508:, :508]
+        quad4 = data[-508:, -508:]
+        vals1, bins1 = np.histogram(quad1.compressed(), bins=500)
+        vals2, bins2 = np.histogram(quad2.compressed(), bins=500)
+        vals3, bins3 = np.histogram(quad3.compressed(), bins=500)
+        vals4, bins4 = np.histogram(quad4.compressed(), bins=500)
+        mode1 = bins1[np.where(vals1 == max(vals1))[0][0]]
+        mode2 = bins2[np.where(vals2 == max(vals2))[0][0]]
+        mode3 = bins3[np.where(vals3 == max(vals3))[0][0]]
+        mode4 = bins4[np.where(vals4 == max(vals4))[0][0]]
+        grad1 = abs(mode1 - mode4)
+        grad2 = abs(mode2 - mode3)
+        abs_grad = np.sqrt(grad1**2 + grad2**2)
+        #print 'modes', mode1, mode2, mode3, mode4
+        #print 'grads', grad1, grad2
+        '''
+        '''
+        if threshold_l < grad < threshold_u:
+            steep_grad = True
+        else:
+            steep_grad = False
+        '''
+        
+        return steep_grad, grad
+     
     def pickle(self):
         """Save the positioned files as binary Pickle files."""
         if self.parallel:
@@ -289,7 +409,11 @@ class Mosaic:
             val_db_name = self.path + (f.basename.replace('int', 'val')).replace('fits', 'pkl')
             unc_db_name = self.path + (f.basename.replace('int', 'unc')).replace('fits', 'pkl')
             if not os.path.isfile(val_db_name):
-                image_val, image_unc = self.position_tile(f)
+                positioned = self.position_tile(f)
+                if not positioned:
+                    continue
+                image_val = f.image_val
+                image_unc = f.image_unc
                 #pos_db = open(pos_db_name, 'wb')
                 #cPickle.dump(image_pos, pos_db, cPickle.HIGHEST_PROTOCOL)
                 #pos_db.close()
@@ -309,6 +433,49 @@ class Mosaic:
             pickle_end = time.clock()
             print 'Files positioned.'
             print 'Time: ' + str(pickle_end - pickle_start)
+        if self.grad_discard:
+            print '{0} files discarded due to gradient effects. This is {1}%% of the total.'.format(self.discard_pile, 100.*self.discard_pile/len(self.filelist))
+            self.plot_grads()
+        return
+
+    def plot_grads(self):
+        print '{0} files discarded due to gradient effects. This is {1}%% of the total.'.format(self.discard_pile, 100.*self.discard_pile/len(self.filelist))
+        '''        
+        bins = np.linspace(0.0, 1e-04, 150)        
+        plt.hist(self.good_grad, bins)
+        plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+        plt.xlabel('Gradient offset')
+        plt.ylabel('No. images')
+        plt.savefig('good_grad.png')
+        plt.close()
+        plt.hist(self.bad_grad, bins)
+        plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+        plt.xlabel('Gradient offset')
+        plt.ylabel('No. images')
+        plt.savefig('bad_grad.png')
+        plt.close()
+        plt.hist(self.good_grad, bins, label='included', alpha=0.5)
+        plt.hist(self.bad_grad, bins, label='discarded', alpha=0.5)
+        plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+        plt.xlabel('Gradient offset')
+        plt.ylabel('No. images')
+        plt.legend(loc='upper right')
+        plt.savefig('all_grad.png')
+        plt.close()
+        '''
+        goodgrad_nostar = np.array(self.good_grad_nostar).flatten()
+        goodgrad_star = np.array(self.good_grad_star).flatten()
+        badgrad = np.array(self.bad_grad).flatten()
+        lims = [min(badgrad), max(badgrad), min(goodgrad_nostar), max(goodgrad_nostar), min(goodgrad_star), max(goodgrad_star)]
+        bins = np.linspace(0.9*min(lims), 1.1*max(lims), 500)
+        plt.hist(goodgrad_star, bins, alpha=0.3, label='keep - star')
+        plt.hist(goodgrad_nostar, bins, alpha=0.3, label='keep - nostar')
+        plt.hist(badgrad, bins, alpha=0.3, label='discard')
+        #plt.ylim((0,5))
+        plt.legend(loc='upper right')
+        plt.savefig('grads.png')
+        plt.close()
+        return
 
     def calc_offsets(self):
         """Adjust each input file in order to smooth the final mosaic.
@@ -567,10 +734,10 @@ class Mosaic:
             print 'Compiling final mosaic...'
         #print 'rank', self.rank, len(index_sublist)
         #print 'rank', self.rank, index_sublist[0], index_sublist[len(index_sublist)-1]
-        mins = np.empty(self.intensity.shape)*(np.nan)
-        maxs = np.empty(self.intensity.shape)*(np.nan)
-        print mins.shape
-        for i in self.index_sublist:
+        #mins = np.empty(self.intensity.shape)*(np.nan)
+        #maxs = np.empty(self.intensity.shape)*(np.nan)
+        #print mins.shape
+        for i in xrange(len(self.image_values)):#self.index_sublist:
             if self.image_values[i] is None:
                 continue
             offset = offsets[i]
@@ -582,10 +749,10 @@ class Mosaic:
             tile_unc = open(self.uncertainties[i],'rb')
             tile_unc_data = cPickle.load(tile_unc)
             #atlas_offset = self.atlas_offset(tile_pos_data, tile_val_data)
-            print len(mins[tile_pos_data.astype(bool)])
-            print len(tile_val_data[tile_pos_data.astype(bool)])
-            mins[tile_pos_data.astype(bool)] = np.nanmin(np.array([mins[tile_pos_data.astype(bool)], tile_val_data[tile_pos_data.astype(bool)]]), axis=0)
-            maxs[tile_pos_data.astype(bool)] = np.nanmax(np.array([maxs[tile_pos_data.astype(bool)], tile_val_data[tile_pos_data.astype(bool)]]), axis=0)
+            #print len(mins[tile_pos_data.astype(bool)])
+            #print len(tile_val_data[tile_pos_data.astype(bool)])
+            #mins[tile_pos_data.astype(bool)] = np.nanmin(np.array([mins[tile_pos_data.astype(bool)], tile_val_data[tile_pos_data.astype(bool)]]), axis=0)
+            #maxs[tile_pos_data.astype(bool)] = np.nanmax(np.array([maxs[tile_pos_data.astype(bool)], tile_val_data[tile_pos_data.astype(bool)]]), axis=0)
             self.intensity += tile_val_data - (offset*tile_pos_data)# + atlas_offset
             self.unc = np.sqrt(self.unc**2 + tile_unc_data**2 
                                            + (d_offset*tile_pos_data)**2)
@@ -635,15 +802,15 @@ class Mosaic:
                 full_unc = full_unc.reshape(self.y_ax,self.x_ax)
             self.comm.barrier()    # Necessary to avoid SegFault.
         else:
-            print 'mins', mins[int(len(mins)/2.):int(len(mins)/2.)+1000]
-            print 'maxs', maxs[int(len(mins)/2.):int(len(mins)/2.)+1000]
-            avgs = np.nanmean(np.array([mins, maxs]), axis=0)
-            print 'avgs', avgs[int(len(mins)/2.):int(len(mins)/2.)+1000]
-            nans = np.isnan(avgs)
-            avgs[nans] = 0.0
-            print 'avgs', avgs[int(len(mins)/2.):int(len(mins)/2.)+1000]
-            self.intensity -= maxs
-            self.count[~nans] -= 1
+            #print 'mins', mins[int(len(mins)/2.):int(len(mins)/2.)+1000]
+            #print 'maxs', maxs[int(len(mins)/2.):int(len(mins)/2.)+1000]
+            #avgs = np.nanmean(np.array([mins, maxs]), axis=0)
+            #print 'avgs', avgs[int(len(mins)/2.):int(len(mins)/2.)+1000]
+            #nans = np.isnan(avgs)
+            #avgs[nans] = 0.0
+            #print 'avgs', avgs[int(len(mins)/2.):int(len(mins)/2.)+1000]
+            #self.intensity -= maxs
+            #self.count[~nans] -= 1
             
             multihits = self.count > 1
             self.intensity[multihits] = (self.intensity[multihits] /
@@ -660,22 +827,35 @@ class Mosaic:
         
 class FullSkyMap():
     
-    def __init__(self, NSIDE, file_list, parallel, band):
+    def __init__(self, NSIDE, file_list, parallel, band, facet):
         self.nside = NSIDE
         self.npix = hp.nside2npix(self.nside)
         self.skymap = np.zeros(self.npix)
         self.count = np.zeros_like(self.skymap, dtype=int)
         self.uncmap = np.zeros_like(self.skymap, dtype=float)
-        self.contd_map = np.zeros_like(self.skymap)
-        self.contd_count = np.zeros_like(self.skymap, dtype=int)
-        self.contd_uncmap = np.zeros_like(self.skymap, dtype=float)
+        self.data_cumul = np.zeros_like(self.skymap, dtype=float)
+        self.sig_sq_inv_cumul = np.zeros_like(self.skymap, dtype=float)
         self.parallel = parallel
         self.band = int(band)
+        self.facet = facet
+        self.alldata = np.zeros_like(self.skymap)
+        self.allsigsq = np.zeros_like(self.skymap)
+        self.chauvenet = True
+        self.px_order = hp.ring2nest(self.nside, np.arange(self.npix))
+        #self.facet_inds = self.select_facet()
+        self.numfiles = len(file_list)
+        if self.numfiles > 3000:
+            self.memory_cond = True
+        else:
+            self.memory_cond = False
         if mpi_available and self.parallel:
             self.comm = MPI.COMM_WORLD
             self.size = self.comm.Get_size()
             self.rank = self.comm.Get_rank()
+            self.name = MPI.Get_processor_name()
+            self.status = MPI.Status()   # get MPI status object
             if self.rank == 0:
+                print '{} files'.format(len(file_list))
                 file_sublist = [
                     file_list[i::self.size] for i in xrange(self.size)
                     ]
@@ -684,10 +864,12 @@ class FullSkyMap():
             file_sublist = self.comm.scatter(file_sublist, root=0)
             self.filelist = file_sublist
             self.index_sublist = range(len(file_list))[self.rank::self.size]
+            self.pix_sublist = range(self.npix)[self.rank::self.size]
         else:
             self.parallel = False
             self.filelist = file_list
             self.index_sublist = range(len(self.filelist))
+            self.pix_sublist = range(self.npix)
         
     def ind2wcs(self, index):
         theta,phi=hp.pixelfunc.pix2ang(self.nside,index)
@@ -706,37 +888,243 @@ class FullSkyMap():
             f.maskname = orig_name.replace('int', 'msk')
         else:
             f = File(file_name)
+            
         f.calibrate(self.band)
         wcs_file = f.wcs2px()[~f.data.mask]
         f.data = f.data.compressed()
-        f.unc = f.unc.compressed()
-        if any(np.isnan(f.unc)):
-            print 'Problem detected with {}'.format(file_name.replace('int', 'unc'))
+        #f.unc = f.unc.compressed()
+        #if any(np.isnan(f.unc)):
+        #    print 'Problem detected with {}'.format(file_name.replace('int', 'unc'))
         
-        sig_sq = np.array([(f.unc[i]**2) for i in xrange(len(f.unc))])
+        #sig_sq = np.array([(f.unc[i]**2) for i in xrange(len(f.unc))])
         
         ra, dec = wcs_file.T
-        hp_inds = self.wcs2ind(ra,dec)
+        hp_inds = self.wcs2ind(ra, dec)
+        #print 'hp_inds', hp_inds
         #sig_sq_hp = np.bincount(hp_inds, weights=sig_sq)        
         #data_hp = np.bincount(hp_inds, weights=f.data)
-        var_inv = np.array([1/val for val in sig_sq])
-        data_adj = f.data / (f.unc**2)
-        data_hp = np.bincount(hp_inds, weights=(data_adj))
-        sig_sq_inv = np.bincount(hp_inds, weights=var_inv)
-        posvals = data_hp != 0.0
+        #var_inv = 1/sig_sq#np.array([1/val for val in sig_sq])
+        data_adj = f.data# / (f.unc**2)
+        #if self.rank == 0:
+        #    print 'Calibration time: {} sec'.format(calibrate_end - calibrate_start)
+        if self.chauvenet:
+            
+            self.alldata = self.groupby_perID(data_adj, hp_inds, self.alldata)
+            #self.allsigsq = self.groupby_perID(var_inv, hp_inds, self.allsigsq)
+            
+        else:
+            
+            data_hp = np.bincount(hp_inds, weights=(data_adj))
+            #sig_sq_inv = np.bincount(hp_inds, weights=var_inv)
+            self.data_cumul[:len(data_hp)] += data_hp
+            #self.sig_sq_inv_cumul[:len(sig_sq_inv)] += sig_sq_inv
+            self.count[:len(data_hp)] += np.bincount(hp_inds)
 
-        data_hp[posvals] = data_hp[posvals] / sig_sq_inv[posvals]
-        sig_hp = np.zeros_like(data_hp)
-        sig_hp[posvals] = np.array([1./np.sqrt(val) for val in sig_sq_inv[posvals]])
-        self.skymap[:len(data_hp)] += data_hp
-        self.uncmap[:len(sig_hp)] += sig_hp
-        self.count[:len(data_hp)] += posvals.astype(int)
+        return
+    
+    def fit_gaussian(self, arr, px):
+        length = len(arr)
+        n, bins, patches = plt.hist(arr[np.where(arr < 3*np.mean(arr))], 300)
+        
+        
+        one_gaussian_fit = False
+        two_gaussian_fit = False
+        bad_fit = False
+        maxcut = 0
+        r_sq_current = 0
+        popt = None
+        y = None
+        fault = None
+        maxn = []
+        try:            
+            while r_sq_current < 0.9 and maxcut < 5:
+                maxn.append(max(n))
+                if maxcut > 0:
+                    n[np.where(n == max(n))] = 0                    
+                try:
+                    amp_est1 = max(n)
+                    mean_est1 = bins[np.where(n == max(n))][0]
+                    sig_est1 = max(bins)/6.
+                    popt_new, _ = sp.optimize.curve_fit(gaussian, bins[:-1], n, p0=[amp_est1, mean_est1, sig_est1])
+                    popt_new = np.abs(popt_new)
+                    y_new = gaussian(bins[:-1], *popt_new)
+                    residuals = n - y_new
+                    ss_res = np.sum(residuals**2)
+                    ss_tot = np.sum((n-np.mean(n))**2)
+                    r_sq_new = 1 - (ss_res / ss_tot)
+                    if r_sq_new > r_sq_current:
+                        r_sq_current = r_sq_new
+                        popt = popt_new
+                        y = y_new                        
+                    maxcut += 1
+                except RuntimeError:
+                    fault = 'fault1'
+                    if maxcut > 0:
+                        pass
+                    else:
+                        fault = 'fault2'
+                        raise RuntimeError
+            one_gaussian_fit = True
+            if r_sq_current < 0.9:
+                fault = 'fault3'
+                raise RuntimeError
+            
+            
+            
+        except RuntimeError:
+            try:
+                amp_est2 = amp_est1*0.6
+                mean_est2 = 2*mean_est1
+                sig_est2 = sig_est1
+                popt_new, _ = sp.optimize.curve_fit(two_gaussians, bins[:-1], n, p0=[amp_est1, mean_est1, sig_est2, amp_est2, mean_est2, sig_est2])
+                popt_new = np.abs(popt_new)                        
+                y_new = two_gaussians(bins[:-1], *popt_new)
+                residuals = n - y_new
+                ss_res = np.sum(residuals**2)
+                ss_tot = np.sum((n-np.mean(n))**2)
+                r_sq_new = 1 - (ss_res / ss_tot)
+                if one_gaussian_fit:
+                    if r_sq_new > r_sq_current:
+                        r_sq_current = r_sq_new
+                        popt = popt_new
+                        y = y_new
+                        two_gaussian_fit = True
+                else:
+                    r_sq_current = r_sq_new
+                    popt = popt_new
+                    y = y_new
+                    two_gaussian_fit = True
+                                
+            except RuntimeError:
+                popt = [amp_est1, mean_est1, sig_est1]                 
+                y = gaussian(bins[:-1], *popt)
+                residuals = n - y
+                ss_res = np.sum(residuals**2)
+                ss_tot = np.sum((n-np.mean(n))**2)
+                r_sq_current = 1 - (ss_res / ss_tot)
+                fault = 'fault4'
+                bad_fit = True
+        
+        if two_gaussian_fit:
+            amp1 = popt[0]
+            amp2 = popt[3]
+            mean1 = popt[1]
+            mean2 = popt[4]
+            if (max(mean1/mean2, mean2/mean1) < 4) and (amp2 > amp1): # make sure the measured peaks are real - avoid spikes at very low values
+                reorder = [3,4,5,0,1,2]
+                popt = popt[reorder]
+            
+            A1 = popt[0]*popt[2]*math.sqrt(2*math.pi)
+            A2 = popt[3]*popt[5]*math.sqrt(2*math.pi)
+            num_px = length*A1/(A1+A2)
+            px_unc = popt[2]/math.sqrt(num_px)
+        else:
+            try:
+                px_unc = popt[2]/math.sqrt(length)
+            except:
+                return 0.0, 0.0
+        px_val = popt[1]
+        
+            
+        if False:#bad_fit:# or r_sq_current < 0.9:
+            plt.plot(bins[:-1], y, 'r--', linewidth=2)
+            plt.xlabel('Calibrated pixel value (MJy/sr)')
+            plt.ylabel('# observations')
+            plt.title('Pixel {0}; Band {1}'.format(px, self.band))
+            if one_gaussian_fit and not two_gaussian_fit:
+                mean = popt[1]
+                amp = popt[0]
+                #plt.text(0.6*max(bins), 0.7*max(n), '1G {0}, 2G {1}, \n R^2 {2} \n mu {3} \n amp {5} \n fault {4} \n maxcut {6} \n npix {7}'.format(one_gaussian_fit, two_gaussian_fit, r_sq_current, mean, fault, amp, maxcut, length))
+        
+            if two_gaussian_fit:
+                mean1 = popt[1]
+                amp1 = popt[0]
+                mean2 = popt[4]
+                amp2 = popt[5]
+                #plt.text(0.6*max(bins), 0.7*max(n), '1G {0}, 2G {1}, \n R^2 {2} \n mu1 {3} \n amp1 {6} \n mu2 {4} \n amp2 {7} \n fault {5} \n maxcut {8} \n npix {9}'.format(one_gaussian_fit, two_gaussian_fit, r_sq_current, mean1, mean2, fault, amp1, amp2, maxcut, length))
+                    
+            plt.savefig('facets/histograms/pixel_distrib_{}.png'.format(px))        
+            plt.close()
+        else:
+            plt.close()
+        
+        return px_val, px_unc
+
+    def remove_outliers(self, data, px):
+        data_arr = self.remove_outliers_chauvenet(data, px)
+        px_val, px_unc = self.fit_gaussian(data_arr, px)
+        
+        return px_val, px_unc, px
+        
+            
+    def remove_outliers_chauvenet(self, data, px):
+        mean = np.mean(data)
+        std = np.std(data)
+        cdf = stats.norm.cdf(data, loc=mean, scale=std)
+        outer_prob = np.minimum(cdf, 1-cdf)
+        count = len(data)
+        outlier_mask = np.zeros_like(data, dtype=bool)
+        outlier_mask[np.where(outer_prob * count < 0.5)] = True
+        
+        return data[~outlier_mask]        
+        
+
+    def groupby_perID(self, data, inds, group_arr):
+        # Get argsort indices, to be used to sort a and b in the next steps
+        #print self.rank, set(inds), len(set(inds))
+        sidx = inds.argsort()
+        data_sorted = data[sidx]
+        inds_sorted = inds[sidx]
+        
+        # Get the group limit indices (start, stop of groups)
+        cut_idx = np.flatnonzero(np.r_[True,inds_sorted[1:] != inds_sorted[:-1],True])
+        
+        # Create cut indices for all unique IDs in b
+        #n = inds_sorted[-1]+2
+        n = len(self.alldata)+1
+        cut_idxe = np.full(n, cut_idx[-1], dtype=int)
+        
+        insert_idx = inds_sorted[cut_idx[:-1]]
+        cut_idxe[insert_idx] = cut_idx[:-1]
+        cut_idxe = np.minimum.accumulate(cut_idxe[::-1])[::-1]
+        
+        # Split input array with those start, stop ones
+        out = np.array([data_sorted[i:j] for i,j in zip(cut_idxe[:-1],cut_idxe[1:])])
+        #print self.rank, type(out), out.shape
+        if isinstance(group_arr[0], np.ndarray):
+            for i in xrange(len(out)):
+                if len(out[i]) > 0:
+                    group_arr[i] = np.append(group_arr[i],out[i])
+
+        else:
+            group_arr = out
+        return group_arr        
+            
+    def normalize_map(self):
+        
+        print "Normalizing map..."
+        posvals = self.skymap != 0.0
+
+        self.skymap[posvals] = self.skymap[posvals] / self.uncmap[posvals]
+        self.uncmap[posvals] = np.sqrt(1/self.uncmap[posvals])
+        
         return 
+        
+    def rotate_map(self, rot=['G','C']):
+        r = hp.rotator.Rotator(coord=rot)  # Transforms galactic to ecliptic coordinates
+        theta_eq, phi_eq = hp.pixelfunc.pix2ang(self.nside,np.arange(self.npix))
+        theta_gal, phi_gal = r(theta_eq, phi_eq)
+        inds = hp.pixelfunc.ang2pix(self.nside, theta_gal, phi_gal, nest=False)        
+        self.skymap = self.skymap[inds]
+        self.uncmap = self.uncmap[inds]
+        
+        return
         
     def build_map(self, map_name):
         skip_file = 0
         use_file = 0
         for i in xrange(len(self.filelist)):
+            #sys.stdout.flush()
             if self.parallel:
                 if self.rank == 0:
                     print_progress(i+1,len(self.filelist),used=use_file,skipped=skip_file)
@@ -757,23 +1145,8 @@ class FullSkyMap():
                     continue
             except TypeError:
                 print('Problem with '+str(file_name))
-            #if os.path.isfile(file_name):
-            #    print 'File Ok', file_name
-            #else:
-            #    raise ValueError('File name problem: ' + file_name)
             
-            #if self.parallel:
-            #    if self.index_sublist[i] > save_num*self.size:
-            #        print 'Saving progress: ', save_num, self.rank
-            #        self.save_map()
-            #        save_num += 1
-            #    print 'build_map Ready ', save_num, self.rank
-            #    self.comm.barrier()
-            #else:
-            #    if self.index_sublist[i] > save_num*100:
-            #        print 'Saving progress: ', save_num
-            #        self.save_map()
-            #        save_num += 1
+            
         use_file, skip_file = self.save_map(map_name, use_file, skip_file)
         if not self.parallel or (self.parallel and self.rank == 0):
             print 'Skipped ' + str(skip_file) + ' files.'
@@ -781,61 +1154,185 @@ class FullSkyMap():
             print 'Map complete.'
         return
 
-    def save_map(self, map_name, use_file, skip_file):                
+    def save_map(self, map_name, use_file, skip_file):
         if self.parallel:
             if self.rank != 0:
-                self.comm.Isend([self.skymap, MPI.FLOAT], dest=0, tag=77)
-                self.comm.Isend([self.uncmap, MPI.FLOAT], dest=0, tag=84)
-                self.comm.Isend([self.count, MPI.INT], dest=0, tag=135)
-                self.comm.isend(use_file, dest=0, tag=104)
-                self.comm.isend(skip_file, dest=0, tag=105)
-            elif self.rank == 0:
-                for proc in xrange(1,self.size):
-                    part_map = np.empty(len(self.skymap), dtype=float)
-                    part_count = np.empty(len(self.count), dtype=int)
-                    part_unc = np.empty(len(self.uncmap), dtype=float)
-                    #part_used = 0
-                    #part_skip = 0
-                    self.comm.Recv([part_map, MPI.FLOAT], source=proc, tag=77)
-                    # Blocking receive is necessary to avoid a SegFault.
-                    self.skymap += part_map
-                    self.comm.Recv([part_unc, MPI.FLOAT], source=proc, tag=84)
-                    self.uncmap += part_unc
-                    self.comm.Recv([part_count, MPI.INT], source=proc, tag=135)
-                    self.count += part_count
-                    part_used = self.comm.recv(source=proc, tag=104)
-                    part_skip = self.comm.recv(source=proc, tag=105)
-                    use_file += int(part_used)
-                    skip_file += int(part_skip)
+                try:
+                    posinds = {ind:len(item) for ind, item in enumerate(self.alldata) if len(item) > 0 and ind in self.facet_inds}
+                    
+                    
+                    process = psutil.Process(os.getpid())
+                    print('Memory usage: {0} MB, rank {1}'.format(round((process.memory_info()[0])*10e-6), self.rank))
+                    self.comm.send(posinds, dest=0, tag=2*self.npix+self.rank)
+                    
+                    
+                    for ind in posinds:
+                        self.comm.Isend([self.alldata[ind], MPI.FLOAT], dest=0, tag=ind)
                 
-                self.skymap += self.contd_map
-                self.uncmap += self.contd_uncmap
-                self.count += self.contd_count
-                self.partmap = np.copy(self.skymap)
-                self.partunc = np.copy(self.uncmap)
-                self.partcount = np.copy(self.count)
-                multihits = self.count > 1
-                self.skymap[multihits] = (self.skymap[multihits] /
-                                          self.count[multihits])
-                self.uncmap = np.array([np.sqrt(val) for val in self.uncmap])
-                hp.fitsfunc.write_map(map_name, self.skymap)
-                hp.fitsfunc.write_map(map_name.replace('.fits', '_unc.fits'), self.uncmap)
+                except TypeError:
+                    print 'len(filelist)', self.rank, len(self.filelist)
+                    posinds = None
+                    self.comm.send(posinds, dest=0, tag=2*self.npix+self.rank)
+                    
+                    
+                    
+            elif self.rank == 0:
+                print 'Gathering data from all processors...'
+                    
+                print 'len(self.facet_inds)', len(self.facet_inds), len(self.facet_inds)/10
+                batches = []
+                for n in xrange(len(self.facet_inds)/10):
+                    batches.append(self.facet_inds[n*10:min((n+1)*10, len(self.facet_inds))])
+                    print 'batch', n, self.facet_inds[n*10:min((n+1)*10, len(self.facet_inds))]
+                
+                    
+                
+                if self.memory_cond:
+                    print 'Receiving proc_inds data'
+                    proc_inds_dict = {}
+                    for proc in xrange(1, self.size):
+                        proc_inds = self.comm.recv(source=proc, tag=2*self.npix+proc)
+                        proc_inds_dict[proc] = proc_inds
+                    #Split facet into chunks and only send relevant ind data
+                    print 'Receiving indices individually'
+                    for i, ind in enumerate(self.facet_inds):
+                        ind_data = []
+                        for proc in xrange(1, self.size):
+                            #print_progress(proc, self.size)
+                            if ind in proc_inds_dict[proc]:
+                                #print 'receiving ind {0} from proc {1}'.format(ind, proc)
+                                part_data = np.zeros(proc_inds_dict[proc][ind], dtype=float)
+                                self.comm.Recv([part_data, MPI.FLOAT], source=proc, tag=ind)
+                                ind_data = np.append(ind_data, part_data)
+                            
+                        if len(ind_data) > 0:
+                            print 'removing outliers from ind {}'.format(ind)
+                            #print 'ind_data', ind_data
+                            px_val, px_unc, px = self.remove_outliers(ind_data, ind)
+                            self.skymap[px] = px_val
+                            self.uncmap[px] = px_unc
+                            
+                
+                else:
+                    for proc in xrange(1, self.size):
+                        print_progress(proc+1, self.size)
+                        proc_inds = self.comm.recv(source=proc, tag=2*self.npix+proc)
+                        if proc_inds is None:
+                            continue
+                        
+                        
+                                    
+                                    #file_usage = self.comm.recv(source=proc, tag=3*self.npix+proc)
+                                    #use_file += file_usage[0]
+                                    #skip_file += file_usage[1]
+                        process = psutil.Process(os.getpid())
+                        print('Memory usage: {0} MB, rank {1}'.format(round((process.memory_info()[0])*10e-6), self.rank))
+
+                        for ind, length in proc_inds.iteritems():
+                            part_data = np.zeros(length, dtype=float)
+                            #part_sigsq = np.zeros(length, dtype=float)
+                            self.comm.Recv([part_data, MPI.FLOAT], source=proc, tag=ind)
+                            #self.comm.Recv([part_sigsq, MPI.FLOAT], source=proc, tag=self.npix+ind)
+                            self.alldata[ind] = np.append(self.alldata[ind], part_data) 
+                            #self.allsigsq[ind] = np.append(self.allsigsq[ind], part_sigsq)
+                    
+                        nonz_px = 0
+                        for pix in xrange(self.npix):
+                            if len(self.alldata[pix]) > 0:
+                                nonz_px += 1
+                                
+                    print 'Cleaning and fitting image pixels...'
+            if not self.memory_cond:
+                self.clean_pixels() 
+                    
             self.comm.barrier()
+                
+            if self.rank == 0:
+                self.rotate_map()
+                hp.fitsfunc.write_map(map_name, self.skymap, coord='G')#, nest=True)
+                hp.fitsfunc.write_map(map_name.replace('.fits', '_unc.fits'), self.uncmap, coord='G')#, nest=True)
+            self.comm.barrier()
+            
         else:
-            self.skymap += self.contd_map
-            self.count += self.contd_count
-            multihits = self.count > 1
-            self.partmap = np.copy(self.skymap)
-            self.partunc = np.copy(self.uncmap)
-            self.partcount = np.copy(self.count)
-            self.skymap[multihits] = (self.skymap[multihits] /
-                                      self.count.astype(float)[multihits])
-            hp.fitsfunc.write_map(map_name, self.skymap)
-            hp.fitsfunc.write_map(map_name.replace('.fits', '_unc.fits'), self.uncmap)    
+            nonz_px = 0
+            for pix in xrange(self.npix):
+                if len(self.alldata[pix]) > 0:
+                    px_val, px_unc = self.remove_outliers(self.alldata[pix], self.allsigsq[pix], pix)
+                    self.skymap[pix] = px_val
+                    self.uncmap[pix] = px_unc
+                    nonz_px += 1
+            print 'nonz px', nonz_px
+            hp.fitsfunc.write_map(map_name, self.skymap, coord='G', nest=True)
+            hp.fitsfunc.write_map(map_name.replace('.fits', '_unc.fits'), self.uncmap, coord='G', nest=True)
         return use_file, skip_file
         
+
+    def clean_pixels(self):
+        # Define MPI message tags
+        tags = enum('READY', 'DONE', 'EXIT', 'START')
         
+        if self.rank == 0:
+            # Master process executes code below
+            tasks = self.alldata
+            task_index = 0
+            num_workers = self.size - 1
+            closed_workers = 0
+            print("Master starting with {} workers".format(num_workers))
+            while closed_workers < num_workers:
+                data = self.comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=self.status)
+                source = self.status.Get_source()
+                tag = self.status.Get_tag()
+                if tag == tags.READY:
+                    # Find a pixel with data in it.
+                    while task_index < len(self.facet_inds) and len(tasks[self.facet_inds[task_index]]) < 250:
+                        task_index += 1                            
+                    # Worker is ready, so send it a task
+                    if task_index < len(self.facet_inds):
+                        pixel = self.facet_inds[task_index]
+                        if len(tasks[pixel]) > 250:                            
+                            self.comm.send([tasks[pixel], pixel], dest=source, tag=tags.START)
+                            print("Sending pixel {} to worker {}".format(pixel, source))
+                        task_index += 1
+                    else:
+                        self.comm.send([None, None], dest=source, tag=tags.EXIT)
+                elif tag == tags.DONE:
+                    px_val, px_unc, px = data
+                    print("Got data from worker {}".format(source))
+                    self.skymap[px] = px_val
+                    self.uncmap[px] = px_unc
+                elif tag == tags.EXIT:
+                    print("Worker {} exited.".format(source))
+                    closed_workers += 1
+            print("Master finishing")
+        else:
+            # Worker processes execute code below
+            print("I am a worker with rank {} on {}.".format(self.rank, self.name))
+            while True:
+                self.comm.send(None, dest=0, tag=tags.READY)
+                task, px = self.comm.recv(source=0, tag=MPI.ANY_SOURCE, status=self.status)
+                tag = self.status.Get_tag()
+                if tag == tags.START:
+                        # Do the work here
+                    px_val, px_unc, px = self.remove_outliers(task, px)
+                    result = [px_val, px_unc, px]
+                    self.comm.send(result, dest=0, tag=tags.DONE)
+                elif tag == tags.EXIT:
+                    break
+            self.comm.send(None, dest=0, tag=tags.EXIT)
+        return
             
+            
+    def select_facet(self, nfacets=3072):
+        skymap = np.zeros(self.npix)
+        facet_size = self.npix // nfacets
+        facet = skymap[self.facet*facet_size:(self.facet+1)*facet_size]
+        facet[:] = 1
+        hp_inds = np.arange(self.npix)
+        facet_inds = hp_inds[skymap.astype(bool)]
+        return hp.nest2ring(self.nside, facet_inds)
+    
+    
+    
         
 def print_progress(iteration, total, used=0, skipped=0, prefix='', suffix='', decimals=1, bar_length=100):
     """
@@ -860,7 +1357,130 @@ def print_progress(iteration, total, used=0, skipped=0, prefix='', suffix='', de
 
     if iteration == total:
         sys.stdout.write('\n')
-    sys.stdout.flush()
+    #sys.stdout.flush()
+    return
+    
+def highpass_fft(data, k):
+
+    # Compute FFT
+    fft = fftpack.fftn(data.astype(float))
+    
+    # Get magnitude of k values
+    abs_fft = np.abs(fft)
+    # Shift frequencies so low-k values are at the center of the image
+    fft_shifted = fftpack.fftshift(abs_fft)
+    #print 'max5', sorted(fft_shifted.flatten())[:5]
+    max1 = np.max(fft_shifted)
+    max2 = np.max(fft_shifted*(fft_shifted != max1))
+    max3 = np.max(fft_shifted*((fft_shifted != max1) & (fft_shifted != max2)))
+    max4 = np.max(fft_shifted*((fft_shifted != max1) & (fft_shifted != max2) & (fft_shifted != max3)))
+    max5 = np.max(fft_shifted*((fft_shifted != max1) & (fft_shifted != max2) & (fft_shifted != max3) & (fft_shifted != max4)))
+    max6 = np.max(fft_shifted*((fft_shifted != max1) & (fft_shifted != max2) & (fft_shifted != max3) & (fft_shifted != max4) & (fft_shifted != max5)))
+    #print max1, max2, max3, max4
+    
+    #print np.where(fft_shifted == np.max(fft_shifted*(fft_shifted != np.max(fft_shifted))))
+    
+    # Select frequencies to set to zero
+    mask = np.ones_like(abs_fft)
+    #mask[508-k:508+k, 508-k:508+k] = 0
+    mask[508,508] = 1 # keep lowest k value as monopole
+    mask[np.where(fft_shifted == max2)] = 0
+    mask[np.where(fft_shifted == max3)] = 0
+    mask[np.where(fft_shifted == max4)] = 0
+    mask[np.where(fft_shifted == max5)] = 0
+    mask[np.where(fft_shifted == max6)] = 0
+    # Reshift frequencies back to default placement
+    #print np.bincount(mask.flatten().astype(int))
+    mask = fftpack.ifftshift(mask)
+    mask = mask.astype(bool)
+
+    # Set unwanted coefficients to zero
+    fft_out = fft * mask
+    
+    # Compute IFFT
+    image_filtered = np.real(fftpack.ifftn(fft_out))
+    
+    # Write to file
+    #fits.writeto('test_hpf.fits', image_filtered, overwrite=True)
+    return image_filtered    
+    
+def highpass_fft1(masked_data, k):
+    datamask = masked_data.mask
+    image_data = np.nan_to_num(masked_data.reshape((1016,1016)))
+    fft = fftpack.fftn(image_data)
+    abs_fft = np.abs(fft)
+    fft_shifted = fftpack.fftshift(abs_fft)
+    mask = np.ones_like(abs_fft)
+    #mask[508-k:508+k, 508-k:508+k] = 0
+    #mask[np.where(fft_shifted == np.max(fft_shifted))] = 1
+    #mask[508,508] = 1
+    print np.where(fft_shifted == np.max(fft_shifted*(fft_shifted != np.max(fft_shifted))))
+    mask[np.where(fft_shifted == np.max(fft_shifted*(fft_shifted != np.max(fft_shifted))))] = 0
+    mask = fftpack.ifftshift(mask)
+    mask = mask.astype(bool)#.astype(int)
+    print mask
+    print np.bincount(mask.flatten())
+    
+    # Make a copy of the original (complex) spectrum
+    F_dim = fft.copy()
+
+    # Set those peak coefficients to zero
+    F_dim = F_dim * mask#.astype(int)
+    print F_dim
+    image_filtered = np.real(fftpack.ifftn(F_dim))
+    print image_filtered
+    fits.writeto('test_hpf.fits', image_filtered, overwrite=True)
+    image_filtered_masked = np.ma.array(image_filtered, mask=datamask)
+    return image_filtered_masked
+    
+    
+def lowpass_fft(File, k):
+    data = np.nan_to_num(File.data.reshape((1016,1016)))#fits.getdata(filename).astype(float)
+    fft = fftpack.fftn(data)
+    abs_fft = np.abs(fft)
+    abs_fft = fftpack.fftshift(abs_fft)
+    mask = np.zeros_like(abs_fft)
+    mask[508-k:508+k, 508-k:508+k] = 1
+    
+    mask = fftpack.ifftshift(mask)
+
+    # Make a copy of the original (complex) spectrum
+    F_dim = fft.copy()
+
+    # Set those peak coefficients to zero
+    F_dim = F_dim * mask.astype(int)
+
+    # Do the inverse Fourier transform to get back to an image.
+    # Since we started with a real image, we only look at the real part of
+    # the output.
+    image_filtered = np.real(fftpack.ifft2(F_dim))
+    
+    return image_filtered
+
+def regression_2d(data_2d):
+    m = data_2d.shape[0] #size of the matrix
+    X1, X2 = np.mgrid[:m, :m]
+    Y = np.array(data_2d)#np.nan_to_num(fits.getdata(sys.argv[1]))
+    #Regression
+    X = np.hstack(   ( np.reshape(X1, (m*m, 1)) , np.reshape(X2, (m*m, 1)) ) )
+    X = np.hstack(   ( np.ones((m*m, 1)) , X ))
+    YY = np.reshape(Y, (m*m, 1))
+    theta = np.dot(np.dot( np.linalg.pinv(np.dot(X.transpose(), X)), X.transpose()), YY)
+
+    return theta
+        
+def gaussian(x, a1, b1, c1):#, a2, b2, c2):
+    return abs(a1) * np.exp(-(x - abs(b1))**2.0 / (2 * abs(c1)**2)) #+ a2 * np.exp(-(x - b2)**2.0 / (2 * c2**2))
+    
+def two_gaussians(x, a1, b1, c1, a2, b2, c2):
+    return abs(a1) * np.exp(-(x - abs(b1))**2.0 / (2 * abs(c1)**2)) + abs(a2) * np.exp(-(x - abs(b2))**2.0 / (2 * abs(c2)**2))
+    
+def enum(*sequential, **named):
+    """Handy way to fake an enumerated type in Python
+    http://stackoverflow.com/questions/36932/how-can-i-represent-an-enum-in-python
+    """
+    enums = dict(zip(sequential, range(len(sequential))), **named)
+    return type('Enum', (), enums)
 '''    
 if __name__ == '__main__':
     print 'Second file'
