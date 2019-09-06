@@ -1,9 +1,21 @@
-from fullskymapping import MapMaker, FileBatcher, MapCombiner
+from fullskymapping import MapMaker, FileBatcher
 from process_manager import RunProcess, RunParallel, RunLinear, RunRankZero, RunDistributed
-import matplotlib.pyplot as plt
-import healpy as hp
+# import matplotlib.pyplot as plt
+import numpy as np
 import sys
 import os
+# import pickle
+#
+# def load_pickle(filename):
+#     with open(filename, 'rb') as f:
+#         data = pickle.load(f)
+#     return data
+#
+# def save_pickle(filename, data):
+#     with open(filename, 'wb') as f:
+#         pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
+#     return
+
 
 def main():
 
@@ -18,6 +30,10 @@ def main():
 
     filelist_gen = RunLinear(batch.filelist_generator).retvalue
 
+    # try:
+    #     popt_vals = load_pickle('popt_vals.pkl')
+    # except IOError:
+    #     popt_vals = np.array([])
     n = 0
     while n < n_days:
         if os.path.exists(f"/home/users/mberkeley/wisemapper/data/output_maps/w{band}/fsm_w{band}_day_{n}.fits"):
@@ -25,6 +41,7 @@ def main():
             filelist = next(filelist_gen)
             n += 1
             continue
+
         RunRankZero(print, data=f"Mapping day {n+1} of {n_days}")
         filelist = next(filelist_gen)
         mapmaker = MapMaker(band, n)
@@ -36,21 +53,14 @@ def main():
         process_map.run_rank_zero(mapmaker.normalize)
         process_map.run_rank_zero(mapmaker.calibrate)
         process_map.run_rank_zero(mapmaker.save_map)
+        # process_map.run_rank_zero(np.append, data=(popt_vals, mapmaker.calibrator.popt))
+        # process_map.run_rank_zero(save_pickle, data=('popt_vals.pkl', popt_vals))
         n += 1
     print("Finished code")
 
 if __name__ == "__main__":
     main()
-    # band = 4
-    # days = 212
-    # mc = MapCombiner(band)
-    # mc.add_days(0, days)
-    # mc.normalize()
-    # mc.save_file()
-    # scale_dict = {1: 1, 2: 1, 3: 35, 4: 70}
-    # hp.mollview(mc.fsm.mapdata, unit='MJy/sr', max=scale_dict[band])
-    # plt.savefig(f'days{days}_band{band}.png')
-    # plt.close()
+
 
     # To do:
     # - Calibrate fit to ceiling

@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
+import math
 
 class ZodiCalibrator:
 
@@ -56,8 +57,40 @@ class ZodiCalibrator:
         return m * x + c
 
     def fit(self):
-        popt, _ = curve_fit(type(self).line, self.raw_vals, self.cal_vals)
+        # sort_order = np.argsort(self.raw_vals)
+        # ceil_data = self.ceiling(self.cal_vals[sort_order], window=50)
+        x, y = self.binmax()
+        popt, _ = curve_fit(type(self).line, x, y)
         return popt
+
+    @staticmethod
+    def ceiling(data, window=5):
+        ceildata = np.array(
+            [max(data[max(0, i - math.floor(window / 2)):min(len(data), i + math.ceil(window / 2))]) for i in
+             range(len(data))])
+        return ceildata
+
+    def binmax(self, nbins=3):
+        minind = np.where(self.cal_vals == min(self.cal_vals))
+        maxind = np.where(self.cal_vals == max(self.cal_vals))
+        minrange = float(self.raw_vals[minind][0])
+        maxrange = float(self.raw_vals[maxind][0])
+        bin_size = int(round((maxrange - minrange) / nbins))
+        nbins = int(round((maxrange - minrange) / bin_size))
+        pts_x = []
+        pts_y = []
+        for n in range(nbins):
+            binmask = ((minrange + n * bin_size) <= self.raw_vals) & (self.raw_vals < (minrange + (n + 1) * bin_size))
+            if len(self.cal_vals[binmask]) > 0:
+                sample_point_ind = np.where(self.cal_vals == max(self.cal_vals[binmask]))
+                pt_x = self.raw_vals[sample_point_ind]
+                pt_y = self.cal_vals[sample_point_ind]
+                pts_x.append(float(pt_x[0]))
+                pts_y.append(float(pt_y[0]))
+
+        pts_x = np.array(pts_x)
+        pts_y = np.array(pts_y)
+        return np.array(pts_x), np.array(pts_y)
 
     def plot(self, label, path):
         plt.plot(self.raw_vals, self.cal_vals, 'r.', self.raw_vals, self.line(self.raw_vals, *self.popt), 'b')

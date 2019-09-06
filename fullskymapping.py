@@ -7,6 +7,9 @@ from healpy.rotator import Rotator
 from calibration import ZodiCalibrator
 from functools import reduce
 import os
+import pickle
+from scipy import stats
+
 
 
 class FullSkyMap(HealpixMap):
@@ -45,9 +48,10 @@ class MapMaker:
     """Class managing how WISE tiles fill the FullSkyMap object"""
 
     def __init__(self, band, n, nside=256):
-        self.path = "/home/users/mberkeley/wisemapper/data/output_maps/"
+        self.band = band
+        self.path = f"/home/users/mberkeley/wisemapper/data/output_maps/w{self.band}/"
         self.label = n
-        self.mapname = f'fsm_w{band}_day_{self.label}.fits'
+        self.mapname = f'fsm_w{self.band}_day_{self.label}.fits'
         self.uncname = self.mapname.replace('day', 'unc_day')
         self.fsm = FullSkyMap(self.mapname, nside)
         self.unc_fsm = FullSkyMap(self.uncname, nside)
@@ -143,6 +147,14 @@ class MapMaker:
     def calibrate(self):
         self.fsm.mapdata, self.unc_fsm.mapdata = self.calibrator.calibrate(self.fsm.mapdata, self.unc_fsm.mapdata)
         self.calibrator.plot(self.label, self.path)
+        popt = self.calibrator.popt
+        with open(f'popt_w{self.band}.pkl', 'rb') as f1:
+            gain, offset = pickle.load(f1)
+
+        gain[self.label] = popt[0]
+        offset[self.label] = popt[1]
+        with open(f'popt_w{self.band}.pkl', 'wb') as f2:
+            pickle.dump([gain, offset], f2, pickle.HIGHEST_PROTOCOL)
 
     def save_map(self):
         hp.fitsfunc.write_map(self.path + self.mapname, self.fsm.mapdata,
@@ -268,3 +280,42 @@ class MapCombiner:
     def save_file(self):
         self.fsm.save_map()
         self.unc_fsm.save_map()
+
+    @staticmethod
+    def mask_outliers(data, threshold=1):
+        z = np.abs(stats.zscore(data[data > 0.0]))
+        mask = z > threshold
+        return mask
+
+    def clean_add(self, day_start, day_end):
+        map_datas = []
+        map_uncs = []
+        for i in range(day_start, day_end):
+            filename = f"{self.path}fsm_w{self.band}_day_{i}.fits"
+            if not os.path.exists(filename):
+                print(f'Skipping file {filename} as it does not exist')
+                continue
+            day_map = WISEMap(filename, self.band)
+            day_map.read_data()
+            map_datas.append(day_map.mapdata)
+            day_uncmap = WISEMap(filename.replace("day", "unc_day"), self.band)
+            day_uncmap.read_data()
+            day_uncmap.mapdata = np.sqrt(day_uncmap.mapdata)
+            map_uncs.append(day_uncmap.mapdata)
+
+        px_vals = np.array(map_datas).T
+        unc_vals = np.array(map_uncs).T
+        for p, px in enumerate(px_vals):
+            if len(px[px > 0.0]) > 2:
+                mask = self.mask_outliers(px)
+                good_vals = px[px > 0.0][~mask]
+                good_unc_vals = unc_vals[p][px > 0.0][~mask]
+            else:
+                good_vals = px[px > 0.0]
+                good_unc_vals = unc_vals[p][px > 0.0]
+
+            if len(good_unc_vals) > 0:
+                numerator = np.sum(good_vals/good_unc_vals**2)
+                denominator = np.sum(1/good_unc_vals**2)
+                self.fsm.mapdata[p] = numerator/denominator
+                self.unc_fsm.mapdata[p] = 1/np.sqrt(denominator)

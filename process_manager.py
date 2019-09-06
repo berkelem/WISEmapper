@@ -120,8 +120,6 @@ class RunRankZero(Process):
 
     def __init__(self, func, **kwargs):
         super().__init__(func, **kwargs)
-        # if self.rank == 0:
-        #     self.retvalue = self.run_job()
         if mpi_available:
             self.comm = MPI.COMM_WORLD
             self.rank = self.comm.Get_rank()
