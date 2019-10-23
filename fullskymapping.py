@@ -4,7 +4,7 @@ import pandas as pd
 from file_handler import HealpixMap, WISEMap
 from data_loader import WISEDataLoader
 from healpy.rotator import Rotator
-from calibration import ZodiCalibrator
+from calibration import ZodiCalibrator, SmoothFit
 from functools import reduce
 import os
 import pickle
@@ -51,8 +51,8 @@ class MapMaker:
         self.band = band
         self.path = f"/home/users/mberkeley/wisemapper/data/output_maps/w{self.band}/"
         self.label = n
-        self.mapname = f'fsm_w{self.band}_day_{self.label}.fits'
-        self.uncname = self.mapname.replace('day', 'unc_day')
+        self.mapname = f'fsm_w{self.band}_orbit_{self.label}.fits'
+        self.uncname = self.mapname.replace('orbit', 'unc_orbit')
         self.fsm = FullSkyMap(self.mapname, nside)
         self.unc_fsm = FullSkyMap(self.uncname, nside)
         # self.pix_count = np.zeros_like(self.fsm.mapdata, dtype=int)
@@ -148,12 +148,17 @@ class MapMaker:
         self.fsm.mapdata, self.unc_fsm.mapdata = self.calibrator.calibrate(self.fsm.mapdata, self.unc_fsm.mapdata)
         self.calibrator.plot(self.label, self.path)
         popt = self.calibrator.popt
-        with open(f'popt_w{self.band}.pkl', 'rb') as f1:
-            gain, offset = pickle.load(f1)
+        popt_file = f'popt_w{self.band}.pkl'
+        if os.path.exists(popt_file):
+            with open(popt_file, 'rb') as f1:
+                gain, offset = pickle.load(f1)
+        else:
+            gain = np.zeros(6323, dtype=float)
+            offset = np.zeros(6323, dtype=float)
 
         gain[self.label] = popt[0]
         offset[self.label] = popt[1]
-        with open(f'popt_w{self.band}.pkl', 'wb') as f2:
+        with open(popt_file, 'wb') as f2:
             pickle.dump([gain, offset], f2, pickle.HIGHEST_PROTOCOL)
 
     def save_map(self):
@@ -171,14 +176,6 @@ class FileBatcher:
         self.filtered_data = None
         self.timestamps_df = None
         self.groups = None
-
-    # def __iter__(self):
-    #     self.load_dataframe()
-    #     self._group_files()
-    #     return self
-    #
-    # def __next__(self):
-    #     return self.filelist_generator()
 
     def load_dataframe(self):
 
@@ -225,6 +222,10 @@ class FileBatcher:
         self.load_dataframe()
         self._group_files(groupby='day')
 
+    def group_orbits(self):
+        self.load_dataframe()
+        self._group_files(groupby='orbit')
+
     def _group_files(self, groupby='day'):
         # Use orbit parameters to filter WISE images
         if groupby == 'day':
@@ -247,29 +248,97 @@ class MapCombiner:
     def __init__(self, band, nside=256):
         self.band = band
         self.path = f"/home/users/mberkeley/wisemapper/data/output_maps/w{band}/"
-        self.mapname = f'fsm_w{band}_all.fits'
+        self.mapname = f'fsm_w{band}_all_interp.fits'
         self.uncname = self.mapname.replace('.fits', '_unc.fits')
         self.fsm = FullSkyMap(self.mapname, nside)
         self.unc_fsm = FullSkyMap(self.uncname, nside)
         self.numerator = np.zeros_like(self.fsm.mapdata)
         self.denominator = np.zeros_like(self.fsm.mapdata)
 
-    def add_days(self, day_start, day_end):
+
+    def add_days(self, day_start, day_end, smooth_window=11):
+
+        smooth_fitter = SmoothFit(self.band, "/home/users/mberkeley/wisemapper/scripts")
+        gain, offset = smooth_fitter.load_fit_vals()
+
+        bad_fit_days = [26, 27, 28, 30, 46, 47, 48, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
+                        67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 85, 86, 87, 88, 95, 98, 99, 100,
+                        102, 108, 112, 113, 114, 115, 116, 117, 125, 126, 127, 128, 129, 130, 131, 132, 136, 146,
+                        147, 150, 158, 176, 177]
+        bad_fit_days2 = [0, 23, 24, 25, 36, 37, 38, 39, 41, 42, 49, 84, 89, 90, 91, 92, 93, 94, 96, 97, 101, 103, 104,
+                         105,
+                         106, 118, 120, 121, 122, 123, 124, 133, 136, 138, 139, 140, 141, 142, 143, 144, 145, 151, 180,
+                         194, 199, 200, 201, 202, 203, 204, 205]
+
+        all_bad_days = bad_fit_days + bad_fit_days2
+        import numpy.ma as ma
+        mask = np.zeros_like(gain)
+        mask[bad_fit_days] = 1
+        mask[bad_fit_days2] = 1
+        days = np.arange(len(gain))
+        days_masked = ma.array(days, mask=mask)
+        masked_gain = ma.array(gain, mask=mask)
+        masked_offset = ma.array(offset, mask=mask)
+
+        interp_gain = np.interp(all_bad_days, days_masked.compressed(), masked_gain.compressed())
+        gain[all_bad_days] = interp_gain
+
+        interp_offset = np.interp(all_bad_days, days_masked.compressed(), masked_offset.compressed())
+        offset[all_bad_days] = interp_offset
+
+        smooth_gain = smooth_fitter.mean_filter(gain, smooth_window)
+        smooth_offset = smooth_fitter.mean_filter(offset, smooth_window)
+        smooth_fitter.plot_smoothfit_vals(gain, smooth_gain, offset, smooth_offset)
+
+        map_datas = []
+        map_uncs = []
+        day_maps = []
         for i in range(day_start, day_end):
             filename = f"{self.path}fsm_w{self.band}_day_{i}.fits"
             if not os.path.exists(filename):
                 print(f'Skipping file {filename} as it does not exist')
                 continue
             day_map = WISEMap(filename, self.band)
+            day_maps.append(day_map)
             day_map.read_data()
+
+            orig_gain = gain[i-day_start]
+            orig_offset = offset[i-day_start]
+            adj_gain = smooth_gain[i-day_start]
+            adj_offset = smooth_offset[i-day_start]
+            data = day_maps[i-day_start].mapdata
+
+            adj_data = smooth_fitter.adjust_calibration(data, orig_gain, adj_gain, orig_offset, adj_offset)
+            map_datas.append(adj_data)
+
             day_uncmap = WISEMap(filename.replace("day", "unc_day"), self.band)
             day_uncmap.read_data()
-            day_uncmap.mapdata = np.sqrt(day_uncmap.mapdata)
+            day_uncmap.mapdata = np.sqrt(np.abs(day_uncmap.mapdata)) * np.abs(adj_gain / orig_gain)
+            # unc data originally saved as variance, so have to take sqrt. Also adjust for smooth fit by applying
+            # gain adjustment factor.
+            map_uncs.append(day_uncmap.mapdata)
 
-            self.numerator += np.divide(day_map.mapdata, day_uncmap.mapdata**2, out=np.zeros_like(day_map.mapdata),
-                                        where=day_uncmap.mapdata != 0.0)
-            self.denominator += np.divide(np.ones_like(day_map.mapdata), day_uncmap.mapdata**2,
-                                          out=np.zeros_like(day_map.mapdata), where=day_uncmap.mapdata != 0.0)
+            # self.numerator += np.divide(adj_data, day_uncmap.mapdata**2, out=np.zeros_like(adj_data),
+            #                             where=day_uncmap.mapdata != 0.0)
+            # self.denominator += np.divide(np.ones_like(adj_data), day_uncmap.mapdata**2,
+            #                               out=np.zeros_like(adj_data), where=day_uncmap.mapdata != 0.0)
+        px_vals = np.array(map_datas).T
+        unc_vals = np.array(map_uncs).T
+        for p, px in enumerate(px_vals):
+            if len(px[px > 0.0]) > 2:
+                mask = self.mask_outliers(px)
+                good_vals = px[px > 0.0][~mask]
+                good_unc_vals = unc_vals[p][px > 0.0][~mask]
+            else:
+                good_vals = px[px > 0.0]
+                good_unc_vals = unc_vals[p][px > 0.0]
+
+            if len(good_unc_vals) > 0:
+                numerator = np.sum(good_vals / good_unc_vals ** 2)
+                denominator = np.sum(1 / good_unc_vals ** 2)
+                self.fsm.mapdata[p] = numerator / denominator
+                self.unc_fsm.mapdata[p] = 1 / np.sqrt(denominator)
+        return
 
     def normalize(self):
         self.fsm.mapdata = np.divide(self.numerator, self.denominator, out=np.zeros_like(self.numerator),
@@ -286,36 +355,3 @@ class MapCombiner:
         z = np.abs(stats.zscore(data[data > 0.0]))
         mask = z > threshold
         return mask
-
-    def clean_add(self, day_start, day_end):
-        map_datas = []
-        map_uncs = []
-        for i in range(day_start, day_end):
-            filename = f"{self.path}fsm_w{self.band}_day_{i}.fits"
-            if not os.path.exists(filename):
-                print(f'Skipping file {filename} as it does not exist')
-                continue
-            day_map = WISEMap(filename, self.band)
-            day_map.read_data()
-            map_datas.append(day_map.mapdata)
-            day_uncmap = WISEMap(filename.replace("day", "unc_day"), self.band)
-            day_uncmap.read_data()
-            day_uncmap.mapdata = np.sqrt(day_uncmap.mapdata)
-            map_uncs.append(day_uncmap.mapdata)
-
-        px_vals = np.array(map_datas).T
-        unc_vals = np.array(map_uncs).T
-        for p, px in enumerate(px_vals):
-            if len(px[px > 0.0]) > 2:
-                mask = self.mask_outliers(px)
-                good_vals = px[px > 0.0][~mask]
-                good_unc_vals = unc_vals[p][px > 0.0][~mask]
-            else:
-                good_vals = px[px > 0.0]
-                good_unc_vals = unc_vals[p][px > 0.0]
-
-            if len(good_unc_vals) > 0:
-                numerator = np.sum(good_vals/good_unc_vals**2)
-                denominator = np.sum(1/good_unc_vals**2)
-                self.fsm.mapdata[p] = numerator/denominator
-                self.unc_fsm.mapdata[p] = 1/np.sqrt(denominator)

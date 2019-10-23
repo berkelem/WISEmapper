@@ -1,20 +1,8 @@
 from fullskymapping import MapMaker, FileBatcher
-from process_manager import RunProcess, RunParallel, RunLinear, RunRankZero, RunDistributed
-# import matplotlib.pyplot as plt
-import numpy as np
+from process_manager import RunLinear, RunRankZero, RunDistributed
+
 import sys
 import os
-# import pickle
-#
-# def load_pickle(filename):
-#     with open(filename, 'rb') as f:
-#         data = pickle.load(f)
-#     return data
-#
-# def save_pickle(filename, data):
-#     with open(filename, 'wb') as f:
-#         pickle.dump(data, f, pickle.HIGHEST_PROTOCOL)
-#     return
 
 
 def main():
@@ -25,8 +13,9 @@ def main():
 
     # Send filelists to ranks
     batch = FileBatcher(filename)
-    RunLinear(batch.group_days)
-    n_days = len(batch.groups)
+    RunLinear(batch.group_orbits)
+    n_orbits = len(batch.groups)
+    print("{} orbits".format(n_orbits))
 
     filelist_gen = RunLinear(batch.filelist_generator).retvalue
 
@@ -35,14 +24,14 @@ def main():
     # except IOError:
     #     popt_vals = np.array([])
     n = 0
-    while n < n_days:
-        if os.path.exists(f"/home/users/mberkeley/wisemapper/data/output_maps/w{band}/fsm_w{band}_day_{n}.fits"):
-            RunRankZero(print, data=f"Already mapped day {n + 1} of {n_days}")
+    while n < n_orbits:
+        if os.path.exists(f"/home/users/mberkeley/wisemapper/data/output_maps/w{band}/fsm_w{band}_orbit_{n}.fits"):
+            RunRankZero(print, data=f"Already mapped orbit {n + 1} of {n_orbits}")
             filelist = next(filelist_gen)
             n += 1
             continue
 
-        RunRankZero(print, data=f"Mapping day {n+1} of {n_days}")
+        RunRankZero(print, data=f"Mapping orbit {n+1} of {n_orbits}")
         filelist = next(filelist_gen)
         mapmaker = MapMaker(band, n)
         process_map = RunDistributed(mapmaker.add_image, filelist, iterate=True,
@@ -50,9 +39,12 @@ def main():
         process_map.run()
         alldata = process_map.retvalue
         process_map.run_rank_zero(mapmaker.unpack_multiproc_data, data=alldata)
-        process_map.run_rank_zero(mapmaker.normalize)
-        process_map.run_rank_zero(mapmaker.calibrate)
-        process_map.run_rank_zero(mapmaker.save_map)
+        try:
+            process_map.run_rank_zero(mapmaker.normalize)
+            process_map.run_rank_zero(mapmaker.calibrate)
+            process_map.run_rank_zero(mapmaker.save_map)
+        except ValueError:
+            continue
         # process_map.run_rank_zero(np.append, data=(popt_vals, mapmaker.calibrator.popt))
         # process_map.run_rank_zero(save_pickle, data=('popt_vals.pkl', popt_vals))
         n += 1

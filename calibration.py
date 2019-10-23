@@ -4,7 +4,11 @@ import numpy as np
 from scipy import stats
 from scipy.optimize import curve_fit
 import matplotlib.pyplot as plt
+import matplotlib
+matplotlib.use('Agg')
 import math
+import os
+import pickle
 
 class ZodiCalibrator:
 
@@ -34,7 +38,7 @@ class ZodiCalibrator:
         calib_map = np.zeros_like(raw_map)
         calib_uncmap = np.zeros_like(raw_map)
         calib_map[nonzero_mask] = raw_map[nonzero_mask]*self.popt[0] + self.popt[1]
-        calib_uncmap[nonzero_mask] = unc_map[nonzero_mask]*self.popt[0]
+        calib_uncmap[nonzero_mask] = unc_map[nonzero_mask]*abs(self.popt[0])
         return calib_map, calib_uncmap
 
     def clean_with_z_score(self, raw_vals, cal_vals, threshold=3):
@@ -59,8 +63,9 @@ class ZodiCalibrator:
     def fit(self):
         # sort_order = np.argsort(self.raw_vals)
         # ceil_data = self.ceiling(self.cal_vals[sort_order], window=50)
-        x, y = self.binmax()
-        popt, _ = curve_fit(type(self).line, x, y)
+        # x, y = self.binmax()
+        x, y = self.raw_vals, self.cal_vals
+        popt, _ = curve_fit(self.line, x, y)
         return popt
 
     @staticmethod
@@ -97,6 +102,167 @@ class ZodiCalibrator:
         plt.xlabel('Raw values (DN)')
         plt.ylabel('Calibrated values (MJy/sr)')
         plt.title(f'Calibration fit for day {label}')
-        plt.savefig(f'{path}band{self.band}_day{label}.png')
+        plt.savefig(f'{path}band{self.band}_orbit{label}.png')
         plt.close()
 
+
+class SmoothFit:
+
+    #  1) load each individual day file and get number of nonzero pixels for weight;
+    #  2) implement smoothing algorithm;
+    #  3) Obtain new gain/offset values for each day;
+    #  4) Apply reversal and recalibration to each day;
+    #  5) Recombine all days using new cleaning method (z <= 1)
+
+    def __init__(self, band, basepath="./"):
+        self.band = band
+        self.basepath = basepath
+        self.popt_file = os.path.join(self.basepath, f"popt_w{self.band}.pkl")
+        self.bad_fit_days = [26, 27, 28, 30, 46, 47, 48, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66,
+                             67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 85, 86, 87, 88, 95, 98, 99, 100,
+                             102, 108, 112, 113, 114, 115, 116, 117, 125, 126, 127, 128, 129, 130, 131, 132, 136, 146,
+                             147, 150, 158, 176, 177]
+
+
+    def load_fit_vals(self):
+        with open(self.popt_file, "rb") as f:
+            gain, offset = pickle.load(f)
+        return gain, offset
+
+    def plot_smoothfit_vals(self, orig_gain, adj_gain, orig_offset, adj_offset):
+        plt.plot(orig_gain, 'r.', adj_gain, 'b')
+        plt.xlabel("Day")
+        plt.ylabel("Fitted gain")
+        plt.title("Mean filter; gain smoothing")
+        plt.savefig(os.path.join(self.basepath, f"w{self.band}_gain_mean_filter_interp.png"))
+        plt.close()
+
+        plt.plot(orig_offset, 'r.', adj_offset, 'b')
+        plt.xlabel("Day")
+        plt.ylabel("Fitted gain")
+        plt.title("Mean filter; offset smoothing")
+        plt.savefig(os.path.join(self.basepath, f"w{self.band}_offset_mean_filter_interp.png"))
+        plt.close()
+        return
+
+    @staticmethod
+    def median_filter(array, size):
+        output = []
+        for p, px in enumerate(array):
+            window = np.zeros(size)
+            step = int(size / 2)
+            if p - step < 0:
+                undershoot = step - p
+                window[:undershoot] = array[-undershoot:]
+                window[undershoot:step] = array[:p]
+            else:
+                window[:step] = array[p - step:p]
+
+            if p + step + 1 > len(array):
+                overshoot = p + step + 1 - len(array)
+                array_roll = np.roll(array, overshoot)
+                window[step:] = array_roll[-(size - step):]
+            else:
+                window[step:] = array[p:p + step + 1]
+
+            window_median = np.median(window)
+            output.append(window_median)
+        return np.array(output)
+
+    @staticmethod
+    def mean_filter(array, size):
+        output = []
+        for p, px in enumerate(array):
+            window = np.ma.zeros(size)
+            step = int(size / 2)
+            if p - step < 0:
+                undershoot = step - p
+                window[:undershoot] = array[-undershoot:]
+                window[undershoot:step] = array[:p]
+            else:
+                window[:step] = array[p - step:p]
+
+            if p + step + 1 > len(array):
+                overshoot = p + step + 1 - len(array)
+                array_roll = np.roll(array, overshoot)
+                window[step:] = array_roll[-(size - step):]
+            else:
+                window[step:] = array[p:p + step + 1]
+
+            window_mean = np.ma.mean(window)
+            output.append(window_mean)
+        return np.array(output)
+
+
+    @staticmethod
+    def weighted_median_filter(array, weights, size):
+        output = []
+        for p, px in enumerate(array):
+            window = np.ma.zeros(size)
+            weights_window = np.zeros(size)
+            step = int(size / 2)
+            if p - step < 0:
+                undershoot = step - p
+                window[:undershoot] = array[-undershoot:]
+                window[undershoot:step] = array[:p]
+                weights_window[:undershoot] = weights[-undershoot:]
+                weights_window[undershoot:step] = weights[:p]
+            else:
+                window[:step] = array[p - step:p]
+                weights_window[:step] = weights[p - step:p]
+
+            if p + step + 1 > len(array):
+                overshoot = p + step + 1 - len(array)
+                array_roll = np.roll(array, overshoot)
+                weights_roll = np.roll(weights, overshoot)
+                window[step:] = array_roll[-(size - step):]
+                weights_window[step:] = weights_roll[-(size - step):]
+            else:
+                window[step:] = array[p:p + step + 1]
+                weights_window[step:] = weights[p:p + step + 1]
+
+            weights_window /= np.sum(weights_window)
+            weighted_median_index = np.searchsorted(np.cumsum(weights_window), 0.5)
+            weighted_median = window[weighted_median_index]
+            output.append(weighted_median)
+        return np.array(output)
+
+    @staticmethod
+    def weighted_mean_filter(array, weights, size):
+        output = []
+        for p, px in enumerate(array):
+            window = np.ma.zeros(size)
+            weights_window = np.zeros(size)
+            step = int(size / 2)
+            if p - step < 0:
+                undershoot = step - p
+                window[:undershoot] = array[-undershoot:]
+                window[undershoot:step] = array[:p]
+                weights_window[:undershoot] = weights[-undershoot:]
+                weights_window[undershoot:step] = weights[:p]
+            else:
+                window[:step] = array[p - step:p]
+                weights_window[:step] = weights[p - step:p]
+
+            if p + step + 1 > len(array):
+                overshoot = p + step + 1 - len(array)
+                array_roll = np.roll(array, overshoot)
+                weights_roll = np.roll(weights, overshoot)
+                window[step:] = array_roll[-(size - step):]
+                weights_window[step:] = weights_roll[-(size - step):]
+            else:
+                window[step:] = array[p:p + step + 1]
+                weights_window[step:] = weights[p:p + step + 1]
+
+            weights_window /= np.sum(weights_window)
+            weighted_mean = np.average(window, weights=weights_window)
+            output.append(weighted_mean)
+        return np.array(output)
+
+    @staticmethod
+    def adjust_calibration(data, orig_gain, adj_gain, orig_offset, adj_offset):
+        """Apply adjustment across entire map and restore original zeros afterwards"""
+        zeros = data == 0.0
+        adj_data = (((data) - orig_offset)/orig_gain) * adj_gain + adj_offset
+        adj_data[zeros] = 0.0
+        return adj_data
