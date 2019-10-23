@@ -24,17 +24,34 @@ class ZodiCalibrator:
         self.nside = None
 
     def calibrate(self, raw_map, unc_map):
+        """
+        This is the main function call that takes a raw map and calibrates it to the Kelsall zodi map.
+        :param raw_map: Raw WISE data in HEALpix form.
+        :param unc_map: The corresponding Kelsall zodi map.
+        :return:
+        """
+        # Ensure the Zodi map has the same resolution as the WISE map
         self.nside = hp.npix2nside(len(raw_map))
         self.kelsall_map.set_resolution(self.nside)
+
+        # Create a mask to remove nonzero pixels and pixels in the galactic plane
         nonzero_mask = raw_map != 0.0
         galaxy_mask = self.mask_galaxy()
         full_mask = nonzero_mask & galaxy_mask
         raw_vals = raw_map[full_mask]
+        unc_vals = unc_map[full_mask]
         cal_vals = self.kelsall_map.mapdata[full_mask]
+
+        # Remove outliers using a z-score cutoff
         clean_mask = ~ self.clean_with_z_score(raw_vals, cal_vals, threshold=1)
         self.raw_vals = raw_vals[clean_mask]
+        self.unc_vals = unc_vals[clean_mask]
         self.cal_vals = cal_vals[clean_mask]
+
+        # Perform least squares fit
         self.popt = self.fit()
+
+        # Apply fit parameters to raw map and return as a calibrated map
         calib_map = np.zeros_like(raw_map)
         calib_uncmap = np.zeros_like(raw_map)
         calib_map[nonzero_mask] = raw_map[nonzero_mask]*self.popt[0] + self.popt[1]
@@ -49,6 +66,10 @@ class ZodiCalibrator:
 
 
     def mask_galaxy(self):
+        """
+        Remove 20% of the sky around the galactic plane where zodi is not the dominant foreground.
+        :return:
+        """
         npix = hp.nside2npix(self.nside)
         theta, _ = hp.pix2ang(self.nside, np.arange(npix))
         mask = (np.pi * 0.4 < theta) & (theta < 0.6 * np.pi)
@@ -61,13 +82,16 @@ class ZodiCalibrator:
         return m * x + c
 
     def fit(self):
-        # sort_order = np.argsort(self.raw_vals)
-        # ceil_data = self.ceiling(self.cal_vals[sort_order], window=50)
-        # x, y = self.binmax()
+        """
+        Straightforward least squares curve fitting.
+        :return:
+        """
         x, y = self.raw_vals, self.cal_vals
-        popt, _ = curve_fit(self.line, x, y)
+        popt, _ = curve_fit(self.line, x, y, sigma=self.unc_vals)
         return popt
 
+    # The following methods were just different variations on the fit that I used when fitting entire days.
+    # They shouldn't be necessary for individual orbits.
     @staticmethod
     def ceiling(data, window=5):
         ceildata = np.array(
