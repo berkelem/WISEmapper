@@ -1,8 +1,8 @@
-from file_handler import ZodiMap
+from file_handler import ZodiMap, HealpixMap
 import healpy as hp
 import numpy as np
 from scipy import stats
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, minimize
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')
@@ -21,9 +21,55 @@ class ZodiCalibrator:
         self.band = band
         self.kelsall_map = ZodiMap(f'/home/users/mberkeley/wisemapper/data/kelsall_maps/{self.zodi_maps[self.band]}', self.band)
         self.kelsall_map.read_data()
+        self.moon_stripe_mask = HealpixMap("/home/users/mberkeley/wisemapper/data/masks/stripe_mask_G.fits")
+        self.moon_stripe_mask.read_data()
+        self.pole_region = HealpixMap("/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/mask_map_70.fits")
+        self.pole_region.read_data()
+        self.pole_region_mask = self.pole_region.mapdata.astype(bool)
         self.nside = None
 
-    def calibrate(self, raw_map, unc_map):
+    def mask_stripes(self, map_data, map_unc):
+        nonzero_mask = map_data != 0.0
+        moon_mask = ~self.moon_stripe_mask.mapdata.astype(bool)
+        full_mask = nonzero_mask & moon_mask
+        map_data_filtered = np.ma.array(map_data, mask=full_mask, fill_value=0.0).filled()
+        map_unc_filtered = np.ma.array(map_unc, mask=full_mask, fill_value=0.0).filled()
+        return map_data_filtered, map_unc_filtered
+
+    def mask_except_poles(self, map_data, map_unc):
+        nonzero_mask = map_data != 0.0
+        moon_mask = ~self.moon_stripe_mask.mapdata.astype(bool)
+        pole_mask = self.pole_region_mask
+        full_mask = nonzero_mask & moon_mask & pole_mask
+        map_data_filtered = np.ma.array(map_data, mask=full_mask, fill_value=0.0).filled()
+        map_unc_filtered = np.ma.array(map_unc, mask=full_mask, fill_value=0.0).filled()
+        return map_data_filtered, map_unc_filtered
+
+    def offset_fit_iteration(self, all_orbits_data, all_orbits_unc, gain):
+        moon_mask = ~self.moon_stripe_mask.mapdata.astype(bool)
+        pole_mask = self.pole_region_mask
+        combined_region_mask = moon_mask & pole_mask
+        selected_region_data = all_orbits_data[combined_region_mask]
+        selected_region_unc = all_orbits_unc[combined_region_mask]
+        calibrated_data = gain * selected_region_data + offset
+
+    @staticmethod
+    def calibrated_variance(offset, data, gain):
+        cal_data = gain * data + offset
+        variance = np.var(cal_data, axis=0)
+        return variance
+
+    def fit_variance(self, init_offset, data, gain):
+        popt = minimize(self.calibrated_variance, init_offset, args=(data, gain), method='Nelder-Mead').x
+        return popt
+
+    def calibrate(self, all_orbits_data, all_orbits_unc):
+        self.nside = hp.npix2nside(all_orbits_data.shape[1])
+        self.kelsall_map.set_resolution(self.nside)
+        fitted_offset = self.fit_variance(0.0, all_orbits_data[:, 0], 1.0)
+
+
+    def calibrate_stripe(self, raw_map, unc_map, id=None):
         """
         This is the main function call that takes a raw map and calibrates it to the Kelsall zodi map.
         :param raw_map: Raw WISE data in HEALpix form.
@@ -36,27 +82,100 @@ class ZodiCalibrator:
 
         # Create a mask to remove nonzero pixels and pixels in the galactic plane
         nonzero_mask = raw_map != 0.0
-        galaxy_mask = self.mask_galaxy()
-        full_mask = nonzero_mask & galaxy_mask
-        raw_vals = raw_map[full_mask]
-        unc_vals = unc_map[full_mask]
-        cal_vals = self.kelsall_map.mapdata[full_mask]
+        # hp.fitsfunc.write_map("nonzero_mask.fits", nonzero_mask, coord="G", overwrite=True)
+        # galaxy_mask = self.mask_galaxy()
+        # hp.fitsfunc.write_map("g_mask.fits", galaxy_mask, coord="G", overwrite=True)
+        moon_mask = ~self.moon_stripe_mask.mapdata.astype(bool)
+        # hp.fitsfunc.write_map("m_mask.fits", moon_mask, coord="G", overwrite=True)
+        pole_mask = self.pole_region_mask
+        # hp.fitsfunc.write_map("p_mask.fits", pole_mask, coord="G", overwrite=True)
+        sky_mask_for_gain = nonzero_mask & moon_mask
+
+        full_mask_for_offset = nonzero_mask & moon_mask & pole_mask
+        # hp.fitsfunc.write_map("fullmask.fits", full_mask, coord="G", overwrite=True)
+        raw_vals_for_gain = raw_map[sky_mask_for_gain]
+        unc_vals_for_gain = unc_map[sky_mask_for_gain]
+        cal_vals_for_gain = self.kelsall_map.mapdata[sky_mask_for_gain]
+
+        raw_vals_for_offset = raw_map[full_mask_for_offset]
+        unc_vals_for_offset = unc_map[full_mask_for_offset]
+        cal_vals_for_offset = self.kelsall_map.mapdata[full_mask_for_offset]
+
+        # raw_vals = raw_map[full_mask]
+        # unc_vals = unc_map[full_mask]
+        # cal_vals = self.kelsall_map.mapdata[full_mask]
 
         # Remove outliers using a z-score cutoff
-        clean_mask = ~ self.clean_with_z_score(raw_vals, cal_vals, threshold=1)
-        self.raw_vals = raw_vals[clean_mask]
-        self.unc_vals = unc_vals[clean_mask]
-        self.cal_vals = cal_vals[clean_mask]
+        clean_mask_for_gain = ~ self.clean_with_z_score(raw_vals_for_gain, cal_vals_for_gain, threshold=3)
+        clean_mask_for_offset = ~ self.clean_with_z_score(raw_vals_for_offset, cal_vals_for_offset, threshold=3)
+        self.raw_vals_for_gain = raw_vals_for_gain[clean_mask_for_gain]
+        self.unc_vals_for_gain = unc_vals_for_gain[clean_mask_for_gain]
+        self.cal_vals_for_gain = cal_vals_for_gain[clean_mask_for_gain]
 
-        # Perform least squares fit
-        self.popt = self.fit()
+        self.raw_vals_for_offset = raw_vals_for_offset[clean_mask_for_offset]
+        self.unc_vals_for_offset = unc_vals_for_offset[clean_mask_for_offset]
+        self.cal_vals_for_offset = cal_vals_for_offset[clean_mask_for_offset]
 
-        # Apply fit parameters to raw map and return as a calibrated map
-        calib_map = np.zeros_like(raw_map)
-        calib_uncmap = np.zeros_like(raw_map)
-        calib_map[nonzero_mask] = raw_map[nonzero_mask]*self.popt[0] + self.popt[1]
-        calib_uncmap[nonzero_mask] = unc_map[nonzero_mask]*abs(self.popt[0])
-        return calib_map, calib_uncmap
+        # self.popt = self.fit()
+        # mean_gain, mean_offset = self.popt
+        gains = []
+        offsets = []
+        offset = 0
+        gain = 1.0
+        i = 0
+        while i < 150:
+            # Perform least squares fit
+            gain = self.fit_gain(self.raw_vals_for_gain, self.unc_vals_for_gain, self.cal_vals_for_gain, gain, offset)
+            gains.append(gain)
+
+            t_gal_offset = (self.raw_vals_for_offset - offset) / gain - self.cal_vals_for_offset
+            # t_gal_gain = (self.raw_vals_for_gain - offset) / gain - self.cal_vals_for_gain
+            self.raw_vals_for_offset -= gain * t_gal_offset
+            # self.raw_vals_for_gain -= gain * t_gal_gain
+
+            offset = self.fit_offset(self.raw_vals_for_offset, self.unc_vals_for_offset, self.cal_vals_for_offset, offset, gain)
+            offsets.append(offset)
+            # Residuals as galactic signal
+            t_gal_gain = (self.raw_vals_for_gain - offset)/gain - self.cal_vals_for_gain
+            self.raw_vals_for_gain -= gain*t_gal_gain
+
+            gain = self.fit_gain(self.raw_vals_for_gain, self.unc_vals_for_gain, self.cal_vals_for_gain, gain, offset)
+            gains.append(gain)
+
+            t_gal_offset = (self.raw_vals_for_offset - offset)/gain - self.cal_vals_for_offset
+            # t_gal_gain = (self.raw_vals_for_gain - offset) / gain - self.cal_vals_for_gain
+            self.raw_vals_for_offset -= gain*t_gal_offset
+            # self.raw_vals_for_gain -= gain * t_gal_gain
+
+            i += 1
+
+        mean_gain, mean_offset = self.plot_fit_vals(gains, offsets, id)
+        return [mean_gain, mean_offset], len(self.raw_vals_for_offset)
+
+        # # Apply fit parameters to raw map and return as a calibrated map
+        # calib_map = np.zeros_like(raw_map)
+        # calib_uncmap = np.zeros_like(raw_map)
+        # calib_map[nonzero_mask] = raw_map[nonzero_mask]*self.popt[0] + self.popt[1]
+        # calib_uncmap[nonzero_mask] = unc_map[nonzero_mask]*abs(self.popt[0])
+        # return calib_map, calib_uncmap
+
+    def plot_fit_vals(self, gains, offsets, id):
+
+        mean_gain = np.mean(gains[50:])
+        mean_offset = np.mean(offsets[50:])
+
+        plt.plot(gains, 'r.', np.ones_like(gains)*mean_gain, 'b')
+        plt.ylabel("Gain")
+        plt.xlabel("Iteration")
+        plt.savefig(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/cal_param_plots/gain_convergence_orbit_{id}.png")
+        plt.close()
+
+        plt.plot(offsets, 'b.', np.ones_like(offsets)*mean_offset, 'r')
+        plt.ylabel("Offset")
+        plt.xlabel("Iteration")
+        plt.savefig(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/cal_param_plots/offset_convergence_orbit_{id}.png")
+        plt.close()
+        return mean_gain, mean_offset
 
     def clean_with_z_score(self, raw_vals, cal_vals, threshold=3):
         data = cal_vals/raw_vals
@@ -81,13 +200,45 @@ class ZodiCalibrator:
     def line(x, m, c):
         return m * x + c
 
-    def fit(self):
+    @staticmethod
+    def chi_sq(params, x_data, y_data, sigma):
+        '''Calculate chi_sq'''
+        residual = (y_data - (params[0] * x_data + params[1]))
+        weighted_residual = residual/sigma
+        chi_sq = np.sum(weighted_residual ** 2) / len(x_data)
+        return chi_sq
+
+    @staticmethod
+    def chi_sq_gain(param, x_data, y_data, sigma, offset):
+        residual = (y_data - (param*x_data + offset))
+        weighted_residual = residual / sigma
+        chi_sq = (np.sum(weighted_residual ** 2) / len(x_data)) if len(x_data) > 0 else 0.0
+        return chi_sq
+
+    @staticmethod
+    def chi_sq_offset(param, x_data, y_data, sigma, gain):
+        residual = (y_data - (gain * x_data + param))
+        weighted_residual = residual / sigma
+        chi_sq = (np.sum(weighted_residual ** 2) / len(x_data)) if len(x_data) > 0 else 0.0
+        return chi_sq
+
+    def fit_gain(self, raw_vals, unc_vals, cal_vals, x0, offset):
+        popt = minimize(self.chi_sq_gain, x0, args=(raw_vals, cal_vals, unc_vals, offset), method='Nelder-Mead').x
+        return popt
+
+    def fit_offset(self, raw_vals, unc_vals, cal_vals, x0, gain):
+        popt = minimize(self.chi_sq_offset, x0, args=(raw_vals, cal_vals, unc_vals, gain), method='Nelder-Mead').x
+        return popt
+
+    def fit(self, raw_vals, unc_vals, cal_vals):
         """
         Straightforward least squares curve fitting.
         :return:
         """
-        x, y = self.raw_vals, self.cal_vals
-        popt, _ = curve_fit(self.line, x, y, sigma=self.unc_vals)
+        x0 = [1.0, 0.0]
+        y, x = raw_vals, cal_vals
+        popt = minimize(self.chi_sq, x0, args=(x, y, unc_vals), method='Nelder-Mead').x
+        # popt, _ = curve_fit(self.line, x, y, sigma=self.unc_vals)
         return popt
 
     # The following methods were just different variations on the fit that I used when fitting entire days.

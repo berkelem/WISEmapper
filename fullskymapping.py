@@ -39,8 +39,8 @@ class FullSkyMap(HealpixMap):
         theta_c, phi_c = self.r(theta, phi)
         return hp.pixelfunc.ang2pix(self.nside, theta_c, phi_c, nest=nest)
 
-    def save_map(self):
-        hp.fitsfunc.write_map(self.filename, self.mapdata, coord='G', overwrite=True)
+    def save_map(self, coord="G"):
+        hp.fitsfunc.write_map(self.filename, self.mapdata, coord=coord, overwrite=True)
         return
 
 

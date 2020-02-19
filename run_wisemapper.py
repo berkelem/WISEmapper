@@ -13,9 +13,12 @@ def main():
 
     # Send filelists to ranks
     batch = FileBatcher(filename)
-    RunLinear(batch.group_orbits)
-    n_orbits = len(batch.groups)
-    print("{} orbits".format(n_orbits))
+    # RunLinear(batch.group_orbits)
+    RunLinear(batch.group_days)
+    # n_orbits = len(batch.groups)
+    n_days = len(batch.groups)
+    # print("{} orbits".format(n_orbits))
+    print("{} days".format(n_days))
 
     filelist_gen = RunLinear(batch.filelist_generator).retvalue
 
@@ -24,14 +27,17 @@ def main():
     # except IOError:
     #     popt_vals = np.array([])
     n = 0
-    while n < n_orbits:
-        if os.path.exists(f"/home/users/mberkeley/wisemapper/data/output_maps/w{band}/fsm_w{band}_orbit_{n}.fits"):
-            RunRankZero(print, data=f"Already mapped orbit {n + 1} of {n_orbits}")
+    while n < n_days:#n_orbits:
+        # if os.path.exists(f"/home/users/mberkeley/wisemapper/data/output_maps/w{band}/fsm_w{band}_orbit_{n}.fits"):
+        #     RunRankZero(print, data=f"Already mapped orbit {n + 1} of {n_orbits}")
+        if os.path.exists(f"/home/users/mberkeley/wisemapper/data/output_maps/w{band}/fsm_w{band}_day_{n}.fits"):
+            RunRankZero(print, data=f"Already mapped day {n + 1} of {n_days}")
             filelist = next(filelist_gen)
             n += 1
             continue
 
-        RunRankZero(print, data=f"Mapping orbit {n+1} of {n_orbits}")
+        # RunRankZero(print, data=f"Mapping orbit {n+1} of {n_orbits}")
+        RunRankZero(print, data=f"Mapping day {n + 1} of {n_days}")
         filelist = next(filelist_gen)
         mapmaker = MapMaker(band, n)
         process_map = RunDistributed(mapmaker.add_image, filelist, iterate=True,
@@ -41,7 +47,7 @@ def main():
         process_map.run_rank_zero(mapmaker.unpack_multiproc_data, data=alldata)
         try:
             process_map.run_rank_zero(mapmaker.normalize)
-            process_map.run_rank_zero(mapmaker.calibrate)
+            # process_map.run_rank_zero(mapmaker.calibrate)
             process_map.run_rank_zero(mapmaker.save_map)
         except ValueError:
             continue

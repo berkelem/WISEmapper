@@ -72,7 +72,7 @@ class HealpixMap(File):
         self.nside = hp.npix2nside(self.npix)
 
     def write_data(self, coord='G', clobber=False):
-        hp.fitsfunc.write_map(self.filename, self.mapdata, coord=coord, clobber=clobber)
+        hp.fitsfunc.write_map(self.filename, self.mapdata, coord=coord, overwrite=clobber)
 
     def set_resolution(self, nside):
         self.nside = nside
