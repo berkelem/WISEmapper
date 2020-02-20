@@ -1,7 +1,11 @@
-from file_handler import ZodiMap, HealpixMap
+from file_handler import ZodiMap, HealpixMap, WISEMap
 import numpy as np
 from scipy.optimize import minimize
 import pickle
+import os
+from scipy import stats
+from fullskymapping import FullSkyMap
+
 
 class ZodiCalibrator:
 
@@ -60,6 +64,7 @@ def calibrate_gain(data, uncs, calibration_data, offsets):
     return np.array(gains, ndmin=2).T
 
 def calibrate(input_data, input_uncs):
+    print("Initializing calibrator")
     zc = ZodiCalibrator(3)
     cal_map = zc.kelsall_map.mapdata
 
@@ -89,7 +94,7 @@ def calibrate(input_data, input_uncs):
     n = 0
     offset_fits = []
     gain_fits = []
-    while n < 5:
+    while n < 30:
         print(f"Calibration iteration {n}")
         print("Fitting gains on each orbit")
         gains = calibrate_gain(masked_data_for_gain_cal, masked_uncs_for_gain_cal, cal_map[gain_inds], offsets)
@@ -110,6 +115,7 @@ def calibrate(input_data, input_uncs):
 def minimize_var(data, uncs):
 
     A = ~data.mask.T
+    print("Shape of matrix A", A.shape)
     data = data.filled(fill_value=0.0)
     unc_sq = np.square(uncs.filled(fill_value=0.0))
     numerator = np.sum(np.divide(data, unc_sq, where=unc_sq != 0.0, out=np.zeros_like(data, dtype=float)), axis=0)
@@ -121,6 +127,19 @@ def minimize_var(data, uncs):
     B = np.divide(-B_num, B_denom, where=B_denom != 0.0, out=np.zeros_like(B_denom, dtype=float))
     return B
 
+def load_data_generator():
+    for i in range(3161):
+        print(f"Loading data for orbit {i}")
+        input_map = WISEMap(
+            f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/uncalibrated/fullskymap_band3_fullorbit_{i}_uncalibrated.fits",
+            3)
+        input_uncmap = WISEMap(
+            f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/uncalibrated/fullskymap_band3_unc_fullorbit_{i}_uncalibrated.fits",
+            3)
+        input_map.read_data()
+        input_uncmap.read_data()
+        yield input_map.mapdata, input_uncmap.mapdata
+
 def load_data():
     with open("/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/all_orbits_data.pkl", "rb") as f:
         all_orbits_data = pickle.load(f)
@@ -128,15 +147,97 @@ def load_data():
         all_orbits_unc = pickle.load(g)
     return all_orbits_data, all_orbits_unc
 
-def main():
-    npix = 786432
-    norbits = 150
-    all_orbits_data = np.random.rand(norbits, npix)
-    all_orbits_unc = np.random.rand(norbits, npix)
-    make_zero = all_orbits_data < 0.5
-    all_orbits_data[make_zero] = 0.0
-    all_orbits_unc[make_zero] = 0.0
-    # all_orbits_data, all_orbits_unc = load_data()
+def create_final_map(all_data, all_uncs):
+    with open("gain_fits.pkl", "rb") as gain_file:
+        fitted_gains = pickle.load(gain_file)
+    with open("offset_fits.pkl", "rb") as offset_file:
+        fitted_offsets = pickle.load(offset_file)
+    opt_gains = fitted_gains[-1]
+    opt_offsets = fitted_offsets[-1]
+    calibrated_data = opt_gains * all_data + opt_offsets
+    calibrated_uncs = np.abs(opt_gains) * all_uncs
+    unc_sq = np.square(calibrated_uncs)
+    numerator = np.sum(np.divide(calibrated_data, unc_sq, where=unc_sq != 0.0, out=np.zeros_like(unc_sq, dtype=float)), axis=0)
+    denominator = np.sum(np.divide(1, unc_sq, where=unc_sq != 0.0, out=np.zeros_like(unc_sq, dtype=float)), axis=0)
+    mapdata = np.divide(numerator, denominator, where=denominator != 0.0, out=np.zeros_like(denominator, dtype=float))
+
+    with open("mapdata.pkl", "wb") as mapdata_file:
+        pickle.dump(mapdata, mapdata_file, protocol=pickle.HIGHEST_PROTOCOL)
+
+def apply_calibration(data, gain, offset):
+    """Apply adjustment across entire map and restore original zeros afterwards"""
+    zeros = data == 0.0
+    adj_data = gain*data + offset
+    adj_data[zeros] = 0.0
+    return adj_data
+
+def mask_outliers(data, threshold=1):
+    z = np.abs(stats.zscore(data[data != 0.0]))
+    mask = z > threshold
+    return mask
+
+def combine_orbits(start, end, gains, offsets):
+    fsm = FullSkyMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_band3_{start}_{end}.fits", 256)
+    unc_fsm = FullSkyMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_unc_band3_{start}_{end}.fits", 256)
+    # fsm = FullSkyMap(f"/Users/Laptop-23950/projects/wisemapping/data/output_maps/orbit_analysis/orbit_batches/fullskymap_band3_{start}_{end}.fits", 256)
+    # unc_fsm = FullSkyMap(f"/Users/Laptop-23950/projects/wisemapping/data/output_maps/orbit_analysis/orbit_batches/fullskymap_unc_band3_{start}_{end}.fits", 256)
+    map_datas = []
+    map_uncs = []
+    for i in range(start, end):
+        filename = f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/uncalibrated/fullskymap_band3_fullorbit_{i}_uncalibrated.fits"
+        # filename = f"/home/users/mberkeley/wisemapper/data/output_maps/fsm_attempt6/w3/uncalibrated/fsm_w3_orbit_{i}_uncalibrated.fits"
+        # filename = f"/Users/Laptop-23950/projects/wisemapping/data/output_maps/orbit_analysis/orbit_maps/fsm_w3_orbit_{i}_uncalibrated.fits"
+        if not os.path.exists(filename):
+            print(f'Skipping file {os.path.basename(filename)} as it does not exist')
+            continue
+        else:
+            print(f"Adding file {os.path.basename(filename)}")
+        orbit_map = WISEMap(filename, 3)
+        orbit_map.read_data()
+        print("gain", gains[i], "offset", offsets[i])
+        map_datas.append(apply_calibration(orbit_map.mapdata, gains[i], offsets[i]))
+
+        orbit_uncmap = WISEMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/uncalibrated/fullskymap_band3_unc_fullorbit_{i}_uncalibrated.fits", 3)
+        # orbit_uncmap = WISEMap(f"/home/users/mberkeley/wisemapper/data/output_maps/fsm_attempt6/w3/uncalibrated/fsm_w3_unc_orbit_{i}_uncalibrated.fits", 3)
+        # orbit_uncmap = WISEMap(f"/Users/Laptop-23950/projects/wisemapping/data/output_maps/orbit_analysis/orbit_maps/fsm_w3_unc_orbit_{i}_uncalibrated.fits", 3)
+        orbit_uncmap.read_data()
+        map_uncs.append((orbit_uncmap.mapdata * np.abs(gains[i])))
+
+    px_vals = np.array(map_datas).T
+    unc_vals = np.array(map_uncs).T
+    for p, px in enumerate(px_vals):
+        if len(px[px != 0.0]) > 2:
+            mask = mask_outliers(px)
+            good_vals = px[px != 0.0][~mask]
+            good_unc_vals = unc_vals[p][px != 0.0][~mask]
+        else:
+            good_vals = px[px != 0.0]
+            good_unc_vals = unc_vals[p][px != 0.0]
+
+        # if len(good_unc_vals) > 1:
+        #     pass
+
+        # if len(good_unc_vals) > 0:
+        numerator = np.sum(good_vals / (good_unc_vals ** 2))
+        denominator = np.sum(1 / (good_unc_vals ** 2))
+        fsm.mapdata[p] = np.divide(numerator, denominator, where=denominator!=0.0, out=np.zeros_like(denominator))
+        unc_fsm.mapdata[p] = np.divide(np.ones_like(denominator), np.sqrt(denominator), where=denominator!=0.0, out=np.zeros_like(denominator))
+    fsm.save_map()
+    unc_fsm.save_map()
+    return
+
+def run_calibration():
+    # npix = 2000
+    # norbits = 3161
+    # all_orbits_data = np.random.rand(norbits, npix)
+    # all_orbits_unc = np.random.rand(norbits, npix)
+    # make_zero = all_orbits_data < 0.5
+    # all_orbits_data[make_zero] = 0.0
+    # all_orbits_unc[make_zero] = 0.0
+    print("Loading data")
+    all_orbits_data, all_orbits_unc = load_data()
+    print("Data successfully loaded")
+
     calibrated_data, calibrated_uncs, gain_fits, offset_fits = calibrate(all_orbits_data, all_orbits_unc)
     with open("calibrated_data.pkl", "wb") as f:
         pickle.dump(calibrated_data, f, pickle.HIGHEST_PROTOCOL)
@@ -146,6 +247,25 @@ def main():
         pickle.dump(gain_fits, p, pickle.HIGHEST_PROTOCOL)
     with open("offset_fits.pkl", "wb") as q:
         pickle.dump(offset_fits, q, pickle.HIGHEST_PROTOCOL)
+
+def run_create_map():
+
+    # create_final_map(all_orbits_data, all_orbits_unc)
+    with open("gain_fits.pkl", "rb") as gain_file:
+        fitted_gains = pickle.load(gain_file)
+    with open("offset_fits.pkl", "rb") as offset_file:
+        fitted_offsets = pickle.load(offset_file)
+    opt_gains = fitted_gains[-1]
+    opt_offsets = fitted_offsets[-1]
+    combine_orbits(0, 3161, opt_gains, opt_offsets)
+
+def main():
+    run_calibration()
+
+
+
+
+
 
 if __name__ == "__main__":
     main()
