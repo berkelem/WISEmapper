@@ -272,6 +272,25 @@ def run_calibration():
     with open("offset_fits.pkl", "wb") as q:
         pickle.dump(offset_fits, q, pickle.HIGHEST_PROTOCOL)
 
+def interp_fitted_vals(gains, offsets):
+    opt_gains = gains[-1].flatten()
+    opt_offsets = offsets[-1].flatten()
+
+    bad_fits = [ind for ind, val in enumerate(opt_offsets) if val == 0.0]
+    good_gains = np.array([opt_gains[i] for i in range(len(opt_gains)) if i not in bad_fits])
+    good_offsets = np.array([opt_offsets[i] for i in range(len(opt_offsets)) if i not in bad_fits])
+    good_inds = np.array([i for i in range(len(opt_offsets)) if i not in bad_fits])
+
+    interp_gains = np.interp(bad_fits, good_inds, good_gains)
+    interp_offsets = np.interp(bad_fits, good_inds, good_offsets)
+
+    opt_gains = np.array(opt_gains)
+    opt_gains[bad_fits] = interp_gains
+
+    opt_offsets = np.array(opt_offsets)
+    opt_offsets[bad_fits] = interp_offsets
+    return opt_gains, opt_offsets
+
 def run_create_map():
 
     # create_final_map(all_orbits_data, all_orbits_unc)
@@ -279,8 +298,7 @@ def run_create_map():
         fitted_gains = pickle.load(gain_file)
     with open("offset_fits.pkl", "rb") as offset_file:
         fitted_offsets = pickle.load(offset_file)
-    opt_gains = fitted_gains[-1]
-    opt_offsets = fitted_offsets[-1]
+    opt_gains, opt_offsets = interp_fitted_vals(fitted_gains, fitted_offsets)
     all_orbits_data, all_orbits_unc = load_data()
 
     combine_orbits_from_pkl(all_orbits_data, all_orbits_unc, opt_gains, opt_offsets, 0, 3161)
