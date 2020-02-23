@@ -176,6 +176,30 @@ def mask_outliers(data, threshold=1):
     mask = z > threshold
     return mask
 
+def combine_orbits_from_pkl(all_data, all_uncs, gains, offsets, start, end):
+    fsm = FullSkyMap(
+        f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_band3_{start}_{end}.fits", 256)
+    unc_fsm = FullSkyMap(
+        f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_unc_band3_{start}_{end}.fits",
+        256)
+
+    for i in range(start, end):
+        all_data[i] = all_data[i] * gains[i] + offsets[i]
+        all_uncs[i] = all_uncs[i] * abs(gains[i])
+
+    unc_sq = np.square(all_uncs)
+    numerator = np.sum(np.divide(all_data, unc_sq, where=unc_sq != 0.0, out=np.zeros_like(unc_sq, dtype=float)),
+                       axis=0)
+    denominator = np.sum(np.divide(1, unc_sq, where=unc_sq != 0.0, out=np.zeros_like(unc_sq, dtype=float)), axis=0)
+    fsm.mapdata = np.divide(numerator, denominator, where=denominator != 0.0, out=np.zeros_like(denominator, dtype=float))
+    fsm.save_map()
+
+    unc_fsm.mapdata = np.divide(1, np.sqrt(denominator), where=denominator != 0.0, out=np.zeros_like(denominator, dtype=float))
+    unc_fsm.save_map()
+
+
+
+
 def combine_orbits(start, end, gains, offsets):
     fsm = FullSkyMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_band3_{start}_{end}.fits", 256)
     unc_fsm = FullSkyMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_unc_band3_{start}_{end}.fits", 256)
@@ -257,10 +281,13 @@ def run_create_map():
         fitted_offsets = pickle.load(offset_file)
     opt_gains = fitted_gains[-1]
     opt_offsets = fitted_offsets[-1]
-    combine_orbits(0, 3161, opt_gains, opt_offsets)
+    all_orbits_data, all_orbits_unc = load_data()
+
+    combine_orbits_from_pkl(all_orbits_data, all_orbits_unc, opt_gains, opt_offsets, 0, 3161)
 
 def main():
-    run_calibration()
+    # run_calibration()
+    run_create_map()
 
 
 
