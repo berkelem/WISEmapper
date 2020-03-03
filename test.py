@@ -1,16 +1,37 @@
 from fullskymapping import FullSkyMap
+import matplotlib.pyplot as plt
+import numpy as np
 
 def main():
 
-    filename = "/Users/Laptop-23950/projects/wisemapping/data/output_maps/orbit_analysis/orbit_maps/fsm_w3_orbit_100_uncalibrated.fits"
-    filemap = FullSkyMap(filename, 256)
-    filemap.read_data()
-    mapdata = filemap.mapdata
+    # filename = "/Users/Laptop-23950/projects/wisemapping/data/output_maps/orbit_analysis/orbit_maps/fsm_w3_orbit_100_uncalibrated.fits"
+    filename1 = "/Users/Laptop-23950/projects/wisemapping/data/output_maps/day_analysis/pole_fitting/fullskymap_band3_100_101.fits"
+    filemap1 = FullSkyMap(filename1, 256)
+    filemap1.read_data()
+    mapdata1 = filemap1.mapdata
 
-    unc_filename = filename.replace("_orbit_", "_unc_orbit_")
-    unc_filemap = FullSkyMap(unc_filename, 256)
-    unc_filemap.read_data()
-    uncdata = unc_filemap.mapdata
+    filename2 = "/Users/Laptop-23950/projects/wisemapping/data/output_maps/day_analysis/pole_fitting/fullskymap_band3_2740_2741.fits"
+    filemap2 = FullSkyMap(filename2, 256)
+    filemap2.read_data()
+    mapdata2 = filemap2.mapdata
+
+    overlap_pixels = mapdata1.astype(bool) & mapdata2.astype(bool)
+
+    overlap_data1 = mapdata1[overlap_pixels]
+    overlap_data2 = mapdata2[overlap_pixels]
+
+    plt.plot(overlap_data1, overlap_data2, 'r.', np.arange(110), np.ones(110)*np.arange(110), 'b--')
+    plt.xlabel("Orbit 101")
+    plt.ylabel("Orbit 2740")
+    plt.savefig("repeated_orbit_100_2740.png")
+    plt.close()
+
+    plt.plot(np.arange(len(overlap_data1)), overlap_data1, 'r.', np.arange(len(overlap_data2)), overlap_data2, 'b.')
+    plt.xlabel("Pixel id")
+    plt.ylabel("MJy/sr")
+    plt.savefig("repeated_orbit_comparison_100_2740.png")
+    plt.close()
+
 
 if __name__ == "__main__":
     main()
