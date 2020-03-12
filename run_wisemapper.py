@@ -13,12 +13,12 @@ def main():
 
     # Send filelists to ranks
     batch = FileBatcher(filename)
-    # RunLinear(batch.group_orbits)
-    RunLinear(batch.group_days)
-    # n_orbits = len(batch.groups)
-    n_days = len(batch.groups)
-    # print("{} orbits".format(n_orbits))
-    print("{} days".format(n_days))
+    RunLinear(batch.group_orbits)
+    # RunLinear(batch.group_days)
+    n_orbits = len(batch.groups)
+    # n_days = len(batch.groups)
+    print("{} orbits".format(n_orbits))
+    # print("{} days".format(n_days))
 
     filelist_gen = RunLinear(batch.filelist_generator).retvalue
 
