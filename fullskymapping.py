@@ -79,7 +79,7 @@ class MapMaker:
     def _place_image(self):
         int_data = self.data_loader.int_data.compressed()
         unc_data = self.data_loader.unc_data.compressed()
-        if self.data_loader.time_data:
+        if self.data_loader.time_data is not None:
             time_data = self.data_loader.time_data.compressed()
         else:
             time_data = None
