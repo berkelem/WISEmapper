@@ -63,7 +63,7 @@ class MapMaker:
         self.time_numerator_cumul = np.zeros_like(self.fsm.mapdata)
 
 
-    def add_image(self, *args):
+    def add_image(self, args):
         filename, mjd_obs = args
         self._load_image(filename, mjd_obs)
         self._place_image()
