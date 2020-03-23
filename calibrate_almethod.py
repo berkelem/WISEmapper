@@ -189,7 +189,7 @@ def create_final_map(all_data, all_uncs):
 def apply_calibration(data, gain, offset):
     """Apply adjustment across entire map and restore original zeros afterwards"""
     zeros = data == 0.0
-    adj_data = gain*data + offset
+    adj_data = gain*(data + offset)
     adj_data[zeros] = 0.0
     return adj_data
 
@@ -248,12 +248,12 @@ def combine_maps_by_pixel(all_data, all_uncs, gains, offsets, start, end, inds):
 
 
 def combine_orbits(start, end, gains, offsets):
-    fsm = FullSkyMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_band3_{start}_{end}.fits", 256)
-    unc_fsm = FullSkyMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_unc_band3_{start}_{end}.fits", 256)
+    fsm = FullSkyMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/fullskymap_band3_{start}_{end}.fits", 256)
+    unc_fsm = FullSkyMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/fullskymap_unc_band3_{start}_{end}.fits", 256)
     map_datas = []
     map_uncs = []
     for i in range(start, end):
-        filename = f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/uncalibrated/fullskymap_band3_fullorbit_{i}_uncalibrated.fits"
+        filename = f"/home/users/mberkeley/wisemapper/data/output_maps/uncalibrated/fsm_w3_orbit_{i}_uncalibrated.fits"
         if not os.path.exists(filename):
             print(f'Skipping file {os.path.basename(filename)} as it does not exist')
             continue
@@ -264,7 +264,7 @@ def combine_orbits(start, end, gains, offsets):
         print("gain", gains[i], "offset", offsets[i])
         map_datas.append(apply_calibration(orbit_map.mapdata, gains[i], offsets[i]))
 
-        orbit_uncmap = WISEMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/uncalibrated/fullskymap_band3_unc_fullorbit_{i}_uncalibrated.fits", 3)
+        orbit_uncmap = WISEMap(f"/home/users/mberkeley/wisemapper/data/output_maps/uncalibrated/fsm_w3_unc_orbit_{i}_uncalibrated.fits", 3)
         orbit_uncmap.read_data()
         map_uncs.append((orbit_uncmap.mapdata * np.abs(gains[i])))
 
@@ -648,11 +648,29 @@ def run_create_map_smoothed():
     combine_orbits(0, 2600, gains, offsets)
     return
 
+def compare_overlap_orbits():
+    with open("gains.pkl", "rb") as gains_file:
+        gains = pickle.load(gains_file)
+
+    with open("offsets.pkl", "rb") as offsets_file:
+        offsets = pickle.load(offsets_file)
+
+    # combine_orbits(200, 202, gains, offsets)
+    # combine_orbits(5480, 5482, gains, offsets)
+    combine_orbits(5482, 5484, gains, offsets)
+    combine_orbits(5484, 5486, gains, offsets)
+    combine_orbits(5486, 5488, gains, offsets)
+    combine_orbits(5488, 5490, gains, offsets)
+    combine_orbits(5490, 5492, gains, offsets)
+    combine_orbits(5494, 5496, gains, offsets)
+
+
 def main():
-    run_calibration()
+    # run_calibration()
     # run_create_map()
     # run_create_partial_map()
     # run_create_map_smoothed()
+    compare_overlap_orbits()
 
 
 

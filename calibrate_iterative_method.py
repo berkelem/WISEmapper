@@ -28,10 +28,9 @@ class ZodiCalibrator:
 
 class RegionSelector:
 
-    def __init__(self, zodi_calibrator):
-        self.zc = zodi_calibrator
-        self.pole_mask = ~self.zc.pole_region_mask
-        self.moon_mask = self.zc.moon_stripe_mask.mapdata.astype(bool)
+    def __init__(self, pole_mask, moon_stripe_mask):
+        self.pole_mask = ~pole_mask
+        self.moon_mask = moon_stripe_mask.mapdata.astype(bool)
 
     def get_pole_map(self):
         pole_full_mask = self.pole_mask | self.moon_mask
@@ -39,10 +38,87 @@ class RegionSelector:
         return pole_full_mask
 
 
-class PoleCalibrator:
+class PoleCalibrator(ZodiCalibrator):
 
-    def __init__(self):
-        pass
+    def __init__(self, n_orbits):
+        rs = RegionSelector(self.pole_region_mask, self.moon_stripe_mask)
+        self.pole_full_mask = rs.get_pole_map()
+
+        self.n_orbits = n_orbits
+        self.A = np.zeros((rs.pole_region_size, n_orbits), dtype=int)
+
+        self.all_data_pole = np.zeros_like(self.A, dtype=float)
+        self.all_uncs_pole = np.zeros_like(self.A, dtype=float)
+
+        self.gains = np.ones(n_orbits, dtype=float)
+        self.offsets = np.zeros_like(gains)
+
+        self.gain_data_list_clean = []
+        self.gain_uncs_list_clean = []
+        self.gain_inds_list_clean = []
+        self.gain_zodi_list_clean = []
+
+        self.gain_data_list_unclean = []
+        self.gain_uncs_list_unclean = []
+        self.gain_inds_list_unclean = []
+        self.gain_zodi_list_unclean = []
+
+    def load_data(self):
+        print("Loading data")
+        for i in range(0, self.n_orbits):
+            # Load orbit data
+            filename = f"/home/users/mberkeley/wisemapper/data/output_maps/uncalibrated/fsm_w3_orbit_{i}_uncalibrated.fits"
+            if not os.path.exists(filename):
+                print(f'Skipping file {os.path.basename(filename)} as it does not exist')
+                continue
+            else:
+                print(f"Reading file {os.path.basename(filename)}")
+            orbit_map = WISEMap(filename, 3)
+            orbit_map.read_data()
+
+            orbit_uncmap = WISEMap(filename.replace("orbit", "unc_orbit"), 3)
+            orbit_uncmap.read_data()
+
+            self.store_data(orbit_map.mapdata, orbit_uncmap.mapdata, i)
+
+    def store_data(self, orbit_data, orbit_uncs, index):
+
+            # Select polar data for offset calibration
+
+            offset_data_region = orbit_data[~self.pole_full_mask]
+            offset_uncs_region = orbit_uncs[~self.pole_full_mask]
+            self.all_data_pole[:, index] = offset_data_region
+            self.all_uncs_pole[:, index] = offset_uncs_region
+            # Make pointing matrix for pole region
+            self.A[:, index] = offset_data_region.astype(bool)
+
+            # Select orbit data for gain calibration
+            nonzero_mask = orbit_uncs == 0.0
+            orbit_mask = nonzero_mask | rs.moon_stripe_mask
+
+            gain_data_region = orbit_map.mapdata[~orbit_mask]
+            gain_uncs_region = orbit_uncmap.mapdata[~orbit_mask]
+            gain_inds_region = np.arange(orbit_map.npix)[~orbit_mask]
+            zodi_map_orbit = zc.kelsall_map.mapdata[~orbit_mask]
+
+            gain_data_list_unclean.append(gain_data_region)
+            gain_uncs_list_unclean.append(gain_uncs_region)
+            gain_inds_list_unclean.append(gain_inds_region)
+            gain_zodi_list_unclean.append(zodi_map_orbit)
+
+            ratio_data = gain_data_region / zodi_map_orbit
+            ratio_uncs = gain_uncs_region / np.abs(zodi_map_orbit)
+            z_gain = nonzero_z_score(ratio_data, ratio_uncs)
+            outlier_inds = np.arange(len(ratio_data))[z_gain > 3]
+            clean_data = np.delete(gain_data_region, outlier_inds)
+            clean_uncs = np.delete(gain_uncs_region, outlier_inds)
+            clean_inds = np.delete(gain_inds_region, outlier_inds)
+            clean_zodi_orbit = np.delete(zodi_map_orbit, outlier_inds)
+
+            gain_data_list_clean.append(clean_data)
+            gain_uncs_list_clean.append(clean_uncs)
+            gain_inds_list_clean.append(clean_inds)
+            gain_zodi_list_clean.append(clean_zodi_orbit)
 
 
 

@@ -7,12 +7,13 @@ from functools import reduce
 
 class WISEDataLoader(object):
 
-    def __init__(self, filename):
+    def __init__(self, filename, mjd_obs=None):
         self.int_filename = filename
         self.msk_filename = filename.replace('-int-', '-msk-')
         self.unc_filename = filename.replace('-int-', '-unc-')
         self.mask = None
         self.wcs_coords = None
+        self.mjd_obs = mjd_obs
 
     def load_data(self):
         self._read_file()
@@ -34,6 +35,10 @@ class WISEDataLoader(object):
         self.mask = reduce(np.add, [self.msk_data, neg_mask, nan_mask, nan_mask_unc])
         self.int_data = ma.array(self.int_data, mask=self.mask)
         self.unc_data = ma.array(self.unc_data, mask=self.mask)
+        if self.mjd_obs:
+            self.time_data = ma.array(np.ones_like(self.int_data)*float(self.mjd_obs), mask=self.mask)
+        else:
+            self.time_data = None
 
     def load_coords(self):
         self.int_file.read_header()
