@@ -33,7 +33,7 @@ def main():
         filelist, mjd_list = next(filelist_gen)
 
         mapmaker = MapMaker(band, n)
-        process_map = RunDistributed(mapmaker.add_image, zip(filelist, mjd_list), iterate=True,
+        process_map = RunDistributed(mapmaker.add_image, list(zip(filelist, mjd_list)), iterate=True,
                    gather_items=[mapmaker.numerator_cumul, mapmaker.denominator_cumul, mapmaker.time_numerator_cumul])
         process_map.run()
         alldata = process_map.retvalue
