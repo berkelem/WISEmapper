@@ -189,8 +189,8 @@ class MapMaker:
         pixel_inds = np.arange(len(self.fsm.mapdata), dtype=int)
         nonzero_inds = self.unc_fsm.mapdata != 0.0
 
-        data_to_save = np.vstack(list(zip([pixel_inds[nonzero_inds], self.fsm.mapdata[nonzero_inds],
-                                          self.unc_fsm.mapdata[nonzero_inds], self.fsm.timedata[nonzero_inds]])))
+        data_to_save = np.vstack((pixel_inds[nonzero_inds], self.fsm.mapdata[nonzero_inds],
+                                  self.unc_fsm.mapdata[nonzero_inds], self.fsm.timedata[nonzero_inds]))
 
         np.savetxt(os.path.join(self.path, self.csv_name), data_to_save, delimiter=',', header="hp_pixel_index,pixel_value,pixel_unc,pixel_mjd_obs")
 
