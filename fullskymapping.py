@@ -84,6 +84,7 @@ class MapMaker:
         ra, dec = coords.T
         hp_inds = self.fsm.wcs2ind(ra, dec)
         self._fill_map(hp_inds, int_data, unc_data, mjd_obs)
+        del self.data_loader
 
         return
 
