@@ -34,7 +34,8 @@ def main():
 
         mapmaker = MapMaker(band, n)
         process_map = RunDistributed(mapmaker.add_image, list(zip(filelist, mjd_list)), iterate=True,
-                   gather_items=[mapmaker.numerator_cumul, mapmaker.denominator_cumul, mapmaker.time_numerator_cumul])
+                   gather_items=[mapmaker.numerator_cumul, mapmaker.denominator_cumul,
+                                 mapmaker.time_numerator_cumul, mapmaker.time_denominator_cumul])
         process_map.run()
         alldata = process_map.retvalue
         process_map.run_rank_zero(mapmaker.unpack_multiproc_data, data=alldata)

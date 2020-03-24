@@ -61,55 +61,52 @@ class MapMaker:
         self.numerator_cumul = np.zeros_like(self.fsm.mapdata)
         self.denominator_cumul = np.zeros_like(self.fsm.mapdata)
         self.time_numerator_cumul = np.zeros_like(self.fsm.mapdata)
+        self.time_denominator_cumul = np.zeros_like(self.fsm.mapdata)
 
 
     def add_image(self, args):
         filename, mjd_obs = args
-        self._load_image(filename, mjd_obs)
-        self._place_image()
+        self._load_image(filename)
+        self._place_image(mjd_obs)
         return
 
-    def _load_image(self, filename, mjd_obs):
+    def _load_image(self, filename):
         # Function to get image and coordinate data from File and map to the Healpix grid
-        self.data_loader = WISEDataLoader(filename, mjd_obs=mjd_obs)
+        self.data_loader = WISEDataLoader(filename)
         self.data_loader.load_data()
         self.data_loader.load_coords()
         return
 
-    def _place_image(self):
+    def _place_image(self, mjd_obs):
         int_data = self.data_loader.int_data.compressed()
         unc_data = self.data_loader.unc_data.compressed()
-        if self.data_loader.time_data is not None:
-            time_data = self.data_loader.time_data.compressed()
-        else:
-            time_data = None
         coords = self.data_loader.wcs_coords
         ra, dec = coords.T
         hp_inds = self.fsm.wcs2ind(ra, dec)
-        self._fill_map(hp_inds, int_data, unc_data, time_data)
+        self._fill_map(hp_inds, int_data, unc_data, mjd_obs)
 
         return
 
-    def _fill_map(self, inds, ints, uncs, times):
-        data_grouped, uncs_grouped, times_grouped = self._groupby(inds, ints, uncs, times)
-        numerator, denominator, time_numerator = zip(*np.array([
-            self._calc_hp_pixel(data_grouped[i], uncs_grouped[i], times_grouped[i])
-            if len(data_grouped[i]) > 0 else (0, 0, 0)
+    def _fill_map(self, inds, ints, uncs, mjd_obs):
+        data_grouped, uncs_grouped, times_grouped = self._groupby(inds, ints, uncs)
+        numerator, denominator, t_numerator, t_denominator = zip(*np.array([self._calc_hp_pixel(data_grouped[i], uncs_grouped[i], mjd_obs)
+            if len(data_grouped[i]) > 0 else (0, 0, 0, 0)
             for i in range(len(data_grouped))
         ]))
         self.numerator_cumul[:len(numerator)] += numerator
         self.denominator_cumul[:len(denominator)] += denominator
-        self.time_numerator_cumul[:len(time_numerator)] += time_numerator
+        self.time_numerator_cumul[:len(t_numerator)] += t_numerator
+        self.time_denominator_cumul[:len(t_denominator)] += t_denominator
+
         return
 
     @staticmethod
-    def _groupby(inds, data, uncs, times):
+    def _groupby(inds, data, uncs):
         # Get argsort indices, to be used to sort arrays in the next steps
         sidx = inds.argsort()
         data_sorted = data[sidx]
         inds_sorted = inds[sidx]
         uncs_sorted = uncs[sidx]
-        times_sorted = times[sidx]
 
         # Get the group limit indices (start, stop of groups)
         cut_idx = np.flatnonzero(np.r_[True, inds_sorted[1:] != inds_sorted[:-1], True])
@@ -125,16 +122,18 @@ class MapMaker:
         # Split input array with those start, stop ones
         data_out = np.array([data_sorted[i:j] for i, j in zip(cut_idxe[:-1], cut_idxe[1:])])
         uncs_out = np.array([uncs_sorted[i:j] for i, j in zip(cut_idxe[:-1], cut_idxe[1:])])
-        times_out = np.array([times_sorted[i:j] for i, j in zip(cut_idxe[:-1], cut_idxe[1:])])
 
-        return data_out, uncs_out, times_out
+        return data_out, uncs_out
 
     @staticmethod
     def _calc_hp_pixel(data, unc, time):
         numerator = np.sum(data/unc**2)
         denominator = np.sum(1/unc**2)
-        time_numerator = np.sum(time/unc**2)
-        return numerator, denominator, time_numerator
+        N = len(data)
+
+        time_numerator = N*time*denominator
+        time_denominator = N*denominator
+        return numerator, denominator, time_numerator, time_denominator
 
     def normalize(self):
         self.fsm.mapdata = np.divide(self.numerator_cumul, self.denominator_cumul, out=np.zeros_like(self.fsm.mapdata),
@@ -142,15 +141,17 @@ class MapMaker:
         self.unc_fsm.mapdata = np.sqrt(np.divide(np.ones_like(self.denominator_cumul), self.denominator_cumul,
                                                  out=np.zeros_like(self.unc_fsm.mapdata),
                                                  where=self.denominator_cumul > 0))
-        self.fsm.timedata = np.divide(self.time_numerator_cumul, self.denominator_cumul, out=np.zeros_like(self.fsm.mapdata),
-                                     where=self.denominator_cumul > 0)
+        self.fsm.timedata = np.divide(self.time_numerator_cumul, self.time_denominator_cumul,
+                                      out=np.zeros_like(self.fsm.mapdata),
+                                      where=self.time_denominator_cumul > 0)
         return
 
     def unpack_multiproc_data(self, alldata):
-        numerators, denominators, time_numerators = zip(*alldata)
+        numerators, denominators, time_numerators, time_denominators = zip(*alldata)
         self.numerator_cumul = reduce(np.add, numerators)
         self.denominator_cumul = reduce(np.add, denominators)
         self.time_numerator_cumul = reduce(np.add, time_numerators)
+        self.time_denominator_cumul = reduce(np.add, time_denominators)
         return
 
     def normalize_multiproc_data(self, alldata):
