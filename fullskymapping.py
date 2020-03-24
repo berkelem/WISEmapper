@@ -189,10 +189,12 @@ class MapMaker:
         pixel_inds = np.arange(len(self.fsm.mapdata), dtype=int)
         nonzero_inds = self.unc_fsm.mapdata != 0.0
 
-        dataframe = pd.DataFrame{"hp_pixel_index": pixel_inds[nonzero_inds],
-                                 "pixel_value": self.fsm.mapdata[nonzero_inds],
-                                 "pixel_unc": self.unc_fsm.mapdata[nonzero_inds],
-                                 "pixel_mjd_obs": self.fsm.timedata[nonzero_inds]}
+        data_to_save = {"hp_pixel_index": pixel_inds[nonzero_inds],
+                        "pixel_value": self.fsm.mapdata[nonzero_inds],
+                        "pixel_unc": self.unc_fsm.mapdata[nonzero_inds],
+                        "pixel_mjd_obs": self.fsm.timedata[nonzero_inds]}
+
+        dataframe = pd.DataFrame(data=data_to_save)
 
         dataframe.to_csv(os.path.join(self.path, self.csv_name))
 
