@@ -88,7 +88,7 @@ class MapMaker:
         return
 
     def _fill_map(self, inds, ints, uncs, mjd_obs):
-        data_grouped, uncs_grouped, times_grouped = self._groupby(inds, ints, uncs)
+        data_grouped, uncs_grouped = self._groupby(inds, ints, uncs)
         numerator, denominator, t_numerator, t_denominator = zip(*np.array([self._calc_hp_pixel(data_grouped[i], uncs_grouped[i], mjd_obs)
             if len(data_grouped[i]) > 0 else (0, 0, 0, 0)
             for i in range(len(data_grouped))
