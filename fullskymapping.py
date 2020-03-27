@@ -269,8 +269,10 @@ class FileBatcher:
         # filegroup_generator = self.filelist_generator()
 
     def filelist_generator(self):
+        grp_num = 0
         for name, group in self.groups:
-            yield group["full_filepath"], group["mjd_obs"]
+            yield group["full_filepath"], group["mjd_obs"], grp_num
+            grp_num += 1
 
     def clean_files(self):
         # Run files through CNN model. Good files undergo outlier removal.

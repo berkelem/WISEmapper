@@ -20,17 +20,19 @@ def main():
     filelist_gen = RunLinear(batch.filelist_generator).retvalue
 
     n = 0
+    orbit_num = None
     while n < n_orbits:
         # if os.path.exists(f"/home/users/mberkeley/wisemapper/data/output_maps/w{band}/fsm_w{band}_orbit_{n}.fits"):
         #     RunRankZero(print, data=f"Already mapped orbit {n + 1} of {n_orbits}")
         if os.path.exists(f"/home/users/mberkeley/wisemapper/data/output_maps/w{band}/fsm_w{band}_orbit_{n}.fits"):
             RunRankZero(print, data=f"Already mapped orbit {n + 1} of {n_orbits}")
-            filelist = next(filelist_gen)
+            filelist, mjd_list, orbit_num = next(filelist_gen)
             n += 1
             continue
 
         RunRankZero(print, data=f"Mapping orbit {n + 1} of {n_orbits}")
-        filelist, mjd_list = next(filelist_gen)
+        while orbit_num != n:
+            filelist, mjd_list, orbit_num = next(filelist_gen)
 
         mapmaker = MapMaker(band, n)
         process_map = RunDistributed(mapmaker.add_image, list(zip(filelist, mjd_list)), iterate=True,
