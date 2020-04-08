@@ -9,9 +9,9 @@ class Coadder:
     def __init__(self, band):
         self.band = band
         self.fsm = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_band3.fits", 256)
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3.fits", 256)
         self.unc_fsm = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_unc_band3.fits", 256)
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3.fits", 256)
         self.numerator = np.zeros_like(self.fsm.mapdata)
         self.denominator = np.zeros_like(self.fsm.mapdata)
 
