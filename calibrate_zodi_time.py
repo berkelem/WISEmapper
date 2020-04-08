@@ -9,6 +9,11 @@ class Coadder:
 
     def __init__(self, band):
         self.band = band
+        self.fsm = FullSkyMap(
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3.fits", 256)
+        self.unc_fsm = FullSkyMap(
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3.fits", 256)
+
         self.moon_stripe_mask = HealpixMap("/home/users/mberkeley/wisemapper/data/masks/stripe_mask_G.fits")
         self.moon_stripe_mask.read_data()
         self.moon_stripe_inds = np.arange(len(self.moon_stripe_mask.mapdata))[self.moon_stripe_mask.mapdata.astype(bool)]
@@ -16,10 +21,6 @@ class Coadder:
         self.galaxy_mask = self.mask_galaxy()
         self.galaxy_mask_inds = np.arange(len(self.galaxy_mask))[self.galaxy_mask]
 
-        self.fsm = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3.fits", 256)
-        self.unc_fsm = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3.fits", 256)
         self.numerator = np.zeros_like(self.fsm.mapdata)
         self.denominator = np.zeros_like(self.fsm.mapdata)
 
