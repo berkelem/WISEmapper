@@ -1,4 +1,4 @@
-from file_handler import WISEMap
+from file_handler import WISEMap, HealpixMap
 import numpy as np
 from scipy.optimize import minimize
 from fullskymapping import FullSkyMap
