@@ -29,7 +29,9 @@ class Coadder:
         cal_data = gain * orbit_data + offset
         cal_uncs = abs(gain) * orbit_uncs
 
-        self.numerator[pixel_inds] += np.divide(cal_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
+        zs_data = cal_data - zodi_data
+
+        self.numerator[pixel_inds] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
         self.denominator[pixel_inds] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
 
     def normalize(self):
