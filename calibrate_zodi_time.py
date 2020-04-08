@@ -4,6 +4,7 @@ from scipy.optimize import minimize
 from fullskymapping import FullSkyMap
 import pandas as pd
 import healpy as hp
+import matplotlib.pyplot as plt
 
 class Coadder:
 
@@ -57,10 +58,19 @@ class Coadder:
         cal_data = gain * orbit_data + offset
         cal_uncs = abs(gain) * orbit_uncs
 
+        self.plot_fit(orbit_num, cal_data, zodi_data)
+
         zs_data = cal_data - zodi_data
 
         self.numerator[pixel_inds] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
         self.denominator[pixel_inds] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
+
+    @staticmethod
+    def plot_fit(i, orbit_data, zodi_data):
+        plt.plot(np.arange(len(orbit_data)), orbit_data, 'r.', np.arange(len(orbit_data)), zodi_data, 'b.')
+        plt.savefig(f"/home/users/mberkeley/wisemapper/data/output_maps/w3/calibration_fit_orbit_{i}.png")
+        plt.close()
+
 
     def normalize(self):
         self.fsm.mapdata = np.divide(self.numerator, self.denominator, where=self.denominator != 0.0, out=np.zeros_like(self.denominator))
