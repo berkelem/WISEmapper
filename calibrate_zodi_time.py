@@ -71,3 +71,7 @@ class Coadder:
         popt = minimize(self.chi_sq, [init_gain, init_offset], args=(orbit_data, zodi_data, orbit_uncs), method='Nelder-Mead').x
         gain, offset = popt
         return gain, offset
+
+if __name__ == "__main__":
+    coadd_map = Coadder(3)
+    coadd_map.run()
