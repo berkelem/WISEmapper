@@ -3,11 +3,19 @@ import numpy as np
 from scipy.optimize import minimize
 from fullskymapping import FullSkyMap
 import pandas as pd
+import healpy as hp
 
 class Coadder:
 
     def __init__(self, band):
         self.band = band
+        self.moon_stripe_mask = HealpixMap("/home/users/mberkeley/wisemapper/data/masks/stripe_mask_G.fits")
+        self.moon_stripe_mask.read_data()
+        self.moon_stripe_inds = np.arange(len(self.moon_stripe_mask.mapdata))[self.moon_stripe_mask.mapdata.astype(bool)]
+
+        self.galaxy_mask = self.mask_galaxy()
+        self.galaxy_mask_inds = np.arange(len(self.galaxy_mask))[self.galaxy_mask]
+
         self.fsm = FullSkyMap(
             f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3.fits", 256)
         self.unc_fsm = FullSkyMap(
@@ -15,8 +23,20 @@ class Coadder:
         self.numerator = np.zeros_like(self.fsm.mapdata)
         self.denominator = np.zeros_like(self.fsm.mapdata)
 
+    def mask_galaxy(self):
+        """
+        Remove 20% of the sky around the galactic plane where zodi is not the dominant foreground.
+        :return:
+        """
+        npix = self.fsm.npix
+        theta, _ = hp.pix2ang(256, np.arange(npix))
+        mask = (np.pi * 0.4 < theta) & (theta < 0.6 * np.pi)
+        galaxy_mask = np.zeros_like(theta)
+        galaxy_mask[mask] = 1.0
+        return galaxy_mask.astype(bool)
+
     def run(self):
-        for i in range(6323):
+        for i in range(1000):
             print(f"Adding orbit {i}")
             self.add_file(i)
         self.normalize()
@@ -24,8 +44,14 @@ class Coadder:
 
     def add_file(self, orbit_num):
         orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
+        entries_to_mask = [i for i in range(len(pixel_inds)) if pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds]
+        orbit_data_masked = np.array([orbit_data[i] for i in range(len(orbit_data)) if i not in entries_to_mask])
+        orbit_uncs_masked = np.array([orbit_uncs[i] for i in range(len(orbit_uncs)) if i not in entries_to_mask])
+
         zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
-        gain, offset = self.fit_to_zodi(orbit_data, zodi_data, orbit_uncs)
+        zodi_data_masked = np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
+
+        gain, offset = self.fit_to_zodi(orbit_data_masked, zodi_data_masked, orbit_uncs_masked)
 
         cal_data = gain * orbit_data + offset
         cal_uncs = abs(gain) * orbit_uncs
