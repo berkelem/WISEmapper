@@ -38,7 +38,7 @@ class Coadder:
         return galaxy_mask.astype(bool)
 
     def run(self):
-        for i in range(100):
+        for i in range(6323):
             print(f"Adding orbit {i}")
             self.add_file(i)
         self.normalize()
@@ -86,6 +86,10 @@ class Coadder:
         zodi_orbit = WISEMap(filename, self.band)
         zodi_orbit.read_data()
         zodi_data = zodi_orbit.mapdata[pixel_inds]
+        if not all(zodi_data.astype(bool)):
+            print(f"Orbit {orbit_num} mismatch with zodi")
+        elif any(zodi_orbit.mapdata[~pixel_inds].astype(bool)):
+            print(f"Orbit {orbit_num} mismatch with zodi")
         return zodi_data
 
     def load_orbit_data(self, orbit_num):
