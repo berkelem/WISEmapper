@@ -85,11 +85,13 @@ class Coadder:
         filename = f"/home/users/jguerraa/AME/cal_files/W3/zodi_map_cal_W{self.band}_{orbit_num}.fits"
         zodi_orbit = WISEMap(filename, self.band)
         zodi_orbit.read_data()
-        zodi_data = zodi_orbit.mapdata[pixel_inds]
+        pixels = np.zeros_like(zodi_orbit.mapdata)
+        pixels[pixel_inds] = 1.0
+        zodi_data = zodi_orbit.mapdata[pixels.astype(bool)]
         if not all(zodi_data.astype(bool)):
-            print(f"Orbit {orbit_num} mismatch with zodi")
-        elif any(zodi_orbit.mapdata[~pixel_inds].astype(bool)):
-            print(f"Orbit {orbit_num} mismatch with zodi")
+            print(f"Orbit {orbit_num} mismatch with zodi: zeros in zodi orbit")
+        elif any(zodi_orbit.mapdata[~pixels.astype(bool)]):
+            print(f"Orbit {orbit_num} mismatch with zodi: nonzeros outside zodi orbit")
         return zodi_data
 
     def load_orbit_data(self, orbit_num):
