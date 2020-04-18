@@ -53,12 +53,13 @@ class Coadder:
         zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
         zodi_data_masked = np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
 
-        gain, offset = self.fit_to_zodi(orbit_data_masked, zodi_data_masked, orbit_uncs_masked)
+        orbit_fitter = IterativeFitter(zodi_data_masked, orbit_data_masked, orbit_uncs_masked)
+        gain, offset = orbit_fitter.iterate_fit(10)
 
-        cal_data = gain * orbit_data + offset
-        cal_uncs = abs(gain) * orbit_uncs
+        cal_data = (orbit_data - offset)/gain
+        cal_uncs = orbit_uncs / abs(gain)
 
-        self.plot_fit(orbit_num, cal_data, zodi_data)
+        # self.plot_fit(orbit_num, cal_data, zodi_data)
 
         zs_data = cal_data - zodi_data
 
@@ -102,19 +103,47 @@ class Coadder:
         pixel_inds = all_orbit_data["hp_pixel_index"]
         return orbit_data, orbit_uncs, pixel_inds
 
+
+class IterativeFitter:
+
+    def __init__(self, zodi_data, raw_data, raw_uncs):
+        self.zodi_data = zodi_data
+        self.raw_data = raw_data
+        self.raw_uncs = raw_uncs
+
     @staticmethod
     def chi_sq(params, x_data, y_data, sigma):
-        residual = (y_data - (params[0] * x_data + params[1]))
+        residual = ((y_data * params[0]) + params[1]) - x_data
         weighted_residual = residual / (np.mean(sigma) ** 2)
-        chi_sq = (np.ma.sum(weighted_residual ** 2) / len(x_data)) if len(x_data) > 0 else 0.0
+        chi_sq = (np.sum(weighted_residual ** 2) / len(x_data)) if len(x_data) > 0 else 0.0
         return chi_sq
 
     def fit_to_zodi(self, orbit_data, zodi_data, orbit_uncs):
         init_gain = 1.0
         init_offset = 0.0
-        popt = minimize(self.chi_sq, [init_gain, init_offset], args=(orbit_data, zodi_data, orbit_uncs), method='Nelder-Mead').x
+        popt = minimize(self.chi_sq, [init_gain, init_offset], args=(orbit_data, zodi_data, orbit_uncs),
+                        method='Nelder-Mead').x
         gain, offset = popt
         return gain, offset
+
+    def iterate_fit(self, n):
+        i = 0
+        data_to_fit = self.raw_data
+        uncs_to_fit = self.raw_uncs
+        while i < n:
+            gain, offset = self.fit_to_zodi(data_to_fit, self.zodi_data, uncs_to_fit)
+            print("Gain:", gain)
+            print("Offset:", offset)
+            data_to_fit = self.adjust_data(gain, offset, data_to_fit)
+            i += 1
+        return gain, offset
+
+
+    def adjust_data(self, gain, offset, data):
+        residual = ((data - offset)/gain) - self.zodi_data
+        new_data = data - gain*residual
+        return new_data
+
 
 if __name__ == "__main__":
     coadd_map = Coadder(3)
