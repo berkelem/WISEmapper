@@ -38,7 +38,7 @@ class Coadder:
         return galaxy_mask.astype(bool)
 
     def run(self):
-        for i in range(5):
+        for i in range(6323):
             print(f"Adding orbit {i}")
             self.add_file(i)
         self.normalize()
