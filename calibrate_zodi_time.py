@@ -61,7 +61,7 @@ class Coadder:
         cal_uncs = orbit_uncs / abs(gain)
 
         self.plot_fit(orbit_num, cal_data, zodi_data)
-        self.plot_fit_improvement(orbit_data, zodi_data, gain_simplefit, offset_simplefit, gain, offset)
+        self.plot_fit_improvement(orbit_num, orbit_data, zodi_data, gain_simplefit, offset_simplefit, gain, offset)
 
         zs_data = cal_data - zodi_data
 
