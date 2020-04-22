@@ -38,7 +38,7 @@ class Coadder:
         return galaxy_mask.astype(bool)
 
     def run(self):
-        for i in range(6323):
+        for i in range(5):
             print(f"Adding orbit {i}")
             self.add_file(i)
         self.normalize()
@@ -54,12 +54,14 @@ class Coadder:
         zodi_data_masked = np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
 
         orbit_fitter = IterativeFitter(zodi_data_masked, orbit_data_masked, orbit_uncs_masked)
+        gain_simplefit, offset_simplefit = orbit_fitter.iterate_fit(1)
         gain, offset = orbit_fitter.iterate_fit(10)
 
         cal_data = (orbit_data - offset)/gain
         cal_uncs = orbit_uncs / abs(gain)
 
-        # self.plot_fit(orbit_num, cal_data, zodi_data)
+        self.plot_fit(orbit_num, cal_data, zodi_data)
+        self.plot_fit_improvement(orbit_data, zodi_data, gain_simplefit, offset_simplefit, gain, offset)
 
         zs_data = cal_data - zodi_data
 
@@ -72,6 +74,14 @@ class Coadder:
         plt.savefig(f"/home/users/mberkeley/wisemapper/data/output_maps/w3/calibration_fit_orbit_{i}.png")
         plt.close()
 
+    @staticmethod
+    def plot_fit_improvement(i, orbit_data, zodi_data, gain1, offset1, gain2, offset2):
+        cal_data1 = (orbit_data - offset1)/gain1
+        cal_data2 = (orbit_data - offset2)/gain2
+        l1, l2, l3 = plt.plot(np.arange(len(orbit_data)), cal_data1, 'r.', np.arange(len(orbit_data)), cal_data2, 'b.', np.arange(len(orbit_data)), zodi_data, 'k.')
+        plt.legend((l1,l2,l3), ("1 iteration", "10 iterations", "zodi template"))
+        plt.savefig(f"/home/users/mberkeley/wisemapper/data/output_maps/w3/calibration_iterfit_orbit_{i}.png")
+        plt.close()
 
     def normalize(self):
         self.fsm.mapdata = np.divide(self.numerator, self.denominator, where=self.denominator != 0.0, out=np.zeros_like(self.denominator))
