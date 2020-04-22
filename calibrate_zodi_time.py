@@ -25,6 +25,8 @@ class Coadder:
         self.numerator = np.zeros_like(self.fsm.mapdata)
         self.denominator = np.zeros_like(self.fsm.mapdata)
 
+        self.store = []
+
     def mask_galaxy(self):
         """
         Remove 20% of the sky around the galactic plane where zodi is not the dominant foreground.
@@ -44,6 +46,14 @@ class Coadder:
         self.normalize()
         self.save_maps()
 
+        import pdb
+        pdb.set_trace()
+        self.store = np.array(self.store)
+        orbit_ids = self.store[:0]
+        gain_diffs = self.store[:1]
+        offset_diffs = self.store[:2]
+
+
     def add_file(self, orbit_num):
         orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
         entries_to_mask = [i for i in range(len(pixel_inds)) if pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds]
@@ -56,6 +66,8 @@ class Coadder:
         orbit_fitter = IterativeFitter(zodi_data_masked, orbit_data_masked, orbit_uncs_masked)
         gain_simplefit, offset_simplefit = orbit_fitter.iterate_fit(1)
         gain, offset = orbit_fitter.iterate_fit(10)
+
+        self.store.append([orbit_num, gain/gain_simplefit, offset/offset_simplefit])
 
         cal_data = (orbit_data - offset)/gain
         cal_uncs = orbit_uncs / abs(gain)
