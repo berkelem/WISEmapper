@@ -81,7 +81,8 @@ class Coadder:
         l1, = plt.plot(np.arange(len(orbit_data)), zodi_data, 'k.', ms=0.7, alpha=1)
         l2, = plt.plot(np.arange(len(orbit_data)), cal_data1, 'r.', ms=0.7, alpha=1)
         l3, = plt.plot( np.arange(len(orbit_data)), cal_data2, 'b.', ms=0.7, alpha=1)
-        plt.legend((l1,l2,l3), ("zodi template", "1 iteration", "10 iterations"))
+        plt.legend((l1,l2,l3), ("zodi template", "1 iteration", "10 iterations"), markerscale=10)
+        plt.title("Orbit {}: gain ratio: {}; offset ratio: {}".format(i, gain2/gain1, offset2/offset1))
         plt.savefig(f"/home/users/mberkeley/wisemapper/data/output_maps/w3/calibration_iterfit_orbit_{i}.png")
         plt.close()
 
