@@ -78,8 +78,10 @@ class Coadder:
     def plot_fit_improvement(i, orbit_data, zodi_data, gain1, offset1, gain2, offset2):
         cal_data1 = (orbit_data - offset1)/gain1
         cal_data2 = (orbit_data - offset2)/gain2
-        l1, l2, l3 = plt.plot(np.arange(len(orbit_data)), cal_data1, 'r.', np.arange(len(orbit_data)), cal_data2, 'b.', np.arange(len(orbit_data)), zodi_data, 'k.')
-        plt.legend((l1,l2,l3), ("1 iteration", "10 iterations", "zodi template"))
+        l1, = plt.plot(np.arange(len(orbit_data)), zodi_data, 'k.', ms=0.7, alpha=1)
+        l2, = plt.plot(np.arange(len(orbit_data)), cal_data1, 'r.', ms=0.7, alpha=1)
+        l3, = plt.plot( np.arange(len(orbit_data)), cal_data2, 'b.', ms=0.7, alpha=1)
+        plt.legend((l1,l2,l3), ("zodi template", "1 iteration", "10 iterations"))
         plt.savefig(f"/home/users/mberkeley/wisemapper/data/output_maps/w3/calibration_iterfit_orbit_{i}.png")
         plt.close()
 
