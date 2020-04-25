@@ -47,11 +47,12 @@ class Coadder:
         orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
         entries_to_mask = np.array([i for i in range(len(pixel_inds)) if
                            pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds])
+        good_pixels = np.array([pixel_inds[p] for p in range(len(pixel_inds)) if p not in entries_to_mask])
 
         zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
         zodi_data_masked = np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
 
-        sim_galaxy = 10 * np.sin(entries_to_mask/len(entries_to_mask))
+        sim_galaxy = 10 * np.sin(good_pixels/len(good_pixels))
         sim_data = zodi_data_masked + sim_galaxy
         sim_uncs = np.ones_like(sim_data)*0.001
 
