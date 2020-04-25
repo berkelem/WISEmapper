@@ -37,7 +37,7 @@ class Coadder:
         return galaxy_mask.astype(bool)
 
     def run(self):
-        for i in range(6323):
+        for i in range(1):
             print(f"Adding orbit {i}")
             self.add_file(i)
         self.normalize()
@@ -136,3 +136,7 @@ class IterativeFitter:
         residual = ((data - offset)/gain) - self.zodi_data
         new_data = data - gain*residual
         return new_data
+
+if __name__ == "__main__":
+    coadd_map = Coadder(3)
+    coadd_map.run()
