@@ -143,8 +143,8 @@ class IterativeFitter:
 
 
     def adjust_data(self, gain, offset, data):
-        residual = ((data - offset)/gain) - self.zodi_data
-        new_data = self.raw_data - gain*residual
+        residual = data - (self.zodi_data*gain + offset)
+        new_data = self.raw_data - residual
         return new_data
 
 if __name__ == "__main__":
