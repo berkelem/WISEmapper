@@ -137,7 +137,7 @@ class IterativeFitter:
     @staticmethod
     def plot_fit(i, raw_data, zodi_data, gain, offset):
 
-        plt.plot(np.arange(len(raw_data)), raw_data, 'r.', np.arange(len(zodi_data)), zodi_data*gain + offset, 'b.')
+        plt.plot(np.arange(len(zodi_data)), zodi_data*gain + offset, 'b.', np.arange(len(raw_data)), raw_data, 'r.')
         plt.savefig(f"/home/users/mberkeley/wisemapper/data/output_maps/w3/calibration_fit_simdata_iter_{i}.png")
         plt.close()
 
