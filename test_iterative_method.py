@@ -130,7 +130,7 @@ class IterativeFitter:
             self.plot_fit(i, data_to_fit, self.zodi_data, gain, offset)
             print("Gain:", gain)
             print("Offset:", offset)
-            data_to_fit = self.adjust_data(gain, offset, data_to_fit)
+            data_to_fit = self.adjust_data(gain, offset, self.raw_data)
             i += 1
         return gain, offset
 
