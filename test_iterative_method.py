@@ -4,6 +4,7 @@ from scipy.optimize import minimize
 from fullskymapping import FullSkyMap
 import pandas as pd
 import healpy as hp
+import matplotlib.pyplot as plt
 
 class Coadder:
 
@@ -126,11 +127,19 @@ class IterativeFitter:
         uncs_to_fit = self.raw_uncs
         while i < n:
             gain, offset = self.fit_to_zodi(data_to_fit, self.zodi_data, uncs_to_fit)
+            self.plot_fit(i, data_to_fit, self.zodi_data, gain, offset)
             print("Gain:", gain)
             print("Offset:", offset)
             data_to_fit = self.adjust_data(gain, offset, data_to_fit)
             i += 1
         return gain, offset
+
+    @staticmethod
+    def plot_fit(i, raw_data, zodi_data, gain, offset):
+
+        plt.plot(np.arange(len(raw_data)), raw_data, 'r.', np.arange(len(zodi_data)), zodi_data*gain + offset, 'b.')
+        plt.savefig(f"/home/users/mberkeley/wisemapper/data/output_maps/w3/calibration_fit_simdata_iter_{i}.png")
+        plt.close()
 
 
     def adjust_data(self, gain, offset, data):
