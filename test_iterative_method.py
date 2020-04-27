@@ -25,6 +25,9 @@ class Coadder:
         self.numerator = np.zeros_like(self.fsm.mapdata)
         self.denominator = np.zeros_like(self.fsm.mapdata)
 
+        self.gain_vals = []
+        self.offset_vals = []
+
     def mask_galaxy(self):
         """
         Remove 20% of the sky around the galactic plane where zodi is not the dominant foreground.
@@ -78,7 +81,7 @@ class Coadder:
         cal_data = (sim_data - offset)/gain
         cal_uncs = sim_uncs / abs(gain)
 
-        zs_data = cal_data - zodi_data
+        zs_data = cal_data - zodi_data_masked
 
         self.numerator[pixel_inds] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
         self.denominator[pixel_inds] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
@@ -117,9 +120,9 @@ class Coadder:
 class IterativeFitter:
 
     def __init__(self, zodi_data, raw_data, raw_uncs):
-        self.zodi_data = np.array([1,3,4,2,6])#zodi_data
-        self.raw_data = np.array([4,3,4,4,3])#raw_data
-        self.raw_uncs = np.array([0.1, 0.1, 0.1, 0.1, 0.1])#raw_uncs
+        self.zodi_data = zodi_data
+        self.raw_data = raw_data
+        self.raw_uncs = raw_uncs
 
     @staticmethod
     def chi_sq(params, x_data, y_data, sigma):
@@ -140,6 +143,8 @@ class IterativeFitter:
         i = 0
         data_to_fit = self.raw_data
         uncs_to_fit = self.raw_uncs
+        gains = []
+        offsets = []
         while i < n:
             plt.plot(range(len(data_to_fit)), data_to_fit, 'r.')
             plt.xlabel("pixel id")
@@ -148,11 +153,23 @@ class IterativeFitter:
             plt.savefig(f"adjusted_signal_iter_{i}.png")
             plt.close()
             gain, offset = self.fit_to_zodi(data_to_fit, self.zodi_data, uncs_to_fit)
+            gains.append(gain)
+            offsets.append(offset)
             self.plot_fit(i, data_to_fit, self.zodi_data, gain, offset)
             print("Gain:", gain)
             print("Offset:", offset)
             data_to_fit = self.adjust_data(gain, offset, data_to_fit, i)
             i += 1
+        plt.plot(range(len(gains)), gains, 'r.')
+        plt.xlabel("iterations")
+        plt.ylabel("Gain value")
+        plt.savefig("gain_iterations.png")
+        plt.close()
+        plt.plot(range(len(offsets)), offsets, 'r.')
+        plt.xlabel("iterations")
+        plt.ylabel("Offset value")
+        plt.savefig("offset_iterations.png")
+        plt.close()
         return gain, offset
 
     @staticmethod
@@ -171,7 +188,7 @@ class IterativeFitter:
         plt.title("Raw data - (zodi * gain + offset)")
         plt.savefig(f"residual_iter_{i}.png")
         plt.close()
-        new_data = self.raw_data - residual
+        new_data = data - residual
         return new_data
 
 if __name__ == "__main__":
