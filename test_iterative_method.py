@@ -117,9 +117,9 @@ class Coadder:
 class IterativeFitter:
 
     def __init__(self, zodi_data, raw_data, raw_uncs):
-        self.zodi_data = zodi_data
-        self.raw_data = raw_data
-        self.raw_uncs = raw_uncs
+        self.zodi_data = np.array([1,3,4,2,6])#zodi_data
+        self.raw_data = np.array([4,3,4,4,3])#raw_data
+        self.raw_uncs = np.array([0.1, 0.1, 0.1, 0.1, 0.1])#raw_uncs
 
     @staticmethod
     def chi_sq(params, x_data, y_data, sigma):
