@@ -141,6 +141,12 @@ class IterativeFitter:
         data_to_fit = self.raw_data
         uncs_to_fit = self.raw_uncs
         while i < n:
+            plt.plot(range(len(data_to_fit)), data_to_fit, 'r.')
+            plt.xlabel("pixel id")
+            plt.ylabel("signal")
+            plt.title(f"adjusted sky signal; iter {i}")
+            plt.savefig(f"adjusted_signal_iter_{i}.png")
+            plt.close()
             gain, offset = self.fit_to_zodi(data_to_fit, self.zodi_data, uncs_to_fit)
             self.plot_fit(i, data_to_fit, self.zodi_data, gain, offset)
             print("Gain:", gain)
@@ -164,6 +170,7 @@ class IterativeFitter:
         plt.ylabel("residual")
         plt.title("Raw data - (zodi * gain + offset)")
         plt.savefig(f"residual_iter_{i}.png")
+        plt.close()
         new_data = self.raw_data - residual
         return new_data
 
