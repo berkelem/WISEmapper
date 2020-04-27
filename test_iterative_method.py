@@ -54,7 +54,22 @@ class Coadder:
         zodi_data_masked = np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
 
         sim_galaxy = 10 * np.sin(good_pixels/len(good_pixels))
+        plt.plot(range(len(sim_galaxy)), sim_galaxy, 'r.')
+        plt.xlabel("pixel id")
+        plt.ylabel("signal")
+        plt.title("Simulated galaxy signal")
+        plt.savefig("sim_galaxy.png")
+        plt.close()
+
         sim_data = zodi_data_masked + sim_galaxy
+        plt.plot(range(len(sim_galaxy)), sim_data, 'r.')
+        plt.xlabel("pixel id")
+        plt.ylabel("signal")
+        plt.title("Simulated sky signal (galaxy + zodi)")
+        plt.savefig("sim_data.png")
+        plt.close()
+
+
         sim_uncs = np.ones_like(sim_data)*0.001
 
         orbit_fitter = IterativeFitter(zodi_data_masked, sim_data, sim_uncs)
@@ -130,7 +145,7 @@ class IterativeFitter:
             self.plot_fit(i, data_to_fit, self.zodi_data, gain, offset)
             print("Gain:", gain)
             print("Offset:", offset)
-            data_to_fit = self.adjust_data(gain, offset, data_to_fit)
+            data_to_fit = self.adjust_data(gain, offset, data_to_fit, i)
             i += 1
         return gain, offset
 
@@ -142,8 +157,13 @@ class IterativeFitter:
         plt.close()
 
 
-    def adjust_data(self, gain, offset, data):
+    def adjust_data(self, gain, offset, data, i):
         residual = data - (self.zodi_data*gain + offset)
+        plt.plot(range(len(residual)), residual, 'r.')
+        plt.xlabel("pixel id")
+        plt.ylabel("residual")
+        plt.title("Raw data - (zodi * gain + offset)")
+        plt.savefig(f"residual_iter_{i}.png")
         new_data = self.raw_data - residual
         return new_data
 
