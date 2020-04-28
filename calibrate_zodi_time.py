@@ -25,7 +25,8 @@ class Coadder:
         self.numerator = np.zeros_like(self.fsm.mapdata)
         self.denominator = np.zeros_like(self.fsm.mapdata)
 
-        self.store = []
+        self.gains = []
+        self.offsets = []
 
     def mask_galaxy(self):
         """
@@ -43,16 +44,23 @@ class Coadder:
         for i in range(6323):
             print(f"Adding orbit {i}")
             self.add_file(i)
+
         self.normalize()
         self.save_maps()
+        self.plot_all_fits()
 
-        import pdb
-        pdb.set_trace()
-        self.store = np.array(self.store)
-        orbit_ids = self.store[:0]
-        gain_diffs = self.store[:1]
-        offset_diffs = self.store[:2]
 
+    def plot_all_fits(self):
+        plt.plot(range(len(self.gains)), self.gains, 'r.')
+        plt.xlabel("orbit iteration")
+        plt.ylabel("gain")
+        plt.savefig("/home/users/mberkeley/wisemapper/data/output_maps/w3/fitted_gains.png")
+        plt.close()
+        plt.plot(range(len(self.offsets)), self.offsets, 'r.')
+        plt.xlabel("orbit iteration")
+        plt.ylabel("offset")
+        plt.savefig("/home/users/mberkeley/wisemapper/data/output_maps/w3/fitted_offsets.png")
+        plt.close()
 
     def add_file(self, orbit_num):
         orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
@@ -64,8 +72,10 @@ class Coadder:
         zodi_data_masked = np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
 
         orbit_fitter = IterativeFitter(zodi_data_masked, orbit_data_masked, orbit_uncs_masked)
-        gain_simplefit, offset_simplefit = orbit_fitter.iterate_fit(1)
+        # gain_simplefit, offset_simplefit = orbit_fitter.iterate_fit(1)
         gain, offset = orbit_fitter.iterate_fit(10)
+        self.gains.append(gain)
+        self.offsets.append(offset)
 
         self.store.append([orbit_num, gain/gain_simplefit, offset/offset_simplefit])
 
@@ -73,7 +83,7 @@ class Coadder:
         cal_uncs = orbit_uncs / abs(gain)
 
         self.plot_fit(orbit_num, cal_data, zodi_data)
-        self.plot_fit_improvement(orbit_num, orbit_data, zodi_data, gain_simplefit, offset_simplefit, gain, offset)
+        # self.plot_fit_improvement(orbit_num, orbit_data, zodi_data, gain_simplefit, offset_simplefit, gain, offset)
 
         zs_data = cal_data - zodi_data
 
@@ -155,12 +165,15 @@ class IterativeFitter:
         i = 0
         data_to_fit = self.raw_data
         uncs_to_fit = self.raw_uncs
-        while i < n:
-            gain, offset = self.fit_to_zodi(data_to_fit, self.zodi_data, uncs_to_fit)
-            print("Gain:", gain)
-            print("Offset:", offset)
-            data_to_fit = self.adjust_data(gain, offset, data_to_fit)
-            i += 1
+        if len(data_to_fit) > 0:
+            while i < n:
+                gain, offset = self.fit_to_zodi(data_to_fit, self.zodi_data, uncs_to_fit)
+                print("Gain:", gain)
+                print("Offset:", offset)
+                data_to_fit = self.adjust_data(gain, offset, data_to_fit)
+                i += 1
+        else:
+            gain = offset = 0.0
         return gain, offset
 
 
