@@ -41,9 +41,19 @@ class Coadder:
         return galaxy_mask.astype(bool)
 
     def run(self):
-        for i in range(1):
+        for i in range(10):
             print(f"Adding orbit {i}")
             self.add_file(i)
+        plt.plot(range(len(self.gain_vals)), self.gain_vals, 'r.')
+        plt.xlabel("orbit iteration")
+        plt.ylabel("gain")
+        plt.savefig("fitted_gains.png")
+        plt.close()
+        plt.plot(range(len(self.offset_vals)), self.offset_vals, 'r.')
+        plt.xlabel("orbit iteration")
+        plt.ylabel("offset")
+        plt.savefig("fitted_offsets.png")
+        plt.close()
         self.normalize()
         self.save_maps()
 
@@ -77,14 +87,16 @@ class Coadder:
 
         orbit_fitter = IterativeFitter(zodi_data_masked, sim_data, sim_uncs)
         gain, offset = orbit_fitter.iterate_fit(10)
+        self.gain_vals.append(gain)
+        self.offset_vals.append(offset)
 
         cal_data = (sim_data - offset)/gain
         cal_uncs = sim_uncs / abs(gain)
 
         zs_data = cal_data - zodi_data_masked
 
-        self.numerator[pixel_inds] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
-        self.denominator[pixel_inds] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
+        self.numerator[good_pixels] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
+        self.denominator[good_pixels] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
 
     def load_zodi_orbit(self, orbit_num, pixel_inds):
         filename = f"/home/users/jguerraa/AME/cal_files/W3/zodi_map_cal_W{self.band}_{orbit_num}.fits"
