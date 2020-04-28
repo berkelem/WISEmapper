@@ -66,7 +66,7 @@ class Coadder:
         zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
         zodi_data_masked = np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
 
-        sim_galaxy = 10 * np.sin(good_pixels/len(good_pixels))
+        sim_galaxy = 10 + 10 * np.sin(good_pixels/len(good_pixels))
         plt.plot(range(len(sim_galaxy)), sim_galaxy, 'r.')
         plt.xlabel("pixel id")
         plt.ylabel("signal")
@@ -80,6 +80,13 @@ class Coadder:
         plt.ylabel("signal")
         plt.title("Simulated sky signal (galaxy + zodi)")
         plt.savefig("sim_data.png")
+        plt.close()
+
+        plt.plot(range(len(zodi_data_masked)), zodi_data_masked, 'r.')
+        plt.xlabel("pixel id")
+        plt.ylabel("signal")
+        plt.title("Zodi template")
+        plt.savefig("zodi_data.png")
         plt.close()
 
 
