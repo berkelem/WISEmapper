@@ -72,18 +72,15 @@ class Coadder:
         zodi_data_masked = np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
 
         orbit_fitter = IterativeFitter(zodi_data_masked, orbit_data_masked, orbit_uncs_masked)
-        # gain_simplefit, offset_simplefit = orbit_fitter.iterate_fit(1)
         gain, offset = orbit_fitter.iterate_fit(10)
         self.gains.append(gain)
         self.offsets.append(offset)
 
-        self.store.append([orbit_num, gain/gain_simplefit, offset/offset_simplefit])
 
         cal_data = (orbit_data - offset)/gain
         cal_uncs = orbit_uncs / abs(gain)
 
         self.plot_fit(orbit_num, cal_data, zodi_data)
-        # self.plot_fit_improvement(orbit_num, orbit_data, zodi_data, gain_simplefit, offset_simplefit, gain, offset)
 
         zs_data = cal_data - zodi_data
 
