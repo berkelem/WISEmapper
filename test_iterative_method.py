@@ -85,18 +85,23 @@ class Coadder:
 
         sim_uncs = np.ones_like(sim_data)*0.001
 
-        orbit_fitter = IterativeFitter(zodi_data_masked, sim_data, sim_uncs)
-        gain, offset = orbit_fitter.iterate_fit(10)
+        if len(zodi_data_masked) > 0:
+            orbit_fitter = IterativeFitter(zodi_data_masked, sim_data, sim_uncs)
+            gain, offset = orbit_fitter.iterate_fit(10)
+
+            cal_data = (sim_data - offset)/gain
+            cal_uncs = sim_uncs / abs(gain)
+
+            zs_data = cal_data - zodi_data_masked
+
+            self.numerator[good_pixels] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
+            self.denominator[good_pixels] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
+
+        else:
+            gain = offset = 0.0
+
         self.gain_vals.append(gain)
         self.offset_vals.append(offset)
-
-        cal_data = (sim_data - offset)/gain
-        cal_uncs = sim_uncs / abs(gain)
-
-        zs_data = cal_data - zodi_data_masked
-
-        self.numerator[good_pixels] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
-        self.denominator[good_pixels] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
 
     def load_zodi_orbit(self, orbit_num, pixel_inds):
         filename = f"/home/users/jguerraa/AME/cal_files/W3/zodi_map_cal_W{self.band}_{orbit_num}.fits"
