@@ -41,7 +41,7 @@ class Coadder:
         return galaxy_mask.astype(bool)
 
     def run(self):
-        for i in range(10):
+        for i in range(100):
             print(f"Adding orbit {i}")
             self.add_file(i)
         plt.plot(range(len(self.gain_vals)), self.gain_vals, 'r.')
