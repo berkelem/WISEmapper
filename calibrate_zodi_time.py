@@ -54,11 +54,13 @@ class Coadder:
         print("Smoothing params")
         self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", "raw_gains_iter_0.png")
         self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets", "raw_offsets_iter_0.png")
-        gains, offsets = self.smooth_fit_params()
-        self.simple_plot(range(len(gains)), gains, "orbit id", "gain", "smooth_gains_iter_0.png")
-        self.simple_plot(range(len(offsets)), offsets, "orbit id", "offsets", "smooth_offsets_iter_0.png")
-        self.gains_adj = gains
-        self.offsets_adj = offsets
+        # gains, offsets = self.smooth_fit_params()
+        # self.simple_plot(range(len(gains)), gains, "orbit id", "gain", "smooth_gains_iter_0.png")
+        # self.simple_plot(range(len(offsets)), offsets, "orbit id", "offsets", "smooth_offsets_iter_0.png")
+        # self.gains_adj = gains
+        # self.offsets_adj = offsets
+        gains = self.gains
+        offsets = self.offets
         for j in range(num_orbits):
             print(f"Adding orbit {j}")
             self.add_file(j, gains[j], offsets[j])
@@ -76,11 +78,13 @@ class Coadder:
         print("Smoothing params")
         self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", "raw_gains_iter_1.png")
         self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets", "raw_offsets_iter_1.png")
-        gains, offsets = self.smooth_fit_params()
-        self.simple_plot(range(len(gains)), gains, "orbit id", "gain", "smooth_gains_iter_1.png")
-        self.simple_plot(range(len(offsets)), offsets, "orbit id", "offsets", "smooth_offsets_iter_1.png")
-        self.gains_adj = gains
-        self.offsets_adj = offsets
+        # gains, offsets = self.smooth_fit_params()
+        # self.simple_plot(range(len(gains)), gains, "orbit id", "gain", "smooth_gains_iter_1.png")
+        # self.simple_plot(range(len(offsets)), offsets, "orbit id", "offsets", "smooth_offsets_iter_1.png")
+        # self.gains_adj = gains
+        # self.offsets_adj = offsets
+        gains = self.gains
+        offsets = self.offets
         for j in range(num_orbits):
             print(f"Adding orbit {j}")
             self.add_file(j, gains[j], offsets[j])
