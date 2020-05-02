@@ -129,14 +129,14 @@ class Coadder:
         orbit_data_masked = np.array([orbit_data[i] for i in range(len(orbit_data)) if i not in entries_to_mask])
         orbit_uncs_masked = np.array([orbit_uncs[i] for i in range(len(orbit_uncs)) if i not in entries_to_mask])
 
-        prev_itermap = self.fsm_prev.mapdata[pixel_inds]
-        prev_itermap_masked = np.array([prev_itermap[i] for i in range(len(prev_itermap)) if i not in entries_to_mask])
-
         zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
         zodi_data_masked = np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
 
-        residue = prev_itermap_masked - (self.gains_adj[orbit_num] * zodi_data_masked + self.offsets_adj[orbit_num])
-        orbit_data_adj = orbit_data_masked - residue
+        prev_itermap = self.fsm_prev.mapdata[pixel_inds]
+        prev_itermap_masked = np.array([prev_itermap[i] for i in range(len(prev_itermap)) if i not in entries_to_mask])
+
+        t_gal = prev_itermap_masked * self.gains[orbit_num]
+        orbit_data_adj = orbit_data_masked - t_gal
 
         orbit_fitter = IterativeFitter(zodi_data_masked, orbit_data_adj, orbit_uncs_masked)
         gain, offset = orbit_fitter.iterate_fit(1)
