@@ -65,6 +65,8 @@ class Coadder:
 
         self.normalize()
         self.save_maps()
+        self.fsm_prev = self.fsm
+        self.set_output_filenames()
 
         for i in range(num_orbits):
             print(f"Fitting orbit {i}")
@@ -122,7 +124,7 @@ class Coadder:
         orbit_data_masked = np.array([orbit_data[i] for i in range(len(orbit_data)) if i not in entries_to_mask])
         orbit_uncs_masked = np.array([orbit_uncs[i] for i in range(len(orbit_uncs)) if i not in entries_to_mask])
 
-        prev_itermap = self.fsm.mapdata[pixel_inds]
+        prev_itermap = self.fsm_prev.mapdata[pixel_inds]
         prev_itermap_masked = np.array([prev_itermap[i] for i in range(len(prev_itermap)) if i not in entries_to_mask])
 
         zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
