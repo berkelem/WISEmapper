@@ -10,10 +10,8 @@ class Coadder:
 
     def __init__(self, band):
         self.band = band
-        self.fsm = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3.fits", 256)
-        self.unc_fsm = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3.fits", 256)
+        self.iter = 0
+        self.set_output_filenames()
 
         self.moon_stripe_mask = HealpixMap("/home/users/mberkeley/wisemapper/data/masks/stripe_mask_G.fits")
         self.moon_stripe_mask.read_data()
@@ -27,6 +25,13 @@ class Coadder:
 
         self.gains = []
         self.offsets = []
+        self.orbit_sizes = []
+
+    def set_output_filenames(self):
+        self.fsm = FullSkyMap(
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_iter_{self.iter}.fits", 256)
+        self.unc_fsm = FullSkyMap(
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_iter_{self.iter}.fits", 256)
 
     def mask_galaxy(self):
         """
@@ -41,14 +46,47 @@ class Coadder:
         return galaxy_mask.astype(bool)
 
     def run(self):
-        for i in range(6323):
-            print(f"Adding orbit {i}")
-            self.add_file(i)
+        num_orbits = 100
+        for i in range(num_orbits):
+            print(f"Fitting orbit {i}")
+            self.fit_orbit(i)
+
+        print("Smoothing params")
+        self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", "raw_gains.png")
+        self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets", "raw_offsets.png")
+        gains, offsets = self.smooth_fit_params()
+        self.simple_plot(range(len(gains)), gains, "orbit id", "gain", "smooth_gains.png")
+        self.simple_plot(range(len(offsets)), offsets, "orbit id", "offsets", "smooth_offsets.png")
+        self.gains_adj = gains
+        self.offsets_adj = offsets
+        for j in range(num_orbits):
+            print(f"Adding orbit {j}")
+            self.add_file(j, gains[j], offsets[j])
 
         self.normalize()
         self.save_maps()
-        self.plot_all_fits()
 
+        for i in range(num_orbits):
+            print(f"Fitting orbit {i}")
+            self.fit_adjusted_orbit(i)
+
+        print("Smoothing params")
+        gains, offsets = self.smooth_fit_params()
+        self.gains_adj = gains
+        self.offsets_adj = offsets
+        for j in range(num_orbits):
+            print(f"Adding orbit {j}")
+            self.add_file(j, gains[j], offsets[j])
+
+        self.normalize()
+        self.save_maps()
+
+    def simple_plot(self, x_data, y_data, x_label, y_label, filename):
+        plt.plot(x_data, y_data, 'r.')
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
+        plt.savefig(filename)
+        plt.close()
 
     def plot_all_fits(self):
         plt.plot(range(len(self.gains)), self.gains, 'r.')
@@ -62,7 +100,7 @@ class Coadder:
         plt.savefig("/home/users/mberkeley/wisemapper/data/output_maps/w3/fitted_offsets.png")
         plt.close()
 
-    def add_file(self, orbit_num):
+    def fit_orbit(self, orbit_num):
         orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
         entries_to_mask = [i for i in range(len(pixel_inds)) if pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds]
         orbit_data_masked = np.array([orbit_data[i] for i in range(len(orbit_data)) if i not in entries_to_mask])
@@ -72,15 +110,39 @@ class Coadder:
         zodi_data_masked = np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
 
         orbit_fitter = IterativeFitter(zodi_data_masked, orbit_data_masked, orbit_uncs_masked)
-        gain, offset = orbit_fitter.iterate_fit(10)
+        gain, offset = orbit_fitter.iterate_fit(1)
         self.gains.append(gain)
         self.offsets.append(offset)
+        self.orbit_sizes.append(len(zodi_data_masked))
+
+    def fit_adjusted_orbit(self, orbit_num):
+        orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
+        entries_to_mask = [i for i in range(len(pixel_inds)) if
+                           pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds]
+        orbit_data_masked = np.array([orbit_data[i] for i in range(len(orbit_data)) if i not in entries_to_mask])
+        orbit_uncs_masked = np.array([orbit_uncs[i] for i in range(len(orbit_uncs)) if i not in entries_to_mask])
+
+        prev_itermap = self.fsm.mapdata[pixel_inds]
+        prev_itermap_masked = np.array([prev_itermap[i] for i in range(len(prev_itermap)) if i not in entries_to_mask])
+
+        zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
+        zodi_data_masked = np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
+
+        residue = prev_itermap_masked - (self.gains_adj[orbit_num] * zodi_data_masked + self.offsets_adj[orbit_num])
+        orbit_data_adj = orbit_data_masked - residue
+
+        orbit_fitter = IterativeFitter(zodi_data_masked, orbit_data_adj, orbit_uncs_masked)
+        gain, offset = orbit_fitter.iterate_fit(1)
+        self.gains.append(gain)
+        self.offsets.append(offset)
+        self.orbit_sizes.append(len(zodi_data_masked))
 
 
+    def add_file(self, orbit_num, gain, offset):
+        orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
         cal_data = (orbit_data - offset)/gain
         cal_uncs = orbit_uncs / abs(gain)
-
-        self.plot_fit(orbit_num, cal_data, zodi_data)
+        zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
 
         zs_data = cal_data - zodi_data
 
@@ -104,6 +166,43 @@ class Coadder:
         plt.title("Orbit {}: gain ratio: {}; offset ratio: {}".format(i, gain2/gain1, offset2/offset1))
         plt.savefig(f"/home/users/mberkeley/wisemapper/data/output_maps/w3/calibration_iterfit_orbit_{i}.png")
         plt.close()
+
+    def smooth_fit_params(self):
+        smooth_gains = self.weighted_mean_filter(self.gains, self.orbit_sizes, 25)
+        smooth_offsets = self.weighted_mean_filter(self.offsets, self.orbit_sizes, 25)
+        return smooth_gains, smooth_offsets
+
+    @staticmethod
+    def weighted_mean_filter(array, weights, size):
+        output = []
+        for p, px in enumerate(array):
+            window = np.ma.zeros(size)
+            weights_window = np.zeros(size)
+            step = int(size / 2)
+            if p - step < 0:
+                undershoot = step - p
+                window[:undershoot] = array[-undershoot:]
+                window[undershoot:step] = array[:p]
+                weights_window[:undershoot] = weights[-undershoot:]
+                weights_window[undershoot:step] = weights[:p]
+            else:
+                window[:step] = array[p - step:p]
+                weights_window[:step] = weights[p - step:p]
+
+            if p + step + 1 > len(array):
+                overshoot = p + step + 1 - len(array)
+                array_roll = np.roll(array, overshoot)
+                weights_roll = np.roll(weights, overshoot)
+                window[step:] = array_roll[-(size - step):]
+                weights_window[step:] = weights_roll[-(size - step):]
+            else:
+                window[step:] = array[p:p + step + 1]
+                weights_window[step:] = weights[p:p + step + 1]
+
+            weights_window /= np.sum(weights_window)
+            weighted_mean = np.average(window, weights=weights_window)
+            output.append(weighted_mean)
+        return np.array(output)
 
     def normalize(self):
         self.fsm.mapdata = np.divide(self.numerator, self.denominator, where=self.denominator != 0.0, out=np.zeros_like(self.denominator))
