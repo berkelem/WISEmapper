@@ -250,7 +250,7 @@ class IterativeFitter:
 
     @staticmethod
     def chi_sq(params, x_data, y_data, sigma):
-        residual = ((y_data * params[0]) + params[1]) - x_data
+        residual = x_data - ((y_data * params[0]) + params[1])
         weighted_residual = residual / (np.mean(sigma) ** 2)
         chi_sq = (np.sum(weighted_residual ** 2) / len(x_data)) if len(x_data) > 0 else 0.0
         return chi_sq
