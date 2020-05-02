@@ -66,6 +66,7 @@ class Coadder:
         self.normalize()
         self.save_maps()
         self.fsm_prev = self.fsm
+        self.iter += 1
         self.set_output_filenames()
 
         for i in range(num_orbits):
