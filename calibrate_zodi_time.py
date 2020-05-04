@@ -50,6 +50,9 @@ class Coadder:
         iterations = 2
 
         for it in range(iterations):
+            self.gains = []
+            self.offsets = []
+            self.orbit_sizes = []
 
             for i in range(num_orbits):
                 print(f"Fitting orbit {i}")
@@ -139,7 +142,7 @@ class Coadder:
         cal_uncs = orbit_uncs / abs(gain)
         zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
 
-        if len(cal_uncs) > 0:
+        if len(cal_uncs[cal_uncs!=0.0]) > 0:
             zs_data = cal_data - zodi_data
 
             self.numerator[pixel_inds] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
