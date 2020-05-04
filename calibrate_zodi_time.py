@@ -47,50 +47,28 @@ class Coadder:
 
     def run(self):
         num_orbits = 100
-        for i in range(num_orbits):
-            print(f"Fitting orbit {i}")
-            self.fit_orbit(i)
+        iterations = 2
 
-        print("Smoothing params")
-        self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", f"raw_gains_iter_{self.iter}.png")
-        self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets", f"raw_offsets_iter_{self.iter}.png")
-        # gains, offsets = self.smooth_fit_params()
-        # self.simple_plot(range(len(gains)), gains, "orbit id", "gain", "smooth_gains_iter_0.png")
-        # self.simple_plot(range(len(offsets)), offsets, "orbit id", "offsets", "smooth_offsets_iter_0.png")
-        # self.gains_adj = gains
-        # self.offsets_adj = offsets
-        gains = self.gains
-        offsets = self.offsets
-        for j in range(num_orbits):
-            print(f"Adding orbit {j}")
-            self.add_file(j, gains[j], offsets[j])
+        for it in range(iterations):
 
-        self.normalize()
-        self.save_maps()
-        self.fsm_prev = self.fsm
-        self.iter += 1
-        self.set_output_filenames()
+            for i in range(num_orbits):
+                print(f"Fitting orbit {i}")
+                self.fit_orbit(i)
 
-        for i in range(num_orbits):
-            print(f"Fitting orbit {i}")
-            self.fit_adjusted_orbit(i)
+            self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", f"raw_gains_iter_{self.iter}.png")
+            self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets", f"raw_offsets_iter_{self.iter}.png")
 
-        print("Smoothing params")
-        self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", f"raw_gains_iter_{self.iter}.png")
-        self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets", f"raw_offsets_iter_{self.iter}.png")
-        # gains, offsets = self.smooth_fit_params()
-        # self.simple_plot(range(len(gains)), gains, "orbit id", "gain", "smooth_gains_iter_1.png")
-        # self.simple_plot(range(len(offsets)), offsets, "orbit id", "offsets", "smooth_offsets_iter_1.png")
-        # self.gains_adj = gains
-        # self.offsets_adj = offsets
-        gains = self.gains
-        offsets = self.offets
-        for j in range(num_orbits):
-            print(f"Adding orbit {j}")
-            self.add_file(j, gains[j], offsets[j])
+            for j in range(num_orbits):
+                print(f"Adding orbit {j}")
+                self.add_file(j, self.gains[j], self.offsets[j])
 
-        self.normalize()
-        self.save_maps()
+            self.normalize()
+            self.save_maps()
+
+            self.fsm_prev = self.fsm
+            self.iter += 1
+            self.set_output_filenames()
+
 
     def simple_plot(self, x_data, y_data, x_label, y_label, filename):
         plt.plot(x_data, y_data, 'r.')
@@ -111,7 +89,13 @@ class Coadder:
         plt.savefig("/home/users/mberkeley/wisemapper/data/output_maps/w3/fitted_offsets.png")
         plt.close()
 
-    def fit_orbit(self, orbit_num):
+    def fit_orbit(self, k):
+        if self.iter == 0:
+            self.fit_initial_orbit(k)
+        else:
+            self.fit_adjusted_orbit(k)
+
+    def fit_initial_orbit(self, orbit_num):
         orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
         entries_to_mask = [i for i in range(len(pixel_inds)) if pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds]
         orbit_data_masked = np.array([orbit_data[i] for i in range(len(orbit_data)) if i not in entries_to_mask])
@@ -155,10 +139,11 @@ class Coadder:
         cal_uncs = orbit_uncs / abs(gain)
         zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
 
-        zs_data = cal_data - zodi_data
+        if len(cal_uncs) > 0:
+            zs_data = cal_data - zodi_data
 
-        self.numerator[pixel_inds] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
-        self.denominator[pixel_inds] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
+            self.numerator[pixel_inds] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
+            self.denominator[pixel_inds] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
 
     @staticmethod
     def plot_fit(i, orbit_data, zodi_data):
