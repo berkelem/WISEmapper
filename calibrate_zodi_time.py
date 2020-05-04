@@ -52,8 +52,8 @@ class Coadder:
             self.fit_orbit(i)
 
         print("Smoothing params")
-        self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", "raw_gains_iter_0.png")
-        self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets", "raw_offsets_iter_0.png")
+        self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", f"raw_gains_iter_{self.iter}.png")
+        self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets", f"raw_offsets_iter_{self.iter}.png")
         # gains, offsets = self.smooth_fit_params()
         # self.simple_plot(range(len(gains)), gains, "orbit id", "gain", "smooth_gains_iter_0.png")
         # self.simple_plot(range(len(offsets)), offsets, "orbit id", "offsets", "smooth_offsets_iter_0.png")
@@ -76,8 +76,8 @@ class Coadder:
             self.fit_adjusted_orbit(i)
 
         print("Smoothing params")
-        self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", "raw_gains_iter_1.png")
-        self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets", "raw_offsets_iter_1.png")
+        self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", f"raw_gains_iter_{self.iter}.png")
+        self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets", f"raw_offsets_iter_{self.iter}.png")
         # gains, offsets = self.smooth_fit_params()
         # self.simple_plot(range(len(gains)), gains, "orbit id", "gain", "smooth_gains_iter_1.png")
         # self.simple_plot(range(len(offsets)), offsets, "orbit id", "offsets", "smooth_offsets_iter_1.png")
