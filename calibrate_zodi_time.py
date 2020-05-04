@@ -48,11 +48,11 @@ class Coadder:
     def run(self):
         num_orbits = 100
         iterations = 2
+        self.gains = np.zeros(num_orbits)
+        self.offsets = np.zeros_like(self.gains)
+        self.orbit_sizes = np.zeros_like(self.gains)
 
         for it in range(iterations):
-            self.gains = []
-            self.offsets = []
-            self.orbit_sizes = []
 
             for i in range(num_orbits):
                 print(f"Fitting orbit {i}")
@@ -109,9 +109,9 @@ class Coadder:
 
         orbit_fitter = IterativeFitter(zodi_data_masked, orbit_data_masked, orbit_uncs_masked)
         gain, offset = orbit_fitter.iterate_fit(1)
-        self.gains.append(gain)
-        self.offsets.append(offset)
-        self.orbit_sizes.append(len(zodi_data_masked))
+        self.gains[orbit_num] = gain
+        self.offsets[orbit_num] = gain
+        self.orbit_sizes[orbit_num] = len(zodi_data_masked)
 
     def fit_adjusted_orbit(self, orbit_num):
         orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
@@ -131,18 +131,18 @@ class Coadder:
 
         orbit_fitter = IterativeFitter(zodi_data_masked, orbit_data_adj, orbit_uncs_masked)
         gain, offset = orbit_fitter.iterate_fit(1)
-        self.gains.append(gain)
-        self.offsets.append(offset)
-        self.orbit_sizes.append(len(zodi_data_masked))
+        self.gains[orbit_num] = gain
+        self.offsets[orbit_num] = gain
+        self.orbit_sizes[orbit_num] = len(zodi_data_masked)
 
 
     def add_file(self, orbit_num, gain, offset):
         orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
-        cal_data = (orbit_data - offset)/gain
-        cal_uncs = orbit_uncs / abs(gain)
-        zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
+        if len(orbit_uncs[orbit_uncs!=0.0]) > 0 and gain!=0.0:
 
-        if len(cal_uncs[cal_uncs!=0.0]) > 0:
+            cal_data = (orbit_data - offset)/gain
+            cal_uncs = orbit_uncs / abs(gain)
+            zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
             zs_data = cal_data - zodi_data
 
             self.numerator[pixel_inds] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
