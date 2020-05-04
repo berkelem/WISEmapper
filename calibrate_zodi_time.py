@@ -60,7 +60,7 @@ class Coadder:
         # self.gains_adj = gains
         # self.offsets_adj = offsets
         gains = self.gains
-        offsets = self.offets
+        offsets = self.offsets
         for j in range(num_orbits):
             print(f"Adding orbit {j}")
             self.add_file(j, gains[j], offsets[j])
