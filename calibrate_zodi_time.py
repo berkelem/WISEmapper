@@ -27,6 +27,9 @@ class Coadder:
         self.offsets = []
         self.orbit_sizes = []
 
+        self.all_gains = []
+        self.all_offsets = []
+
     def set_output_filenames(self):
         self.fsm = FullSkyMap(
             f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_iter_{self.iter}.fits", 256)
@@ -61,6 +64,15 @@ class Coadder:
             self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", f"raw_gains_iter_{self.iter}.png")
             self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets", f"raw_offsets_iter_{self.iter}.png")
 
+            self.gains, self.offsets = self.smooth_fit_params(25)
+            self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", f"smooth_gains_iter_{self.iter}.png")
+            self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets",
+                             f"smooth_offsets_iter_{self.iter}.png")
+
+            self.all_gains.append(self.gains)
+            self.all_offsets.append(self.offsets)
+
+
             for j in range(num_orbits):
                 print(f"Adding orbit {j}")
                 self.add_file(j, self.gains[j], self.offsets[j])
@@ -71,6 +83,12 @@ class Coadder:
             self.fsm_prev = self.fsm
             self.iter += 1
             self.set_output_filenames()
+
+        for s in range(0, num_orbits, 10):
+            gains = [self.all_gains[i][s] for i in range(len(self.all_gains))]
+            offsets = [self.all_offsets[i][s] for i in range(len(self.all_offsets))]
+            self.simple_plot(range(len(gains)), gains, "iteration", "gain", f"orbit_{s}_gain_evolution.png")
+            self.simple_plot(range(len(offsets)), offsets, "iteration", "offset", f"orbit_{s}_offset_evolution.png")
 
 
     def simple_plot(self, x_data, y_data, x_label, y_label, filename):
@@ -166,9 +184,9 @@ class Coadder:
         plt.savefig(f"/home/users/mberkeley/wisemapper/data/output_maps/w3/calibration_iterfit_orbit_{i}.png")
         plt.close()
 
-    def smooth_fit_params(self):
-        smooth_gains = self.weighted_mean_filter(self.gains, self.orbit_sizes, 25)
-        smooth_offsets = self.weighted_mean_filter(self.offsets, self.orbit_sizes, 25)
+    def smooth_fit_params(self, window_size):
+        smooth_gains = self.weighted_mean_filter(self.gains, self.orbit_sizes, window_size)
+        smooth_offsets = self.weighted_mean_filter(self.offsets, self.orbit_sizes, window_size)
         return smooth_gains, smooth_offsets
 
     @staticmethod
