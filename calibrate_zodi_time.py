@@ -47,7 +47,7 @@ class Coadder:
 
     def run(self):
         num_orbits = 100
-        iterations = 2
+        iterations = 10
         self.gains = np.zeros(num_orbits)
         self.offsets = np.zeros_like(self.gains)
         self.orbit_sizes = np.zeros_like(self.gains)
