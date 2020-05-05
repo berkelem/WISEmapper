@@ -69,8 +69,8 @@ class Coadder:
             self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets",
                              f"smooth_offsets_iter_{self.iter}.png")
 
-            self.all_gains.append(self.gains)
-            self.all_offsets.append(self.offsets)
+            self.all_gains.append(self.gains.copy())
+            self.all_offsets.append(self.offsets.copy())
 
 
             for j in range(num_orbits):
