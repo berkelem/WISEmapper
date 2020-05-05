@@ -228,8 +228,8 @@ class Coadder:
         for p, px in enumerate(array):
             min_ind = max(0, p - step)
             max_ind = min(len(array), p + step)
-            window = array[min_ind:max_ind]
-            weights_window = weights[min_ind:max_ind]
+            window = array[min_ind:max_ind].copy()
+            weights_window = weights[min_ind:max_ind].copy()
             weights_window /= np.sum(weights_window)
             weighted_mean = np.average(window, weights=weights_window)
             output.append(weighted_mean)
