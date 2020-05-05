@@ -190,7 +190,7 @@ class Coadder:
         return smooth_gains, smooth_offsets
 
     @staticmethod
-    def weighted_mean_filter(array, weights, size):
+    def weighted_mean_filter_wraparound(array, weights, size):
         output = []
         for p, px in enumerate(array):
             window = np.ma.zeros(size)
@@ -220,6 +220,21 @@ class Coadder:
             weighted_mean = np.average(window, weights=weights_window)
             output.append(weighted_mean)
         return np.array(output)
+
+    @staticmethod
+    def weighted_mean_filter(array, weights, size):
+        output = []
+        step = int(size / 2)
+        for p, px in enumerate(array):
+            min_ind = max(0, p - step)
+            max_ind = min(len(array), p + step)
+            window = array[min_ind:max_ind]
+            weights_window = weights[min_ind:max_ind]
+            weights_window /= np.sum(weights_window)
+            weighted_mean = np.average(window, weights=weights_window)
+            output.append(weighted_mean)
+        return np.array(output)
+
 
     def normalize(self):
         self.fsm.mapdata = np.divide(self.numerator, self.denominator, where=self.denominator != 0.0, out=np.zeros_like(self.denominator))
