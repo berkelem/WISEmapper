@@ -296,8 +296,8 @@ class IterativeFitter:
         if len(data_to_fit) > 0:
             while i < n:
                 gain, offset = self.fit_to_zodi(data_to_fit, self.zodi_data, uncs_to_fit)
-                print("Gain:", gain)
-                print("Offset:", offset)
+                # print("Gain:", gain)
+                # print("Offset:", offset)
                 data_to_fit = self.adjust_data(gain, offset, data_to_fit)
                 i += 1
         else:
