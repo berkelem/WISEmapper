@@ -150,7 +150,7 @@ class Coadder:
         orbit_fitter = IterativeFitter(zodi_data_masked, orbit_data_adj, orbit_uncs_masked)
         gain, offset = orbit_fitter.iterate_fit(1)
         self.gains[orbit_num] = gain
-        self.offsets[orbit_num] = gain
+        self.offsets[orbit_num] = offset
         self.orbit_sizes[orbit_num] = len(zodi_data_masked)
 
 
