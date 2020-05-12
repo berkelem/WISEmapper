@@ -51,6 +51,7 @@ class Coadder:
     def run(self):
         num_orbits = 6323
         iterations = 50
+        smoothing_window = 525
         self.gains = np.zeros(num_orbits)
         self.offsets = np.zeros_like(self.gains)
         self.orbit_sizes = np.zeros_like(self.gains)
@@ -64,7 +65,7 @@ class Coadder:
             self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", f"raw_gains_iter_{self.iter}.png")
             self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets", f"raw_offsets_iter_{self.iter}.png")
 
-            self.gains, self.offsets = self.smooth_fit_params(25)
+            self.gains, self.offsets = self.smooth_fit_params(smoothing_window)
             self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", f"smooth_gains_iter_{self.iter}.png")
             self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets",
                              f"smooth_offsets_iter_{self.iter}.png")
