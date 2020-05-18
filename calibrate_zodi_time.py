@@ -164,6 +164,20 @@ class Coadder:
             zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
             zs_data = cal_data - zodi_data
 
+            if orbit_num % 100 == 0:
+                l1, l2 = plt.plot(np.arange(len(cal_data)), cal_data, 'r.', np.arange(len(zodi_data)), zodi_data, 'b.')
+                plt.xlabel("pixel id")
+                plt.ylabel("signal")
+                plt.legend((l1, l2), ("Calibrated data", "zodi template"))
+                plt.savefig(f"orbit_{orbit_num}_fit_{self.iter}.png")
+                plt.close()
+
+                plt.plot(np.arange(len(cal_data)), zs_data, 'r.')
+                plt.xlabel("pixel id")
+                plt.ylabel("signal")
+                plt.savefig(f"orbit_{orbit_num}_diff_{self.iter}.png")
+                plt.close()
+
             self.numerator[pixel_inds] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
             self.denominator[pixel_inds] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
 
