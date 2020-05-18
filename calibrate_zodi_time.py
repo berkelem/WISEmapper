@@ -65,10 +65,10 @@ class Coadder:
             self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", f"raw_gains_iter_{self.iter}.png")
             self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets", f"raw_offsets_iter_{self.iter}.png")
 
-            self.gains, self.offsets = self.smooth_fit_params(smoothing_window)
-            self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", f"smooth_gains_iter_{self.iter}.png")
-            self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets",
-                             f"smooth_offsets_iter_{self.iter}.png")
+            # self.gains, self.offsets = self.smooth_fit_params(smoothing_window)
+            # self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", f"smooth_gains_iter_{self.iter}.png")
+            # self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets",
+            #                  f"smooth_offsets_iter_{self.iter}.png")
 
             self.all_gains.append(self.gains.copy())
             self.all_offsets.append(self.offsets.copy())
