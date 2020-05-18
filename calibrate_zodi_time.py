@@ -58,7 +58,7 @@ class Coadder:
 
         for it in range(iterations):
 
-            for i in range(num_orbits):
+            for i in range(250, 250+num_orbits):
                 print(f"Fitting orbit {i}")
                 self.fit_orbit(i)
 
