@@ -58,9 +58,9 @@ class Coadder:
 
         for it in range(iterations):
 
-            for i in range(250, 250+num_orbits):
+            for i in range(num_orbits):
                 print(f"Fitting orbit {i}")
-                self.fit_orbit(i)
+                self.fit_orbit(250+i)
 
             self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", f"raw_gains_iter_{self.iter}.png")
             self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets", f"raw_offsets_iter_{self.iter}.png")
