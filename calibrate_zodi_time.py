@@ -50,7 +50,7 @@ class Coadder:
 
     def run(self):
         num_orbits = 10
-        iterations = 50
+        iterations = 10
         # smoothing_window = 25
         self.gains = np.zeros(num_orbits)
         self.offsets = np.zeros_like(self.gains)
@@ -128,6 +128,28 @@ class Coadder:
 
         orbit_fitter = IterativeFitter(zodi_data_masked, orbit_data_masked, orbit_uncs_masked)
         gain, offset = orbit_fitter.iterate_fit(1)
+
+        l1, l2 = plt.plot(np.arange(len(orbit_data_masked)), (orbit_data_masked - offset)/gain, 'r.', np.arange(len(orbit_data_masked)), zodi_data_masked, 'b.')
+        plt.xlabel("pixel id")
+        plt.ylabel("signal")
+        plt.legend((l1, l2), ("Calibrated data", "zodi template"))
+        plt.savefig(f"orbit_{orbit_num}_fit_{self.iter}.png")
+        plt.close()
+
+        diff = zodi_data_masked - (orbit_data_masked - offset)/gain
+        plt.plot(np.arange(len(orbit_data_masked)), diff, 'r.')
+        plt.xlabel("pixel id")
+        plt.ylabel("signal")
+        plt.savefig(f"orbit_{orbit_num}_diff_{self.iter}.png")
+        plt.close()
+
+        zs = zodi_data - (orbit_data - offset)/gain
+        plt.plot(np.arange(len(orbit_data_masked)), zs, 'r.')
+        plt.xlabel("pixel id")
+        plt.ylabel("signal")
+        plt.savefig(f"orbit_{orbit_num}_zs_{self.iter}.png")
+        plt.close()
+
         self.gains[orbit_num] = gain
         self.offsets[orbit_num] = offset
         self.orbit_sizes[orbit_num] = len(zodi_data_masked)
@@ -150,6 +172,37 @@ class Coadder:
 
         orbit_fitter = IterativeFitter(zodi_data_masked, orbit_data_adj, orbit_uncs_masked)
         gain, offset = orbit_fitter.iterate_fit(1)
+
+        l1, l2 = plt.plot(np.arange(len(orbit_data_masked)), orbit_data_masked, 'r.',
+                          np.arange(len(orbit_data_masked)), orbit_data_adj, 'b.')
+        plt.xlabel("pixel id")
+        plt.ylabel("signal")
+        plt.legend((l1, l2), ("Original data", "Adjusted data"))
+        plt.savefig(f"orbit_{orbit_num}_adj_{self.iter}.png")
+        plt.close()
+
+        l1, l2 = plt.plot(np.arange(len(orbit_data_adj)), (orbit_data_adj - offset) / gain, 'r.',
+                          np.arange(len(orbit_data_adj)), zodi_data_masked, 'b.')
+        plt.xlabel("pixel id")
+        plt.ylabel("signal")
+        plt.legend((l1, l2), ("Calibrated data", "zodi template"))
+        plt.savefig(f"orbit_{orbit_num}_fit_{self.iter}.png")
+        plt.close()
+
+        diff = zodi_data_masked - (orbit_data_adj - offset) / gain
+        plt.plot(np.arange(len(orbit_data_adj)), diff, 'r.')
+        plt.xlabel("pixel id")
+        plt.ylabel("signal")
+        plt.savefig(f"orbit_{orbit_num}_diff_{self.iter}.png")
+        plt.close()
+
+        zs = zodi_data - (orbit_data - offset) / gain
+        plt.plot(np.arange(len(orbit_data_masked)), zs, 'r.')
+        plt.xlabel("pixel id")
+        plt.ylabel("signal")
+        plt.savefig(f"orbit_{orbit_num}_zs_{self.iter}.png")
+        plt.close()
+
         self.gains[orbit_num] = gain
         self.offsets[orbit_num] = offset
         self.orbit_sizes[orbit_num] = len(zodi_data_masked)
@@ -164,19 +217,19 @@ class Coadder:
             zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
             zs_data = cal_data - zodi_data
 
-            if orbit_num % 100 == 0:
-                l1, l2 = plt.plot(np.arange(len(cal_data)), cal_data, 'r.', np.arange(len(zodi_data)), zodi_data, 'b.')
-                plt.xlabel("pixel id")
-                plt.ylabel("signal")
-                plt.legend((l1, l2), ("Calibrated data", "zodi template"))
-                plt.savefig(f"orbit_{orbit_num}_fit_{self.iter}.png")
-                plt.close()
-
-                plt.plot(np.arange(len(cal_data)), zs_data, 'r.')
-                plt.xlabel("pixel id")
-                plt.ylabel("signal")
-                plt.savefig(f"orbit_{orbit_num}_diff_{self.iter}.png")
-                plt.close()
+            # if orbit_num % 100 == 0:
+            #     l1, l2 = plt.plot(np.arange(len(cal_data)), cal_data, 'r.', np.arange(len(zodi_data)), zodi_data, 'b.')
+            #     plt.xlabel("pixel id")
+            #     plt.ylabel("signal")
+            #     plt.legend((l1, l2), ("Calibrated data", "zodi template"))
+            #     plt.savefig(f"orbit_{orbit_num}_fit_{self.iter}.png")
+            #     plt.close()
+            #
+            #     plt.plot(np.arange(len(cal_data)), zs_data, 'r.')
+            #     plt.xlabel("pixel id")
+            #     plt.ylabel("signal")
+            #     plt.savefig(f"orbit_{orbit_num}_diff_{self.iter}.png")
+            #     plt.close()
 
             self.numerator[pixel_inds] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
             self.denominator[pixel_inds] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
