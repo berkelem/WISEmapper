@@ -216,10 +216,14 @@ class Coadder:
 
     def add_file(self, orbit_num, gain, offset):
         orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
+        entries_to_mask = [i for i in range(len(pixel_inds)) if
+                           pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds]
+        orbit_data_masked = np.array([orbit_data[i] for i in range(len(orbit_data)) if i not in entries_to_mask])
+        orbit_uncs_masked = np.array([orbit_uncs[i] for i in range(len(orbit_uncs)) if i not in entries_to_mask])
         if len(orbit_uncs[orbit_uncs!=0.0]) > 0 and gain!=0.0:
 
-            cal_data = (orbit_data - offset)/gain
-            cal_uncs = orbit_uncs / abs(gain)
+            cal_data = (orbit_data_masked - offset)/gain
+            cal_uncs = orbit_uncs_masked / abs(gain)
             zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
             zs_data = cal_data - zodi_data
 
