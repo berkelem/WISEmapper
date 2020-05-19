@@ -49,7 +49,7 @@ class Coadder:
         return galaxy_mask.astype(bool)
 
     def run(self):
-        num_orbits = 6323
+        num_orbits = 10
         iterations = 50
         # smoothing_window = 25
         self.gains = np.zeros(num_orbits)
@@ -85,7 +85,7 @@ class Coadder:
             self.iter += 1
             self.set_output_filenames()
 
-            for s in range(0, num_orbits, 100):
+            for s in range(0, num_orbits):#, 100):
                 gains = [self.all_gains[i][s] for i in range(len(self.all_gains))]
                 offsets = [self.all_offsets[i][s] for i in range(len(self.all_offsets))]
                 self.simple_plot(range(len(gains)), gains, "iteration", "gain", f"orbit_{s}_gain_evolution.png")
