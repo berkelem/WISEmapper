@@ -220,6 +220,7 @@ class Coadder:
                            pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds]
         orbit_data_masked = np.array([orbit_data[i] for i in range(len(orbit_data)) if i not in entries_to_mask])
         orbit_uncs_masked = np.array([orbit_uncs[i] for i in range(len(orbit_uncs)) if i not in entries_to_mask])
+        pixel_inds_masked = np.array([pixel_inds[i] for i in range(len(pixel_inds)) if i not in entries_to_mask])
         if len(orbit_uncs[orbit_uncs!=0.0]) > 0 and gain!=0.0:
 
             cal_data = (orbit_data_masked - offset)/gain
@@ -243,8 +244,8 @@ class Coadder:
             #     plt.savefig(f"orbit_{orbit_num}_diff_{self.iter}.png")
             #     plt.close()
 
-            self.numerator[pixel_inds] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
-            self.denominator[pixel_inds] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
+            self.numerator[pixel_inds_masked] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
+            self.denominator[pixel_inds_masked] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
 
     @staticmethod
     def plot_fit(i, orbit_data, zodi_data):
