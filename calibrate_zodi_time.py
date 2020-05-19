@@ -144,7 +144,7 @@ class Coadder:
         plt.close()
 
         zs = zodi_data - (orbit_data - offset)/gain
-        plt.plot(np.arange(len(orbit_data_masked)), zs, 'r.')
+        plt.plot(np.arange(len(orbit_data)), zs, 'r.')
         plt.xlabel("pixel id")
         plt.ylabel("signal")
         plt.savefig(f"orbit_{orbit_num}_zs_{self.iter}.png")
@@ -197,7 +197,7 @@ class Coadder:
         plt.close()
 
         zs = zodi_data - (orbit_data - offset) / gain
-        plt.plot(np.arange(len(orbit_data_masked)), zs, 'r.')
+        plt.plot(np.arange(len(orbit_data)), zs, 'r.')
         plt.xlabel("pixel id")
         plt.ylabel("signal")
         plt.savefig(f"orbit_{orbit_num}_zs_{self.iter}.png")
