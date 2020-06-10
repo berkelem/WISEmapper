@@ -21,7 +21,7 @@ class Coadder:
         self.galaxy_mask_inds = np.arange(len(self.galaxy_mask))[self.galaxy_mask]
 
         self.south_pole_mask = HealpixMap("/home/users/mberkeley/wisemapper/data/masks/south_pole_mask.fits").read_data()
-        self.south_pole_mask_inds = np.arange(len(self.south_pole_mask))[self.south_pole_mask.mapdata.astype(bool)]
+        self.south_pole_mask_inds = np.arange(len(self.south_pole_mask.mapdata))[self.south_pole_mask.mapdata.astype(bool)]
 
         self.numerator = np.zeros_like(self.fsm.mapdata)
         self.denominator = np.zeros_like(self.fsm.mapdata)
