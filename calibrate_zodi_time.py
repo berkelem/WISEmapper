@@ -20,6 +20,9 @@ class Coadder:
         self.galaxy_mask = self.mask_galaxy()
         self.galaxy_mask_inds = np.arange(len(self.galaxy_mask))[self.galaxy_mask]
 
+        self.south_pole_mask = HealpixMap("/home/users/mberkeley/wisemapper/data/masks/south_pole_mask.fits")
+        self.south_pole_mask_inds = np.arange(len(self.south_pole_mask))[self.south_pole_mask]
+
         self.numerator = np.zeros_like(self.fsm.mapdata)
         self.denominator = np.zeros_like(self.fsm.mapdata)
 
@@ -49,8 +52,8 @@ class Coadder:
         return galaxy_mask.astype(bool)
 
     def run(self):
-        num_orbits = 6323
-        iterations = 50
+        num_orbits = 1000
+        iterations = 10
         # smoothing_window = 25
         self.gains = np.zeros(num_orbits)
         self.offsets = np.zeros_like(self.gains)
@@ -119,7 +122,7 @@ class Coadder:
 
     def fit_initial_orbit(self, orbit_num):
         orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
-        entries_to_mask = [i for i in range(len(pixel_inds)) if pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds]
+        entries_to_mask = [i for i in range(len(pixel_inds)) if pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds or pixel_inds[i] not in self.south_pole_mask_inds]
         orbit_data_masked = np.array([orbit_data[i] for i in range(len(orbit_data)) if i not in entries_to_mask])
         orbit_uncs_masked = np.array([orbit_uncs[i] for i in range(len(orbit_uncs)) if i not in entries_to_mask])
 
