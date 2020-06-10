@@ -60,7 +60,7 @@ class Orbit:
         return
 
     def fit(self):
-        if self.coadd_map:
+        if self.coadd_map is not None:
             prev_itermap = self.coadd_map[self.pixel_inds]
             prev_itermap_masked = np.array([prev_itermap[i] for i in range(len(prev_itermap)) if i not in self.entries_to_mask])
 
