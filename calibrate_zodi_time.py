@@ -6,12 +6,76 @@ import pandas as pd
 import healpy as hp
 import matplotlib.pyplot as plt
 
+class Orbit:
+
+    coadd_map = None
+
+    def __init__(self, orbit_num, band, mask):
+        self.orbit_num = orbit_num
+        self.band = band
+        self.filename = f"/home/users/mberkeley/wisemapper/data/output_maps/w{self.band}/csv_files/" \
+            f"band_w{self.band}_orbit_{self.orbit_num}_pixel_timestamps.csv"
+        self.zodi_filename = f"/home/users/jguerraa/AME/cal_files/W3/zodi_map_cal_W{self.band}_{self.orbit_num}.fits"
+        self.mask = mask
+        self.mask_inds = np.arange(len(self.mask.mapdata))[self.mask.mapdata.astype(bool)]
+
+        self.orbit_data = None
+        self.orbit_uncs = None
+        self.pixel_inds = None
+        self.zodi_data = None
+
+        self.orbit_data_masked = None
+        self.orbit_uncs_masked = None
+        self.zodi_data_masked = None
+
+        self.gain = 1.0
+        self.offset = 0.0
+
+
+    def load_orbit_data(self):
+        all_orbit_data = pd.read_csv(self.filename)
+        self.orbit_data = all_orbit_data["pixel_value"]
+        self.orbit_uncs = all_orbit_data["pixel_unc"]
+        self.pixel_inds = all_orbit_data["hp_pixel_index"]
+        return
+
+    def load_zodi_orbit_data(self):
+        zodi_orbit = WISEMap(self.zodi_filename, self.band)
+        zodi_orbit.read_data()
+        pixels = np.zeros_like(zodi_orbit.mapdata)
+        pixels[self.pixel_inds] = 1.0
+        self.zodi_data = zodi_orbit.mapdata[pixels.astype(bool)]
+        if not all(self.zodi_data.astype(bool)):
+            print(f"Orbit {self.orbit_num} mismatch with zodi: zeros in zodi orbit")
+        elif any(zodi_orbit.mapdata[~pixels.astype(bool)]):
+            print(f"Orbit {self.orbit_num} mismatch with zodi: nonzeros outside zodi orbit")
+        return
+
+    def apply_mask(self):
+        self.entries_to_mask = [i for i in range(len(self.pixel_inds)) if self.pixel_inds[i] in self.mask_inds]
+        self.pixel_inds_masked = np.array([self.pixel_inds[i] for i in range(len(self.pixel_inds)) if i not in self.entries_to_mask])
+        self.orbit_data_masked = np.array([self.orbit_data[i] for i in range(len(self.orbit_data)) if i not in self.entries_to_mask])
+        self.orbit_uncs_masked = np.array([self.orbit_uncs[i] for i in range(len(self.orbit_uncs)) if i not in self.entries_to_mask])
+        self.zodi_data_masked = np.array([self.zodi_data[i] for i in range(len(self.zodi_data)) if i not in self.entries_to_mask])
+        return
+
+    def fit(self):
+        if self.coadd_map:
+            prev_itermap = self.coadd_map[self.pixel_inds]
+            prev_itermap_masked = np.array([prev_itermap[i] for i in range(len(prev_itermap)) if i not in self.entries_to_mask])
+
+            t_gal = prev_itermap_masked * self.gain
+            self.orbit_data_masked -= t_gal
+
+        orbit_fitter = IterativeFitter(self.zodi_data_masked, self.orbit_data_masked, self.orbit_uncs_masked)
+        self.gain, self.offset = orbit_fitter.iterate_fit(1)
+
+
 class Coadder:
 
     def __init__(self, band):
         self.band = band
         self.iter = 0
-        self.set_output_filenames()
 
         self.moon_stripe_mask = HealpixMap("/home/users/mberkeley/wisemapper/data/masks/stripe_mask_G.fits")
         self.moon_stripe_mask.read_data()
@@ -23,6 +87,8 @@ class Coadder:
         self.south_pole_mask = HealpixMap("/home/users/mberkeley/wisemapper/data/masks/south_pole_mask.fits")
         self.south_pole_mask.read_data()
         self.south_pole_mask_inds = np.arange(len(self.south_pole_mask.mapdata))[self.south_pole_mask.mapdata.astype(bool)]
+
+        self.full_mask = self.moon_stripe | self.galaxy_mask | ~self.south_pole_mask
 
         self.numerator = np.zeros_like(self.fsm.mapdata)
         self.denominator = np.zeros_like(self.fsm.mapdata)
@@ -55,45 +121,27 @@ class Coadder:
     def run(self):
         num_orbits = 10
         iterations = 10
-        # smoothing_window = 25
-        self.gains = np.zeros(num_orbits)
-        self.offsets = np.zeros_like(self.gains)
-        self.orbit_sizes = np.zeros_like(self.gains)
+        all_orbits = []
 
         for it in range(iterations):
 
             for i in range(num_orbits):
                 print(f"Fitting orbit {i}")
-                self.fit_orbit(i)
-
-            self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", f"raw_gains_iter_{self.iter}.png")
-            self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets", f"raw_offsets_iter_{self.iter}.png")
-
-            # self.gains, self.offsets = self.smooth_fit_params(smoothing_window)
-            # self.simple_plot(range(len(self.gains)), self.gains, "orbit id", "gain", f"smooth_gains_iter_{self.iter}.png")
-            # self.simple_plot(range(len(self.offsets)), self.offsets, "orbit id", "offsets",
-            #                  f"smooth_offsets_iter_{self.iter}.png")
-
-            self.all_gains.append(self.gains.copy())
-            self.all_offsets.append(self.offsets.copy())
-
-
-            for j in range(num_orbits):
+                self.set_output_filenames()
+                orbit = Orbit(i, self.band, self.full_mask)
+                all_orbits.append(orbit)
+                orbit.load_orbit_data()
+                orbit.load_zodi_orbit_data()
+                orbit.apply_mask()
+                orbit.fit()
                 print(f"Adding orbit {j}")
-                self.add_file(j, self.gains[j], self.offsets[j])
+                self.add_orbit(orbit)
 
             self.normalize()
             self.save_maps()
 
-            self.fsm_prev = self.fsm
+            setattr(Orbit, "coadd_map", self.fsm)
             self.iter += 1
-            self.set_output_filenames()
-
-            for s in range(0, num_orbits, 100):
-                gains = [self.all_gains[i][s] for i in range(len(self.all_gains))]
-                offsets = [self.all_offsets[i][s] for i in range(len(self.all_offsets))]
-                self.simple_plot(range(len(gains)), gains, "iteration", "gain", f"orbit_{s}_gain_evolution.png")
-                self.simple_plot(range(len(offsets)), offsets, "iteration", "offset", f"orbit_{s}_offset_evolution.png")
 
 
     def simple_plot(self, x_data, y_data, x_label, y_label, filename):
@@ -221,41 +269,19 @@ class Coadder:
         self.orbit_sizes[orbit_num] = len(zodi_data_masked)
 
 
-    def add_file(self, orbit_num, gain, offset):
-        orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
-        entries_to_mask = [i for i in range(len(pixel_inds)) if
-                           pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds or
-                           pixel_inds[i] not in self.south_pole_mask_inds]
+    def add_orbit(self, orbit):
 
-        orbit_data_masked = np.array([orbit_data[i] for i in range(len(orbit_data)) if i not in entries_to_mask])
-        orbit_uncs_masked = np.array([orbit_uncs[i] for i in range(len(orbit_uncs)) if i not in entries_to_mask])
-        pixel_inds_masked = np.array([pixel_inds[i] for i in range(len(pixel_inds)) if i not in entries_to_mask])
-        if len(orbit_uncs[orbit_uncs!=0.0]) > 0 and gain!=0.0:
+        if len(orbit.orbit_uncs[orbit.orbit_uncs!=0.0]) > 0 and orbit.gain!=0.0:
 
-            cal_data = (orbit_data_masked - offset)/gain
-            cal_uncs = orbit_uncs_masked / abs(gain)
-            zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
-            zodi_data_masked = np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
-            zs_data = cal_data - zodi_data_masked
+            cal_data = (orbit.orbit_data_masked - orbit.offset)/orbit.gain
+            cal_uncs = orbit.orbit_uncs_masked / abs(orbit.gain)
+
+            zs_data = cal_data - orbit.zodi_data_masked
             zs_data[zs_data < 0.0] = 0.0
 
-
-            if orbit_num % 100 == 0:
-                l1, l2 = plt.plot(np.arange(len(cal_data)), cal_data, 'r.', np.arange(len(zodi_data_masked)), zodi_data_masked, 'b.')
-                plt.xlabel("pixel id")
-                plt.ylabel("signal")
-                plt.legend((l1, l2), ("Calibrated data", "zodi template"))
-                plt.savefig(f"orbit_{orbit_num}_fit_{self.iter}.png")
-                plt.close()
-
-                plt.plot(np.arange(len(cal_data)), zs_data, 'r.')
-                plt.xlabel("pixel id")
-                plt.ylabel("signal")
-                plt.savefig(f"orbit_{orbit_num}_diff_{self.iter}.png")
-                plt.close()
-
-            self.numerator[pixel_inds_masked] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
-            self.denominator[pixel_inds_masked] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
+            self.numerator[orbit.pixel_inds_masked] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
+            self.denominator[orbit.pixel_inds_masked] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
+        return
 
     @staticmethod
     def plot_fit(i, orbit_data, zodi_data):
