@@ -235,7 +235,7 @@ class Coadder:
             cal_data = (orbit_data_masked - offset)/gain
             cal_uncs = orbit_uncs_masked / abs(gain)
             zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
-            zodi_data_masked = zodi_data#np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
+            zodi_data_masked = np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
             zs_data = cal_data - zodi_data_masked
             zs_data[zs_data < 0.0] = 0.0
 
