@@ -1,6 +1,7 @@
 from file_handler import WISEMap, HealpixMap
 import numpy as np
 from scipy.optimize import minimize
+from scipy import stats
 from fullskymapping import FullSkyMap
 import pandas as pd
 import healpy as hp
@@ -30,6 +31,10 @@ class Orbit:
 
         self.gain = 1.0
         self.offset = 0.0
+
+        self.cal_data = None
+        self.cal_uncs = None
+        self.zs_data = None
 
 
     def load_orbit_data(self):
@@ -67,8 +72,24 @@ class Orbit:
             t_gal = prev_itermap_masked * self.gain
             self.orbit_data_masked -= t_gal
 
+            self.clean_data()
+
         orbit_fitter = IterativeFitter(self.zodi_data_masked, self.orbit_data_masked, self.orbit_uncs_masked)
         self.gain, self.offset = orbit_fitter.iterate_fit(1)
+
+        self.cal_data = (self.orbit_data_masked - self.offset) / self.gain
+        self.cal_uncs = self.orbit_uncs_masked / abs(self.gain)
+
+        self.zs_data = self.cal_data - self.zodi_data_masked
+        self.zs_data[self.zs_data < 0.0] = 0.0
+
+    def clean_data(self):
+        z = np.abs(stats.zscore(self.zs_data))
+        mask = z > 3
+        self.orbit_data_masked = self.orbit_data_masked[~mask]
+        self.orbit_uncs_masked = self.orbit_uncs_masked[~mask]
+        self.zodi_data_masked = self.zodi_data_masked[~mask]
+        return
 
 
 class Coadder:
@@ -132,11 +153,14 @@ class Coadder:
             for i in range(num_orbits):
                 print(f"Iteration {it}; Fitting orbit {i}")
                 self.set_output_filenames()
-                orbit = Orbit(i, self.band, self.full_mask)
-                all_orbits.append(orbit)
-                orbit.load_orbit_data()
-                orbit.load_zodi_orbit_data()
-                orbit.apply_mask()
+                if it == 0:
+                    orbit = Orbit(i, self.band, self.full_mask)
+                    all_orbits.append(orbit)
+                    orbit.load_orbit_data()
+                    orbit.load_zodi_orbit_data()
+                    orbit.apply_mask()
+                else:
+                    orbit = all_orbits[i]
                 orbit.fit()
                 self.add_orbit(orbit)
 
@@ -275,15 +299,8 @@ class Coadder:
     def add_orbit(self, orbit):
 
         if len(orbit.orbit_uncs[orbit.orbit_uncs!=0.0]) > 0 and orbit.gain!=0.0:
-
-            cal_data = (orbit.orbit_data_masked - orbit.offset)/orbit.gain
-            cal_uncs = orbit.orbit_uncs_masked / abs(orbit.gain)
-
-            zs_data = cal_data - orbit.zodi_data_masked
-            zs_data[zs_data < 0.0] = 0.0
-
-            self.numerator[orbit.pixel_inds_masked] += np.divide(zs_data, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
-            self.denominator[orbit.pixel_inds_masked] += np.divide(1, np.square(cal_uncs), where=cal_uncs != 0.0, out=np.zeros_like(cal_uncs))
+            self.numerator[orbit.pixel_inds_masked] += np.divide(orbit.zs_data, np.square(orbit.cal_uncs), where=orbit.cal_uncs != 0.0, out=np.zeros_like(orbit.cal_uncs))
+            self.denominator[orbit.pixel_inds_masked] += np.divide(1, np.square(orbit.cal_uncs), where=orbit.cal_uncs != 0.0, out=np.zeros_like(orbit.cal_uncs))
         return
 
     @staticmethod
