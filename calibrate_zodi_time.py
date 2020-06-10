@@ -17,7 +17,7 @@ class Orbit:
             f"band_w{self.band}_orbit_{self.orbit_num}_pixel_timestamps.csv"
         self.zodi_filename = f"/home/users/jguerraa/AME/cal_files/W3/zodi_map_cal_W{self.band}_{self.orbit_num}.fits"
         self.mask = mask
-        self.mask_inds = np.arange(len(self.mask.mapdata))[self.mask.mapdata.astype(bool)]
+        self.mask_inds = np.arange(len(self.mask))[self.mask.astype(bool)]
 
         self.orbit_data = None
         self.orbit_uncs = None
