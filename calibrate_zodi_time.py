@@ -123,14 +123,14 @@ class Coadder:
         return galaxy_mask.astype(bool)
 
     def run(self):
-        num_orbits = 10
+        num_orbits = 6323
         iterations = 10
         all_orbits = []
 
         for it in range(iterations):
 
             for i in range(num_orbits):
-                print(f"Fitting orbit {i}")
+                print(f"Iteration {it}; Fitting orbit {i}")
                 self.set_output_filenames()
                 orbit = Orbit(i, self.band, self.full_mask)
                 all_orbits.append(orbit)
@@ -138,7 +138,6 @@ class Coadder:
                 orbit.load_zodi_orbit_data()
                 orbit.apply_mask()
                 orbit.fit()
-                print(f"Adding orbit {i}")
                 self.add_orbit(orbit)
 
             self.normalize()
