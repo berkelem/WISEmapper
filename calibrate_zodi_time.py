@@ -224,10 +224,12 @@ class Coadder:
     def add_file(self, orbit_num, gain, offset):
         orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
         entries_to_mask = [i for i in range(len(pixel_inds)) if
-                           pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds]
-        orbit_data_masked = orbit_data#np.array([orbit_data[i] for i in range(len(orbit_data)) if i not in entries_to_mask])
-        orbit_uncs_masked = orbit_uncs#np.array([orbit_uncs[i] for i in range(len(orbit_uncs)) if i not in entries_to_mask])
-        pixel_inds_masked = pixel_inds#np.array([pixel_inds[i] for i in range(len(pixel_inds)) if i not in entries_to_mask])
+                           pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds or
+                           pixel_inds[i] not in self.south_pole_mask_inds]
+
+        orbit_data_masked = np.array([orbit_data[i] for i in range(len(orbit_data)) if i not in entries_to_mask])
+        orbit_uncs_masked = np.array([orbit_uncs[i] for i in range(len(orbit_uncs)) if i not in entries_to_mask])
+        pixel_inds_masked = np.array([pixel_inds[i] for i in range(len(pixel_inds)) if i not in entries_to_mask])
         if len(orbit_uncs[orbit_uncs!=0.0]) > 0 and gain!=0.0:
 
             cal_data = (orbit_data_masked - offset)/gain
