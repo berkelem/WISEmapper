@@ -53,7 +53,7 @@ class Coadder:
         return galaxy_mask.astype(bool)
 
     def run(self):
-        num_orbits = 1000
+        num_orbits = 10
         iterations = 10
         # smoothing_window = 25
         self.gains = np.zeros(num_orbits)
