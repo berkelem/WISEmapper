@@ -144,7 +144,7 @@ class Coadder:
         return galaxy_mask.astype(bool)
 
     def run(self):
-        num_orbits = 6323
+        num_orbits = 10
         iterations = 10
         all_orbits = []
 
