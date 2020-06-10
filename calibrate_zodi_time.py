@@ -241,7 +241,7 @@ class Coadder:
 
 
             if orbit_num % 100 == 0:
-                l1, l2 = plt.plot(np.arange(len(cal_data)), cal_data, 'r.', np.arange(len(zodi_data)), zodi_data, 'b.')
+                l1, l2 = plt.plot(np.arange(len(cal_data)), cal_data, 'r.', np.arange(len(zodi_data_masked)), zodi_data_masked, 'b.')
                 plt.xlabel("pixel id")
                 plt.ylabel("signal")
                 plt.legend((l1, l2), ("Calibrated data", "zodi template"))
