@@ -138,7 +138,7 @@ class Coadder:
                 orbit.load_zodi_orbit_data()
                 orbit.apply_mask()
                 orbit.fit()
-                print(f"Adding orbit {j}")
+                print(f"Adding orbit {i}")
                 self.add_orbit(orbit)
 
             self.normalize()
