@@ -89,6 +89,7 @@ class Orbit:
         self.orbit_data_masked = self.orbit_data_masked[~mask]
         self.orbit_uncs_masked = self.orbit_uncs_masked[~mask]
         self.zodi_data_masked = self.zodi_data_masked[~mask]
+        self.pixel_inds_masked = self.pixel_inds_masked[~mask]
         return
 
 
