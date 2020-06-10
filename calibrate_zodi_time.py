@@ -89,7 +89,7 @@ class Coadder:
             self.iter += 1
             self.set_output_filenames()
 
-            for s in range(0, num_orbits):#, 100):
+            for s in range(0, num_orbits, 100):
                 gains = [self.all_gains[i][s] for i in range(len(self.all_gains))]
                 offsets = [self.all_offsets[i][s] for i in range(len(self.all_offsets))]
                 self.simple_plot(range(len(gains)), gains, "iteration", "gain", f"orbit_{s}_gain_evolution.png")
@@ -161,7 +161,7 @@ class Coadder:
     def fit_adjusted_orbit(self, orbit_num):
         orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
         entries_to_mask = [i for i in range(len(pixel_inds)) if
-                           pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds]
+                           pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds or pixel_inds[i] not in self.south_pole_mask_inds]
         orbit_data_masked = np.array([orbit_data[i] for i in range(len(orbit_data)) if i not in entries_to_mask])
         orbit_uncs_masked = np.array([orbit_uncs[i] for i in range(len(orbit_uncs)) if i not in entries_to_mask])
 
