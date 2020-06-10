@@ -90,7 +90,7 @@ class Coadder:
         self.south_pole_mask.read_data()
         self.south_pole_mask_inds = np.arange(len(self.south_pole_mask.mapdata))[self.south_pole_mask.mapdata.astype(bool)]
 
-        self.full_mask = self.moon_stripe_mask.mapdata | self.galaxy_mask.mapdata | ~self.south_pole_mask.mapdata
+        self.full_mask = self.moon_stripe_mask.mapdata | self.galaxy_mask | ~self.south_pole_mask.mapdata
 
         self.numerator = np.zeros_like(self.fsm.mapdata)
         self.denominator = np.zeros_like(self.fsm.mapdata)
