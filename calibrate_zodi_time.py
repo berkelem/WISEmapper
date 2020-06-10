@@ -144,7 +144,7 @@ class Coadder:
             self.normalize()
             self.save_maps()
 
-            setattr(Orbit, "coadd_map", self.fsm)
+            setattr(Orbit, "coadd_map", self.fsm.mapdata)
             self.iter += 1
 
 
