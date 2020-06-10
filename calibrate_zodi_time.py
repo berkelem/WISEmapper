@@ -86,10 +86,9 @@ class Orbit:
     def clean_data(self):
         z = np.abs(stats.zscore(self.zs_data))
         mask = z > 3
-        self.orbit_data_masked = self.orbit_data_masked[~mask]
-        self.orbit_uncs_masked = self.orbit_uncs_masked[~mask]
-        self.zodi_data_masked = self.zodi_data_masked[~mask]
-        self.pixel_inds_masked = self.pixel_inds_masked[~mask]
+        inds_to_mask = self.pixel_inds_masked[mask]
+        self.mask_inds += inds_to_mask
+        self.apply_mask()
         return
 
 
