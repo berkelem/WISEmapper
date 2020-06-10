@@ -92,8 +92,8 @@ class Coadder:
 
         self.full_mask = self.moon_stripe_mask.mapdata.astype(bool) | self.galaxy_mask.astype(bool) | ~self.south_pole_mask.mapdata.astype(bool)
 
-        self.numerator = np.zeros_like(self.fsm.mapdata)
-        self.denominator = np.zeros_like(self.fsm.mapdata)
+        self.numerator = np.zeros(self.npix)
+        self.denominator = np.zeros_like(self.numerator)
 
         self.gains = []
         self.offsets = []
