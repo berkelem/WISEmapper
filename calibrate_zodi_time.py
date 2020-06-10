@@ -76,6 +76,8 @@ class Coadder:
     def __init__(self, band):
         self.band = band
         self.iter = 0
+        self.nside = 256
+        self.npix = hp.nside2npix(self.nside)
 
         self.moon_stripe_mask = HealpixMap("/home/users/mberkeley/wisemapper/data/masks/stripe_mask_G.fits")
         self.moon_stripe_mask.read_data()
@@ -100,19 +102,21 @@ class Coadder:
         self.all_gains = []
         self.all_offsets = []
 
+        self.fsm = None
+        self.unc_fsm = None
+
     def set_output_filenames(self):
         self.fsm = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_iter_{self.iter}.fits", 256)
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_iter_{self.iter}.fits", self.nside)
         self.unc_fsm = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_iter_{self.iter}.fits", 256)
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_iter_{self.iter}.fits", self.nside)
 
     def mask_galaxy(self):
         """
         Remove 20% of the sky around the galactic plane where zodi is not the dominant foreground.
         :return:
         """
-        npix = self.fsm.npix
-        theta, _ = hp.pix2ang(256, np.arange(npix))
+        theta, _ = hp.pix2ang(256, np.arange(self.npix))
         mask = (np.pi * 0.4 < theta) & (theta < 0.6 * np.pi)
         galaxy_mask = np.zeros_like(theta)
         galaxy_mask[mask] = 1.0
