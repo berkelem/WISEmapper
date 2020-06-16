@@ -23,7 +23,10 @@ class Orbit:
         self.orbit_data = None
         self.orbit_uncs = None
         self.pixel_inds = None
+        self.orbit_mjd_obs = None
         self.zodi_data = None
+        self.mean_mjd_obs = None
+        self.std_mjd_obs = None
 
         self.orbit_data_masked = None
         self.orbit_uncs_masked = None
@@ -42,6 +45,9 @@ class Orbit:
         self.orbit_data = all_orbit_data["pixel_value"]
         self.orbit_uncs = all_orbit_data["pixel_unc"]
         self.pixel_inds = all_orbit_data["hp_pixel_index"]
+        self.orbit_mjd_obs = all_orbit_data["pixel_mjd_obs"]
+        self.mean_mjd_obs = np.mean(self.orbit_mjd_obs)
+        self.std_mjd_obs = np.std(self.orbit_mjd_obs)
         return
 
     def load_zodi_orbit_data(self):
@@ -61,6 +67,7 @@ class Orbit:
         self.pixel_inds_masked = np.array([self.pixel_inds[i] for i in range(len(self.pixel_inds)) if i not in self.entries_to_mask])
         self.orbit_data_masked = np.array([self.orbit_data[i] for i in range(len(self.orbit_data)) if i not in self.entries_to_mask])
         self.orbit_uncs_masked = np.array([self.orbit_uncs[i] for i in range(len(self.orbit_uncs)) if i not in self.entries_to_mask])
+        self.orbit_mjd_masked = np.array([self.orbit_mjd_obs[i] for i in range(len(self.orbit_mjd_obs)) if i not in self.entries_to_mask])
         self.zodi_data_masked = np.array([self.zodi_data[i] for i in range(len(self.zodi_data)) if i not in self.entries_to_mask])
         return
 
@@ -107,11 +114,11 @@ class Coadder:
         self.galaxy_mask = self.mask_galaxy()
         self.galaxy_mask_inds = np.arange(len(self.galaxy_mask))[self.galaxy_mask]
 
-        self.south_pole_mask = HealpixMap("/home/users/mberkeley/wisemapper/data/masks/south_pole_mask.fits")
-        self.south_pole_mask.read_data()
-        self.south_pole_mask_inds = np.arange(len(self.south_pole_mask.mapdata))[self.south_pole_mask.mapdata.astype(bool)]
+        # self.south_pole_mask = HealpixMap("/home/users/mberkeley/wisemapper/data/masks/south_pole_mask.fits")
+        # self.south_pole_mask.read_data()
+        # self.south_pole_mask_inds = np.arange(len(self.south_pole_mask.mapdata))[self.south_pole_mask.mapdata.astype(bool)]
 
-        self.full_mask = self.moon_stripe_mask.mapdata.astype(bool) | self.galaxy_mask.astype(bool) | ~self.south_pole_mask.mapdata.astype(bool)
+        self.full_mask = self.moon_stripe_mask.mapdata.astype(bool) | self.galaxy_mask.astype(bool) #| ~self.south_pole_mask.mapdata.astype(bool)
 
         self.numerator = np.zeros(self.npix)
         self.denominator = np.zeros_like(self.numerator)
@@ -145,7 +152,7 @@ class Coadder:
 
     def run(self):
         num_orbits = 6323
-        iterations = 25
+        iterations = 50
         all_orbits = []
 
         for it in range(iterations):
