@@ -200,7 +200,7 @@ class Coadder:
     def add_orbit(self, orbit):
 
         if len(orbit.orbit_uncs[orbit.orbit_uncs!=0.0]) > 0 and orbit.gain!=0.0:
-            print(orbit.pixel_inds.shape, orbit.zs_data.hape, orbit.cal_uncs.shape)
+            print(orbit.pixel_inds.shape, orbit.zs_data.shape, orbit.cal_uncs.shape)
             self.numerator[orbit.pixel_inds] += np.divide(orbit.zs_data, np.square(orbit.cal_uncs), where=orbit.cal_uncs != 0.0, out=np.zeros_like(orbit.cal_uncs))
             self.denominator[orbit.pixel_inds] += np.divide(1, np.square(orbit.cal_uncs), where=orbit.cal_uncs != 0.0, out=np.zeros_like(orbit.cal_uncs))
         return
