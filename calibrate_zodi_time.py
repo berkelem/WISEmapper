@@ -84,10 +84,10 @@ class Orbit:
         orbit_fitter = IterativeFitter(self.zodi_data_masked, self.orbit_data_masked, self.orbit_uncs_masked)
         self.gain, self.offset = orbit_fitter.iterate_fit(1)
 
-        self.cal_data = (self.orbit_data_masked - self.offset) / self.gain
-        self.cal_uncs = self.orbit_uncs_masked / abs(self.gain)
+        self.cal_data = (self.orbit_data - self.offset) / self.gain
+        self.cal_uncs = self.orbit_uncs / abs(self.gain)
 
-        self.zs_data = self.cal_data - self.zodi_data_masked
+        self.zs_data = self.cal_data - self.zodi_data
         self.zs_data[self.zs_data < 0.0] = 0.0
 
     def clean_data(self):
@@ -197,188 +197,12 @@ class Coadder:
         plt.savefig("/home/users/mberkeley/wisemapper/data/output_maps/w3/fitted_offsets.png")
         plt.close()
 
-    def fit_orbit(self, k):
-        if self.iter == 0:
-            self.fit_initial_orbit(k)
-        else:
-            self.fit_adjusted_orbit(k)
-
-    def fit_initial_orbit(self, orbit_num):
-        orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
-        test1 = [i for i in range(len(pixel_inds)) if pixel_inds[i] in self.moon_stripe_inds]
-        test2 = [i for i in range(len(pixel_inds)) if pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds]
-        test3 = [i for i in range(len(pixel_inds)) if pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds or pixel_inds[i] not in self.south_pole_mask_inds]
-        entries_to_mask = [i for i in range(len(pixel_inds)) if pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds or pixel_inds[i] not in self.south_pole_mask_inds]
-        orbit_data_masked = np.array([orbit_data[i] for i in range(len(orbit_data)) if i not in entries_to_mask])
-        orbit_uncs_masked = np.array([orbit_uncs[i] for i in range(len(orbit_uncs)) if i not in entries_to_mask])
-
-        zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
-        zodi_data_masked = np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
-
-        orbit_fitter = IterativeFitter(zodi_data_masked, orbit_data_masked, orbit_uncs_masked)
-        gain, offset = orbit_fitter.iterate_fit(1)
-
-        l1, l2 = plt.plot(np.arange(len(orbit_data_masked)), (orbit_data_masked - offset)/gain, 'r.', np.arange(len(orbit_data_masked)), zodi_data_masked, 'b.')
-        plt.xlabel("pixel id")
-        plt.ylabel("signal")
-        plt.legend((l1, l2), ("Calibrated data", "zodi template"))
-        plt.savefig(f"orbit_{orbit_num}_fit_{self.iter}.png")
-        plt.close()
-
-        diff = zodi_data_masked - (orbit_data_masked - offset)/gain
-        plt.plot(np.arange(len(orbit_data_masked)), diff, 'r.')
-        plt.xlabel("pixel id")
-        plt.ylabel("signal")
-        plt.savefig(f"orbit_{orbit_num}_diff_{self.iter}.png")
-        plt.close()
-
-        zs = (orbit_data - offset)/gain - zodi_data
-        plt.plot(np.arange(len(orbit_data)), zs, 'r.')
-        plt.xlabel("pixel id")
-        plt.ylabel("signal")
-        plt.savefig(f"orbit_{orbit_num}_zs_{self.iter}.png")
-        plt.close()
-
-        self.gains[orbit_num] = gain
-        self.offsets[orbit_num] = offset
-        self.orbit_sizes[orbit_num] = len(zodi_data_masked)
-
-    def fit_adjusted_orbit(self, orbit_num):
-        orbit_data, orbit_uncs, pixel_inds = self.load_orbit_data(orbit_num)
-        entries_to_mask = [i for i in range(len(pixel_inds)) if
-                           pixel_inds[i] in self.moon_stripe_inds or pixel_inds[i] in self.galaxy_mask_inds or pixel_inds[i] not in self.south_pole_mask_inds]
-        orbit_data_masked = np.array([orbit_data[i] for i in range(len(orbit_data)) if i not in entries_to_mask])
-        orbit_uncs_masked = np.array([orbit_uncs[i] for i in range(len(orbit_uncs)) if i not in entries_to_mask])
-
-        zodi_data = self.load_zodi_orbit(orbit_num, pixel_inds)
-        zodi_data_masked = np.array([zodi_data[i] for i in range(len(zodi_data)) if i not in entries_to_mask])
-
-        prev_itermap = self.fsm_prev.mapdata[pixel_inds]
-        prev_itermap_masked = np.array([prev_itermap[i] for i in range(len(prev_itermap)) if i not in entries_to_mask])
-
-        t_gal = prev_itermap_masked * self.gains[orbit_num]
-        orbit_data_adj = orbit_data_masked - t_gal
-
-        orbit_fitter = IterativeFitter(zodi_data_masked, orbit_data_adj, orbit_uncs_masked)
-        gain, offset = orbit_fitter.iterate_fit(1)
-
-        l1, l2 = plt.plot(np.arange(len(orbit_data_masked)), orbit_data_masked, 'r.',
-                          np.arange(len(orbit_data_masked)), orbit_data_adj, 'b.')
-        plt.xlabel("pixel id")
-        plt.ylabel("signal")
-        plt.legend((l1, l2), ("Original data", "Adjusted data"))
-        plt.savefig(f"orbit_{orbit_num}_adj_{self.iter}.png")
-        plt.close()
-
-        l1, l2 = plt.plot(np.arange(len(orbit_data_adj)), (orbit_data_adj - offset) / gain, 'r.',
-                          np.arange(len(orbit_data_adj)), zodi_data_masked, 'b.')
-        plt.xlabel("pixel id")
-        plt.ylabel("signal")
-        plt.legend((l1, l2), ("Calibrated data", "zodi template"))
-        plt.savefig(f"orbit_{orbit_num}_fit_{self.iter}.png")
-        plt.close()
-
-        diff = zodi_data_masked - (orbit_data_adj - offset) / gain
-        plt.plot(np.arange(len(orbit_data_adj)), diff, 'r.')
-        plt.xlabel("pixel id")
-        plt.ylabel("signal")
-        plt.savefig(f"orbit_{orbit_num}_diff_{self.iter}.png")
-        plt.close()
-
-        plt.plot(np.arange(len(orbit_data_adj)), t_gal, 'r.')
-        plt.xlabel("pixel id")
-        plt.ylabel("signal")
-        plt.savefig(f"orbit_{orbit_num}_tgal_{self.iter}.png")
-        plt.close()
-
-        zs = (orbit_data - offset) / gain - zodi_data
-        plt.plot(np.arange(len(orbit_data)), zs, 'r.')
-        plt.xlabel("pixel id")
-        plt.ylabel("signal")
-        plt.savefig(f"orbit_{orbit_num}_zs_{self.iter}.png")
-        plt.close()
-
-        self.gains[orbit_num] = gain
-        self.offsets[orbit_num] = offset
-        self.orbit_sizes[orbit_num] = len(zodi_data_masked)
-
-
     def add_orbit(self, orbit):
 
         if len(orbit.orbit_uncs[orbit.orbit_uncs!=0.0]) > 0 and orbit.gain!=0.0:
             self.numerator[orbit.pixel_inds_masked] += np.divide(orbit.zs_data, np.square(orbit.cal_uncs), where=orbit.cal_uncs != 0.0, out=np.zeros_like(orbit.cal_uncs))
             self.denominator[orbit.pixel_inds_masked] += np.divide(1, np.square(orbit.cal_uncs), where=orbit.cal_uncs != 0.0, out=np.zeros_like(orbit.cal_uncs))
         return
-
-    @staticmethod
-    def plot_fit(i, orbit_data, zodi_data):
-        plt.plot(np.arange(len(orbit_data)), orbit_data, 'r.', np.arange(len(orbit_data)), zodi_data, 'b.')
-        plt.savefig(f"/home/users/mberkeley/wisemapper/data/output_maps/w3/calibration_fit_orbit_{i}.png")
-        plt.close()
-
-    @staticmethod
-    def plot_fit_improvement(i, orbit_data, zodi_data, gain1, offset1, gain2, offset2):
-        cal_data1 = (orbit_data - offset1)/gain1
-        cal_data2 = (orbit_data - offset2)/gain2
-        l1, = plt.plot(np.arange(len(orbit_data)), zodi_data, 'k.', ms=0.7, alpha=1)
-        l2, = plt.plot(np.arange(len(orbit_data)), cal_data1, 'r.', ms=0.7, alpha=1)
-        l3, = plt.plot( np.arange(len(orbit_data)), cal_data2, 'b.', ms=0.7, alpha=1)
-        plt.legend((l1,l2,l3), ("zodi template", "1 iteration", "10 iterations"), markerscale=10)
-        plt.title("Orbit {}: gain ratio: {}; offset ratio: {}".format(i, gain2/gain1, offset2/offset1))
-        plt.savefig(f"/home/users/mberkeley/wisemapper/data/output_maps/w3/calibration_iterfit_orbit_{i}.png")
-        plt.close()
-
-    def smooth_fit_params(self, window_size):
-        smooth_gains = self.weighted_mean_filter(self.gains, self.orbit_sizes, window_size)
-        smooth_offsets = self.weighted_mean_filter(self.offsets, self.orbit_sizes, window_size)
-        return smooth_gains, smooth_offsets
-
-    @staticmethod
-    def weighted_mean_filter_wraparound(array, weights, size):
-        output = []
-        for p, px in enumerate(array):
-            window = np.ma.zeros(size)
-            weights_window = np.zeros(size)
-            step = int(size / 2)
-            if p - step < 0:
-                undershoot = step - p
-                window[:undershoot] = array[-undershoot:]
-                window[undershoot:step] = array[:p]
-                weights_window[:undershoot] = weights[-undershoot:]
-                weights_window[undershoot:step] = weights[:p]
-            else:
-                window[:step] = array[p - step:p]
-                weights_window[:step] = weights[p - step:p]
-
-            if p + step + 1 > len(array):
-                overshoot = p + step + 1 - len(array)
-                array_roll = np.roll(array, overshoot)
-                weights_roll = np.roll(weights, overshoot)
-                window[step:] = array_roll[-(size - step):]
-                weights_window[step:] = weights_roll[-(size - step):]
-            else:
-                window[step:] = array[p:p + step + 1]
-                weights_window[step:] = weights[p:p + step + 1]
-
-            weights_window /= np.sum(weights_window)
-            weighted_mean = np.average(window, weights=weights_window)
-            output.append(weighted_mean)
-        return np.array(output)
-
-    @staticmethod
-    def weighted_mean_filter(array, weights, size):
-        output = []
-        step = int(size / 2)
-        for p, px in enumerate(array):
-            min_ind = max(0, p - step)
-            max_ind = min(len(array), p + step)
-            window = array[min_ind:max_ind].copy()
-            weights_window = weights[min_ind:max_ind].copy()
-            weights_window /= np.sum(weights_window)
-            weighted_mean = np.average(window, weights=weights_window)
-            output.append(weighted_mean)
-        return np.array(output)
-
 
     def normalize(self):
         self.fsm.mapdata = np.divide(self.numerator, self.denominator, where=self.denominator != 0.0, out=np.zeros_like(self.denominator))
