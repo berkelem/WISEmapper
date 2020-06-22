@@ -93,7 +93,7 @@ class Orbit:
     def clean_data(self):
         z = np.abs(stats.zscore(self.zs_data))
         mask = z > 1
-        inds_to_mask = self.pixel_inds_masked[mask]
+        inds_to_mask = self.pixel_inds[mask]
         self.mask_inds = np.append(self.mask_inds, inds_to_mask)
         self.apply_mask()
         return
