@@ -28,6 +28,9 @@ class Orbit:
         self.mean_mjd_obs = None
         self.std_mjd_obs = None
 
+        self.smooth_gain = None
+        self.smooth_offset = None
+
         self.orbit_data_masked = None
         self.orbit_uncs_masked = None
         self.zodi_data_masked = None
@@ -48,7 +51,24 @@ class Orbit:
         self.orbit_mjd_obs = all_orbit_data["pixel_mjd_obs"]
         self.mean_mjd_obs = np.mean(self.orbit_mjd_obs)
         self.std_mjd_obs = np.std(self.orbit_mjd_obs)
+
+        self.smooth_gain = np.ones_like(self.orbit_mjd_obs, dtype=float)
+        self.smooth_offset = np.zeros_like(self.orbit_mjd_obs)
         return
+
+    @staticmethod
+    def update_param(orig_param, smooth_param):
+        first_val = smooth_param.index(filter(lambda x: x!=1.0, smooth_param)[0])
+        last_val = smooth_param.index(filter(lambda x: x!=1.0, smooth_param)[-1])
+        orig_param[first_val:last_val] = smooth_param[first_val:last_val]
+        if first_val != 0 and orig_param[first_val-1] != orig_param[first_val]:
+            orig_param[:first_val] = orig_param[first_val]
+        if last_val != len(orig_param) and orig_param[last_val - 1] != orig_param[last_val]:
+            orig_param[last_val:] = orig_param[last_val - 1]
+
+        return orig_param
+
+
 
     def load_zodi_orbit_data(self):
         zodi_orbit = WISEMap(self.zodi_filename, self.band)
@@ -84,6 +104,7 @@ class Orbit:
         orbit_fitter = IterativeFitter(self.zodi_data_masked, self.orbit_data_masked, self.orbit_uncs_masked)
         self.gain, self.offset = orbit_fitter.iterate_fit(1)
 
+    def apply_fit(self):
         self.cal_data = (self.orbit_data - self.offset) / self.gain
         self.cal_uncs = self.orbit_uncs / abs(self.gain)
 
@@ -151,8 +172,8 @@ class Coadder:
         return galaxy_mask.astype(bool)
 
     def run(self):
-        num_orbits = 6323
-        iterations = 50
+        num_orbits = 10
+        iterations = 10
         all_orbits = []
 
         for it in range(iterations):
@@ -169,6 +190,18 @@ class Coadder:
                 else:
                     orbit = all_orbits[i]
                 orbit.fit()
+
+            for i in range(num_orbits-1):
+                orbit1 = all_orbits[i]
+                orbit2 = all_orbits[i+1]
+                sg1, sg2, sb1, sb2 = self.smooth_fit_params(orbit1, orbit2)
+                orbit1.update_param(orbit1.smooth_gain, sg1)
+                orbit2.update_param(orbit2.smooth_gain, sg2)
+                orbit1.update_param(orbit1.smooth_offset, sb1)
+                orbit2.update_param(orbit2.smooth_offset, sb2)
+
+            for i in range(num_orbits):
+                orbit.apply_fit()
                 self.add_orbit(orbit)
 
             self.normalize()
@@ -176,6 +209,42 @@ class Coadder:
 
             setattr(Orbit, "coadd_map", self.fsm.mapdata)
             self.iter += 1
+
+    def smooth_fit_params(self, orbit1, orbit2):
+        t1 = orbit1.orbit_mjd_obs
+        t2 = orbit2.orbit_mjd_obs
+        g1 = orbit1.gain
+        g2 = orbit2.gain
+        f1 = orbit1.offset
+        f2 = orbit2.offset
+
+        mt1 = np.mean(t1)
+        mt2 = np.mean(t2)
+        t1_fit = t1[int(len(t1) / 2):]
+        t2_fit = t2[:int(len(t2) / 2)]
+
+        t = np.zeros(len(t1_fit) + len(t2_fit), dtype=float)
+
+        t[:len(t1_fit)] = t1_fit
+        t[len(t1_fit):] = t2_fit
+
+        A = np.sin((np.pi / 2) * ((t - mt2) / (mt1 - mt2))) ** 2
+        B = np.cos((np.pi / 2) * ((t - mt2) / (mt1 - mt2))) ** 2
+
+        G = A * g1 + B * g2
+        F = A * f1 + B * f2
+
+        G1 = np.ones_like(t1)
+        G2 = np.ones_like(t2)
+        F1 = np.zeros_like(t1)
+        F2 = np.zeros_like(t2)
+
+        G1[int(len(t1) / 2):] = G[:len(t1_fit)]
+        G2[:int(len(t2) / 2)] = G[len(t1_fit):]
+        F1[int(len(t1) / 2):] = F[:len(t1_fit)]
+        F2[:int(len(t2) / 2)] = F[len(t1_fit):]
+
+        return G1, G2, F1, F2
 
 
     def simple_plot(self, x_data, y_data, x_label, y_label, filename):
