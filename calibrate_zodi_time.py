@@ -218,8 +218,8 @@ class Coadder:
         f1 = orbit1.offset
         f2 = orbit2.offset
 
-        mt1 = np.mean(t1)
-        mt2 = np.mean(t2)
+        mt1 = np.median(t1)
+        mt2 = np.median(t2)
         t1_fit = t1[int(len(t1) / 2):]
         t2_fit = t2[:int(len(t2) / 2)]
 
