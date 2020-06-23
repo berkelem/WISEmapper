@@ -68,8 +68,6 @@ class Orbit:
 
         return orig_param
 
-
-
     def load_zodi_orbit_data(self):
         zodi_orbit = WISEMap(self.zodi_filename, self.band)
         zodi_orbit.read_data()
@@ -192,9 +190,34 @@ class Coadder:
                     orbit = all_orbits[i]
                 orbit.fit()
 
+            all_gains = np.array([orb.gain for orb in all_orbits])
+            all_offsets = np.array([orb.offset for orb in all_orbits])
+            all_orbit_sizes = np.array([len(orb.orbit_data) for orb in all_orbits])
+
+            smoothed_gains = self.weighted_mean_filter(all_gains, all_orbit_sizes, 25)
+            smoothed_offsets = self.weighted_mean_filter(all_offsets, all_orbit_sizes, 25)
+
+            l1, l2 = plt.plot(range(len(all_gains)), all_gains, 'r.', range(len(smoothed_gains)), smoothed_gains, 'b.')
+            plt.xlabel("Orbit number")
+            plt.ylabel("Gain")
+            plt.legend((l1, l2), ("Original fit", "w median filtered"))
+            plt.savefig("all_gains.png")
+            plt.close()
+
+            l1, l2 = plt.plot(range(len(all_offsets)), all_offsets, 'r.', range(len(smoothed_offsets)), smoothed_offsets, 'b.')
+            plt.xlabel("Orbit number")
+            plt.ylabel("Offset")
+            plt.legend((l1, l2), ("Original fit", "w median filtered"))
+            plt.savefig("all_offsets.png")
+            plt.close()
+
             for i in range(num_orbits-1):
                 orbit1 = all_orbits[i]
                 orbit2 = all_orbits[i+1]
+                orbit1.gain = smoothed_gains[i]
+                orbit1.offset = smoothed_offsets[i]
+                orbit2.gain = smoothed_gains[i+1]
+                orbit2.offset = smoothed_offsets[i+1]
                 sg1, sg2, sb1, sb2 = self.smooth_fit_params(orbit1, orbit2)
                 orbit1.update_param(orbit1.smooth_gain, sg1)
                 orbit2.update_param(orbit2.smooth_gain, sg2)
@@ -304,6 +327,20 @@ class Coadder:
         orbit_uncs = all_orbit_data["pixel_unc"]
         pixel_inds = all_orbit_data["hp_pixel_index"]
         return orbit_data, orbit_uncs, pixel_inds
+
+    @staticmethod
+    def weighted_mean_filter(array, weights, size):
+        output = []
+        step = int(size / 2)
+        for p, px in enumerate(array):
+            min_ind = max(0, p - step)
+            max_ind = min(len(array), p + step)
+            window = array[min_ind:max_ind].copy()
+            weights_window = weights[min_ind:max_ind].copy()
+            weights_window /= np.sum(weights_window)
+            weighted_mean = np.average(window, weights=weights_window)
+            output.append(weighted_mean)
+        return np.array(output)
 
 
 class IterativeFitter:
