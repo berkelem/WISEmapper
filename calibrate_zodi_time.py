@@ -59,12 +59,12 @@ class Orbit:
     @staticmethod
     def update_param(orig_param, smooth_param):
         first_val = np.where(smooth_param == list(filter(lambda x: x!=1.0, smooth_param))[0])[0][0]
-        last_val = np.where(smooth_param == list(filter(lambda x: x!=1.0, smooth_param))[-1])[0][-1] + 1
-        orig_param[first_val:last_val] = smooth_param[first_val:last_val]
+        last_val = np.where(smooth_param == list(filter(lambda x: x!=1.0, smooth_param))[-1])[0][-1]
+        orig_param[first_val:last_val+1] = smooth_param[first_val:last_val+1]
         if first_val != 0 and orig_param[first_val-1] != orig_param[first_val]:
             orig_param[:first_val] = orig_param[first_val]
-        if last_val != len(orig_param) and orig_param[last_val - 1] != orig_param[last_val - 2]:
-            orig_param[last_val:] = orig_param[last_val - 1]
+        if last_val+1 != len(orig_param) and orig_param[last_val - 1] != orig_param[last_val]:
+            orig_param[last_val + 1:] = orig_param[last_val]
 
         return orig_param
 
