@@ -58,8 +58,8 @@ class Orbit:
 
     @staticmethod
     def update_param(orig_param, smooth_param):
-        first_val = smooth_param.index(filter(lambda x: x!=1.0, smooth_param)[0])
-        last_val = smooth_param.index(filter(lambda x: x!=1.0, smooth_param)[-1])
+        first_val = smooth_param.where(filter(lambda x: x!=1.0, smooth_param)[0])
+        last_val = smooth_param.where(filter(lambda x: x!=1.0, smooth_param)[-1])
         orig_param[first_val:last_val] = smooth_param[first_val:last_val]
         if first_val != 0 and orig_param[first_val-1] != orig_param[first_val]:
             orig_param[:first_val] = orig_param[first_val]
