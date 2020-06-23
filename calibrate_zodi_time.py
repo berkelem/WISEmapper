@@ -105,8 +105,8 @@ class Orbit:
         self.gain, self.offset = orbit_fitter.iterate_fit(1)
 
     def apply_fit(self):
-        self.cal_data = (self.orbit_data - self.offset) / self.gain
-        self.cal_uncs = self.orbit_uncs / abs(self.gain)
+        self.cal_data = (self.orbit_data - self.smooth_offset) / self.smooth_gain
+        self.cal_uncs = self.orbit_uncs / np.abs(self.smooth_gain)
 
         self.zs_data = self.cal_data - self.zodi_data
         self.zs_data[self.zs_data < 0.0] = 0.0
