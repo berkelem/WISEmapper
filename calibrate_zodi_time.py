@@ -63,7 +63,7 @@ class Orbit:
         orig_param[first_val:last_val] = smooth_param[first_val:last_val]
         if first_val != 0 and orig_param[first_val-1] != orig_param[first_val]:
             orig_param[:first_val] = orig_param[first_val]
-        if last_val != len(orig_param) and orig_param[last_val - 1] != orig_param[last_val]:
+        if last_val != len(orig_param) and orig_param[last_val - 1] != orig_param[last_val - 2]:
             orig_param[last_val:] = orig_param[last_val - 1]
 
         return orig_param
