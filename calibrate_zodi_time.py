@@ -94,10 +94,11 @@ class Orbit:
     def fit(self):
         if self.coadd_map is not None:
             prev_itermap = self.coadd_map[self.pixel_inds]
-            prev_itermap_masked = np.array([prev_itermap[i] for i in range(len(prev_itermap)) if i not in self.entries_to_mask])
+            t_gal = prev_itermap * self.smooth_gain
 
-            t_gal = prev_itermap_masked * self.gain
-            self.orbit_data_masked -= t_gal
+            t_gal_masked = np.array([t_gal[i] for i in range(len(t_gal)) if i not in self.entries_to_mask])
+
+            self.orbit_data_masked -= t_gal_masked
 
             self.clean_data()
 
