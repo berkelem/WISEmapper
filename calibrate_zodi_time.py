@@ -202,6 +202,7 @@ class Coadder:
                 orbit2.update_param(orbit2.smooth_offset, sb2)
 
             for i in range(num_orbits):
+                orbit = all_orbits[i]
                 orbit.apply_fit()
                 self.add_orbit(orbit)
 
