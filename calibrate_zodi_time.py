@@ -201,14 +201,14 @@ class Coadder:
             plt.xlabel("Orbit number")
             plt.ylabel("Gain")
             plt.legend((l1, l2), ("Original fit", "w median filtered"))
-            plt.savefig("all_gains.png")
+            plt.savefig("all_gains_iter_{}.png".format(it))
             plt.close()
 
             l1, l2 = plt.plot(range(len(all_offsets)), all_offsets, 'r.', range(len(smoothed_offsets)), smoothed_offsets, 'b.')
             plt.xlabel("Orbit number")
             plt.ylabel("Offset")
             plt.legend((l1, l2), ("Original fit", "w median filtered"))
-            plt.savefig("all_offsets.png")
+            plt.savefig("all_offsets_iter_{}.png".format(it))
             plt.close()
 
             for i in range(num_orbits-1):
@@ -337,7 +337,7 @@ class Coadder:
             max_ind = min(len(array), p + step)
             window = array[min_ind:max_ind].copy()
             weights_window = weights[min_ind:max_ind].copy()
-            weights_window /= np.sum(weights_window)
+            weights_window = weights_window / np.sum(weights_window)
             weighted_mean = np.average(window, weights=weights_window)
             output.append(weighted_mean)
         return np.array(output)
