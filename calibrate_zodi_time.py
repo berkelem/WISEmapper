@@ -104,16 +104,18 @@ class Orbit:
         self.gain, self.offset = orbit_fitter.iterate_fit(1)
 
     def apply_fit(self):
-        self.cal_data = (self.orbit_data - self.smooth_offset) / self.smooth_gain
-        self.cal_uncs = self.orbit_uncs / np.abs(self.smooth_gain)
+        self.cal_data = (self.orbit_data - self.offset) / self.gain #self.smooth_offset) / self.smooth_gain
+        self.cal_uncs = self.orbit_uncs / abs(self.gain) #np.abs(self.smooth_gain)
 
         self.zs_data = self.cal_data - self.zodi_data
         self.zs_data[self.zs_data < 0.0] = 0.0
 
+        self.zs_data_masked = np.array([self.zs_data[i] for i in range(len(self.zs_data)) if i not in self.entries_to_mask])
+
     def clean_data(self):
-        z = np.abs(stats.zscore(self.zs_data))
+        z = np.abs(stats.zscore(self.zs_data_masked))
         mask = z > 1
-        inds_to_mask = self.pixel_inds[mask]
+        inds_to_mask = self.pixel_inds_masked[mask]
         self.mask_inds = np.append(self.mask_inds, inds_to_mask)
         self.apply_mask()
         return
@@ -190,39 +192,39 @@ class Coadder:
                     orbit = all_orbits[i]
                 orbit.fit()
 
-            all_gains = np.array([orb.gain for orb in all_orbits])
-            all_offsets = np.array([orb.offset for orb in all_orbits])
-            all_orbit_sizes = np.array([len(orb.orbit_data) for orb in all_orbits])
-
-            smoothed_gains = self.weighted_mean_filter(all_gains, all_orbit_sizes, 25)
-            smoothed_offsets = self.weighted_mean_filter(all_offsets, all_orbit_sizes, 25)
-
-            l1, l2 = plt.plot(range(len(all_gains)), all_gains, 'r.', range(len(smoothed_gains)), smoothed_gains, 'b.')
-            plt.xlabel("Orbit number")
-            plt.ylabel("Gain")
-            plt.legend((l1, l2), ("Original fit", "w median filtered"))
-            plt.savefig("all_gains_iter_{}.png".format(it))
-            plt.close()
-
-            l1, l2 = plt.plot(range(len(all_offsets)), all_offsets, 'r.', range(len(smoothed_offsets)), smoothed_offsets, 'b.')
-            plt.xlabel("Orbit number")
-            plt.ylabel("Offset")
-            plt.legend((l1, l2), ("Original fit", "w median filtered"))
-            plt.savefig("all_offsets_iter_{}.png".format(it))
-            plt.close()
-
-            for i in range(num_orbits-1):
-                orbit1 = all_orbits[i]
-                orbit2 = all_orbits[i+1]
-                orbit1.gain = smoothed_gains[i]
-                orbit1.offset = smoothed_offsets[i]
-                orbit2.gain = smoothed_gains[i+1]
-                orbit2.offset = smoothed_offsets[i+1]
-                sg1, sg2, sb1, sb2 = self.smooth_fit_params(orbit1, orbit2)
-                orbit1.update_param(orbit1.smooth_gain, sg1)
-                orbit2.update_param(orbit2.smooth_gain, sg2)
-                orbit1.update_param(orbit1.smooth_offset, sb1)
-                orbit2.update_param(orbit2.smooth_offset, sb2)
+            # all_gains = np.array([orb.gain for orb in all_orbits])
+            # all_offsets = np.array([orb.offset for orb in all_orbits])
+            # all_orbit_sizes = np.array([len(orb.orbit_data) for orb in all_orbits])
+            #
+            # smoothed_gains = self.weighted_mean_filter(all_gains, all_orbit_sizes, 25)
+            # smoothed_offsets = self.weighted_mean_filter(all_offsets, all_orbit_sizes, 25)
+            #
+            # l1, l2 = plt.plot(range(len(all_gains)), all_gains, 'r.', range(len(smoothed_gains)), smoothed_gains, 'b.')
+            # plt.xlabel("Orbit number")
+            # plt.ylabel("Gain")
+            # plt.legend((l1, l2), ("Original fit", "w median filtered"))
+            # plt.savefig("all_gains_iter_{}.png".format(it))
+            # plt.close()
+            #
+            # l1, l2 = plt.plot(range(len(all_offsets)), all_offsets, 'r.', range(len(smoothed_offsets)), smoothed_offsets, 'b.')
+            # plt.xlabel("Orbit number")
+            # plt.ylabel("Offset")
+            # plt.legend((l1, l2), ("Original fit", "w median filtered"))
+            # plt.savefig("all_offsets_iter_{}.png".format(it))
+            # plt.close()
+            #
+            # for i in range(num_orbits-1):
+            #     orbit1 = all_orbits[i]
+            #     orbit2 = all_orbits[i+1]
+            #     orbit1.gain = smoothed_gains[i]
+            #     orbit1.offset = smoothed_offsets[i]
+            #     orbit2.gain = smoothed_gains[i+1]
+            #     orbit2.offset = smoothed_offsets[i+1]
+            #     sg1, sg2, sb1, sb2 = self.smooth_fit_params(orbit1, orbit2)
+            #     orbit1.update_param(orbit1.smooth_gain, sg1)
+            #     orbit2.update_param(orbit2.smooth_gain, sg2)
+            #     orbit1.update_param(orbit1.smooth_offset, sb1)
+            #     orbit2.update_param(orbit2.smooth_offset, sb2)
 
             for i in range(num_orbits):
                 orbit = all_orbits[i]
