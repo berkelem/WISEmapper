@@ -52,8 +52,8 @@ class Orbit:
         self.mean_mjd_obs = np.mean(self.orbit_mjd_obs)
         self.std_mjd_obs = np.std(self.orbit_mjd_obs)
 
-        self.smooth_gain = np.ones_like(self.orbit_mjd_obs, dtype=float)
-        self.smooth_offset = np.zeros_like(self.orbit_mjd_obs)
+        # self.smooth_gain = np.ones_like(self.orbit_mjd_obs, dtype=float)
+        # self.smooth_offset = np.zeros_like(self.orbit_mjd_obs)
         return
 
     @staticmethod
@@ -92,7 +92,7 @@ class Orbit:
     def fit(self):
         if self.coadd_map is not None:
             prev_itermap = self.coadd_map[self.pixel_inds]
-            t_gal = prev_itermap * self.smooth_gain
+            t_gal = prev_itermap * self.gain #self.smooth_gain
 
             t_gal_masked = np.array([t_gal[i] for i in range(len(t_gal)) if i not in self.entries_to_mask])
 
@@ -174,7 +174,7 @@ class Coadder:
 
     def run(self):
         num_orbits = 6323
-        iterations = 1
+        iterations = 10
         all_orbits = []
 
         for it in range(iterations):
@@ -237,12 +237,12 @@ class Coadder:
             setattr(Orbit, "coadd_map", self.fsm.mapdata)
             self.iter += 1
 
-        all_gains = np.array([orb.gain for orb in all_orbits])
-        all_offsets = np.array([orb.offset for orb in all_orbits])
-        all_mean_time = np.array([orb.mean_mjd_obs for orb in all_orbits])
-        import pickle
-        with open("fitvals.pkl", "wb") as f:
-            pickle.dump([all_gains, all_offsets, all_mean_time], f, protocol=pickle.HIGHEST_PROTOCOL)
+        # all_gains = np.array([orb.gain for orb in all_orbits])
+        # all_offsets = np.array([orb.offset for orb in all_orbits])
+        # all_mean_time = np.array([orb.mean_mjd_obs for orb in all_orbits])
+        # import pickle
+        # with open("fitvals.pkl", "wb") as f:
+        #     pickle.dump([all_gains, all_offsets, all_mean_time], f, protocol=pickle.HIGHEST_PROTOCOL)
 
     # def smooth_fit_params(self, orbit1, orbit2):
     #     t1 = orbit1.orbit_mjd_obs
