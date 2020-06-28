@@ -174,7 +174,7 @@ class Coadder:
 
     def run(self):
         num_orbits = 6323
-        iterations = 25
+        iterations = 1
         all_orbits = []
 
         for it in range(iterations):
@@ -237,41 +237,48 @@ class Coadder:
             setattr(Orbit, "coadd_map", self.fsm.mapdata)
             self.iter += 1
 
-    def smooth_fit_params(self, orbit1, orbit2):
-        t1 = orbit1.orbit_mjd_obs
-        t2 = orbit2.orbit_mjd_obs
-        g1 = orbit1.gain
-        g2 = orbit2.gain
-        f1 = orbit1.offset
-        f2 = orbit2.offset
+        all_gains = np.array([orb.gain for orb in all_orbits])
+        all_offsets = np.array([orb.offset for orb in all_orbits])
+        all_mean_time = np.array([orb.mean_mjd_obs for orb in all_orbits])
+        import pickle
+        with open("fitvals.pkl", "wb") as f:
+            pickle.dump([all_gains, all_offsets, all_mean_time], f, protocol=pickle.HIGHEST_PROTOCOL)
 
-        mt1 = np.median(t1)
-        mt2 = np.median(t2)
-        t1_fit = t1[int(len(t1) / 2):]
-        t2_fit = t2[:int(len(t2) / 2)]
-
-        t = np.zeros(len(t1_fit) + len(t2_fit), dtype=float)
-
-        t[:len(t1_fit)] = t1_fit
-        t[len(t1_fit):] = t2_fit
-
-        A = np.sin((np.pi / 2) * ((t - mt2) / (mt1 - mt2))) ** 2
-        B = np.cos((np.pi / 2) * ((t - mt2) / (mt1 - mt2))) ** 2
-
-        G = A * g1 + B * g2
-        F = A * f1 + B * f2
-
-        G1 = np.ones_like(t1)
-        G2 = np.ones_like(t2)
-        F1 = np.zeros_like(t1)
-        F2 = np.zeros_like(t2)
-
-        G1[int(len(t1) / 2):] = G[:len(t1_fit)]
-        G2[:int(len(t2) / 2)] = G[len(t1_fit):]
-        F1[int(len(t1) / 2):] = F[:len(t1_fit)]
-        F2[:int(len(t2) / 2)] = F[len(t1_fit):]
-
-        return G1, G2, F1, F2
+    # def smooth_fit_params(self, orbit1, orbit2):
+    #     t1 = orbit1.orbit_mjd_obs
+    #     t2 = orbit2.orbit_mjd_obs
+    #     g1 = orbit1.gain
+    #     g2 = orbit2.gain
+    #     f1 = orbit1.offset
+    #     f2 = orbit2.offset
+    #
+    #     mt1 = np.median(t1)
+    #     mt2 = np.median(t2)
+    #     t1_fit = t1[int(len(t1) / 2):]
+    #     t2_fit = t2[:int(len(t2) / 2)]
+    #
+    #     t = np.zeros(len(t1_fit) + len(t2_fit), dtype=float)
+    #
+    #     t[:len(t1_fit)] = t1_fit
+    #     t[len(t1_fit):] = t2_fit
+    #
+    #     A = np.sin((np.pi / 2) * ((t - mt2) / (mt1 - mt2))) ** 2
+    #     B = np.cos((np.pi / 2) * ((t - mt2) / (mt1 - mt2))) ** 2
+    #
+    #     G = A * g1 + B * g2
+    #     F = A * f1 + B * f2
+    #
+    #     G1 = np.ones_like(t1)
+    #     G2 = np.ones_like(t2)
+    #     F1 = np.zeros_like(t1)
+    #     F2 = np.zeros_like(t2)
+    #
+    #     G1[int(len(t1) / 2):] = G[:len(t1_fit)]
+    #     G2[:int(len(t2) / 2)] = G[len(t1_fit):]
+    #     F1[int(len(t1) / 2):] = F[:len(t1_fit)]
+    #     F2[:int(len(t2) / 2)] = F[len(t1_fit):]
+    #
+    #     return G1, G2, F1, F2
 
 
     def simple_plot(self, x_data, y_data, x_label, y_label, filename):
