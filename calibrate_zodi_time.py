@@ -158,10 +158,10 @@ class Coadder:
         self.full_mask = self.moon_stripe_mask.mapdata.astype(bool) | self.galaxy_mask.astype(bool) #| ~self.south_pole_mask.mapdata.astype(bool)
 
         with open("gain_spline.pkl", "rb") as gain_spline_file:
-            self.gain_spline = pickle.load(gain_spline_file)[0]
+            self.gain_spline = pickle.load(gain_spline_file)
 
         with open("offset_spline.pkl", "rb") as offset_spline_file:
-            self.offset_spline = pickle.load(offset_spline_file)[0]
+            self.offset_spline = pickle.load(offset_spline_file)
 
         self.numerator = np.zeros(self.npix)
         self.denominator = np.zeros_like(self.numerator)
