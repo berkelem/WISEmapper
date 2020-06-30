@@ -6,6 +6,7 @@ from fullskymapping import FullSkyMap
 import pandas as pd
 import healpy as hp
 import matplotlib.pyplot as plt
+import pickle
 
 class Orbit:
 
@@ -112,6 +113,20 @@ class Orbit:
 
         self.zs_data_masked = np.array([self.zs_data[i] for i in range(len(self.zs_data)) if i not in self.entries_to_mask])
 
+    def apply_spline_fit(self, gain_spline, offset_spline):
+        gains = gain_spline(self.orbit_mjd_obs)
+        offsets = offset_spline(self.orbit_mjd_obs)
+        self.cal_data = (self.orbit_data - offsets) / gains
+        self.cal_uncs = self.orbit_uncs / abs(gains)
+
+        self.zs_data = self.cal_data - self.zodi_data
+        self.zs_data[self.zs_data < 0.0] = 0.0
+
+        self.zs_data_masked = np.array(
+            [self.zs_data[i] for i in range(len(self.zs_data)) if i not in self.entries_to_mask])
+
+        return
+
     def clean_data(self):
         z = np.abs(stats.zscore(self.zs_data_masked))
         mask = z > 1
@@ -141,6 +156,12 @@ class Coadder:
         # self.south_pole_mask_inds = np.arange(len(self.south_pole_mask.mapdata))[self.south_pole_mask.mapdata.astype(bool)]
 
         self.full_mask = self.moon_stripe_mask.mapdata.astype(bool) | self.galaxy_mask.astype(bool) #| ~self.south_pole_mask.mapdata.astype(bool)
+
+        with open("gain_spline.pkl", "rb") as gain_spline_file:
+            self.gain_spline = pickle.load(gain_spline_file)[0]
+
+        with open("offset_spline.pkl", "rb") as offset_spline_file:
+            self.offset_spline = pickle.load(offset_spline_file)[0]
 
         self.numerator = np.zeros(self.npix)
         self.denominator = np.zeros_like(self.numerator)
@@ -174,7 +195,7 @@ class Coadder:
 
     def run(self):
         num_orbits = 6323
-        iterations = 10
+        iterations = 1
         all_orbits = []
 
         for it in range(iterations):
@@ -190,7 +211,9 @@ class Coadder:
                     orbit.apply_mask()
                 else:
                     orbit = all_orbits[i]
-                orbit.fit()
+                # orbit.fit()
+                orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
+                self.add_orbit(orbit)
 
             # all_gains = np.array([orb.gain for orb in all_orbits])
             # all_offsets = np.array([orb.offset for orb in all_orbits])
@@ -226,10 +249,10 @@ class Coadder:
             #     orbit1.update_param(orbit1.smooth_offset, sb1)
             #     orbit2.update_param(orbit2.smooth_offset, sb2)
 
-            for i in range(num_orbits):
-                orbit = all_orbits[i]
-                orbit.apply_fit()
-                self.add_orbit(orbit)
+            # for i in range(num_orbits):
+            #     orbit = all_orbits[i]
+            #     orbit.apply_fit()
+            #     self.add_orbit(orbit)
 
             self.normalize()
             self.save_maps()
