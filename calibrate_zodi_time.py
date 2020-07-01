@@ -120,7 +120,7 @@ class Orbit:
         self.cal_uncs = self.orbit_uncs / abs(gains)
 
         self.zs_data = self.cal_data - self.zodi_data
-        self.zs_data[self.zs_data < 0.0] = 0.0
+        # self.zs_data[self.zs_data < 0.0] = 0.0
 
         self.zs_data_masked = np.array(
             [self.zs_data[i] for i in range(len(self.zs_data)) if i not in self.entries_to_mask])
