@@ -212,6 +212,7 @@ class Coadder:
                 else:
                     orbit = all_orbits[i]
                 orbit.fit()
+                orbit.apply_fit()
                 # orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
                 self.add_orbit(orbit)
 
