@@ -195,7 +195,7 @@ class Coadder:
 
     def run(self):
         num_orbits = 6323
-        iterations = 1
+        iterations = 50
         all_orbits = []
 
         for it in range(iterations):
@@ -211,13 +211,17 @@ class Coadder:
                     orbit.apply_mask()
                 else:
                     orbit = all_orbits[i]
-                # orbit.fit()
-                orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
+                orbit.fit()
+                # orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
                 self.add_orbit(orbit)
 
-            # all_gains = np.array([orb.gain for orb in all_orbits])
-            # all_offsets = np.array([orb.offset for orb in all_orbits])
+            all_gains = np.array([orb.gain for orb in all_orbits])
+            all_offsets = np.array([orb.offset for orb in all_orbits])
             # all_orbit_sizes = np.array([len(orb.orbit_data) for orb in all_orbits])
+            all_mjd_vals = np.array([orb.orbit_mjd_obs for orb in all_orbits])
+            print("Saving data for iteration {}".format(it))
+            with open("fitvals_iter_{}.pkl".format(it), "wb") as f:
+                pickle.dump([all_gains, all_offsets, all_mjd_vals], f, protocol=pickle.HIGHEST_PROTOCOL)
             #
             # smoothed_gains = self.weighted_mean_filter(all_gains, all_orbit_sizes, 25)
             # smoothed_offsets = self.weighted_mean_filter(all_offsets, all_orbit_sizes, 25)
