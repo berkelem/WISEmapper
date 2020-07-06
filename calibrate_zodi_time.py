@@ -57,17 +57,17 @@ class Orbit:
         # self.smooth_offset = np.zeros_like(self.orbit_mjd_obs)
         return
 
-    @staticmethod
-    def update_param(orig_param, smooth_param):
-        first_val = np.where(smooth_param == list(filter(lambda x: x!=1.0, smooth_param))[0])[0][0]
-        last_val = np.where(smooth_param == list(filter(lambda x: x!=1.0, smooth_param))[-1])[0][-1]
-        orig_param[first_val:last_val+1] = smooth_param[first_val:last_val+1]
-        if first_val != 0 and orig_param[first_val-1] != orig_param[first_val]:
-            orig_param[:first_val] = orig_param[first_val]
-        if last_val+1 != len(orig_param) and orig_param[last_val + 1] != orig_param[last_val]:
-            orig_param[last_val + 1:] = orig_param[last_val]
-
-        return orig_param
+    # @staticmethod
+    # def update_param(orig_param, smooth_param):
+    #     first_val = np.where(smooth_param == list(filter(lambda x: x!=1.0, smooth_param))[0])[0][0]
+    #     last_val = np.where(smooth_param == list(filter(lambda x: x!=1.0, smooth_param))[-1])[0][-1]
+    #     orig_param[first_val:last_val+1] = smooth_param[first_val:last_val+1]
+    #     if first_val != 0 and orig_param[first_val-1] != orig_param[first_val]:
+    #         orig_param[:first_val] = orig_param[first_val]
+    #     if last_val+1 != len(orig_param) and orig_param[last_val + 1] != orig_param[last_val]:
+    #         orig_param[last_val + 1:] = orig_param[last_val]
+    #
+    #     return orig_param
 
     def load_zodi_orbit_data(self):
         zodi_orbit = WISEMap(self.zodi_filename, self.band)
@@ -113,19 +113,19 @@ class Orbit:
 
         self.zs_data_masked = np.array([self.zs_data[i] for i in range(len(self.zs_data)) if i not in self.entries_to_mask])
 
-    def apply_spline_fit(self, gain_spline, offset_spline):
-        gains = gain_spline(self.orbit_mjd_obs)
-        offsets = offset_spline(self.orbit_mjd_obs)
-        self.cal_data = (self.orbit_data - offsets) / gains
-        self.cal_uncs = self.orbit_uncs / abs(gains)
-
-        self.zs_data = self.cal_data - self.zodi_data
-        # self.zs_data[self.zs_data < 0.0] = 0.0
-
-        self.zs_data_masked = np.array(
-            [self.zs_data[i] for i in range(len(self.zs_data)) if i not in self.entries_to_mask])
-
-        return
+    # def apply_spline_fit(self, gain_spline, offset_spline):
+    #     gains = gain_spline(self.orbit_mjd_obs)
+    #     offsets = offset_spline(self.orbit_mjd_obs)
+    #     self.cal_data = (self.orbit_data - offsets) / gains
+    #     self.cal_uncs = self.orbit_uncs / abs(gains)
+    #
+    #     self.zs_data = self.cal_data - self.zodi_data
+    #     # self.zs_data[self.zs_data < 0.0] = 0.0
+    #
+    #     self.zs_data_masked = np.array(
+    #         [self.zs_data[i] for i in range(len(self.zs_data)) if i not in self.entries_to_mask])
+    #
+    #     return
 
     def clean_data(self):
         z = np.abs(stats.zscore(self.zs_data_masked))
@@ -157,11 +157,11 @@ class Coadder:
 
         self.full_mask = self.moon_stripe_mask.mapdata.astype(bool) | self.galaxy_mask.astype(bool) #| ~self.south_pole_mask.mapdata.astype(bool)
 
-        with open("gain_spline.pkl", "rb") as gain_spline_file:
-            self.gain_spline = pickle.load(gain_spline_file)
-
-        with open("offset_spline.pkl", "rb") as offset_spline_file:
-            self.offset_spline = pickle.load(offset_spline_file)
+        # with open("gain_spline.pkl", "rb") as gain_spline_file:
+        #     self.gain_spline = pickle.load(gain_spline_file)
+        #
+        # with open("offset_spline.pkl", "rb") as offset_spline_file:
+        #     self.offset_spline = pickle.load(offset_spline_file)
 
         self.numerator = np.zeros(self.npix)
         self.denominator = np.zeros_like(self.numerator)
@@ -195,7 +195,7 @@ class Coadder:
 
     def run(self):
         num_orbits = 6323
-        iterations = 50
+        iterations = 25
         all_orbits = []
 
         for it in range(iterations):
@@ -330,9 +330,9 @@ class Coadder:
 
     def add_orbit(self, orbit):
 
-        if len(orbit.orbit_uncs[orbit.orbit_uncs!=0.0]) > 0 and orbit.gain!=0.0:
-            self.numerator[orbit.pixel_inds] += np.divide(orbit.zs_data, np.square(orbit.cal_uncs), where=orbit.cal_uncs != 0.0, out=np.zeros_like(orbit.cal_uncs))
-            self.denominator[orbit.pixel_inds] += np.divide(1, np.square(orbit.cal_uncs), where=orbit.cal_uncs != 0.0, out=np.zeros_like(orbit.cal_uncs))
+        if len(orbit.orbit_uncs_masked[orbit.orbit_uncs_masked!=0.0]) > 0 and orbit.gain!=0.0:
+            self.numerator[orbit.pixel_inds_masked] += np.divide(orbit.zs_data_masked, np.square(orbit.cal_uncs_masked), where=orbit.cal_uncs_masked != 0.0, out=np.zeros_like(orbit.cal_uncs_masked))
+            self.denominator[orbit.pixel_inds_masked] += np.divide(1, np.square(orbit.cal_uncs_masked), where=orbit.cal_uncs_masked != 0.0, out=np.zeros_like(orbit.cal_uncs_masked))
         return
 
     def normalize(self):
