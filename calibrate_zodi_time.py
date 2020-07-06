@@ -107,11 +107,13 @@ class Orbit:
     def apply_fit(self):
         self.cal_data = (self.orbit_data - self.offset) / self.gain #self.smooth_offset) / self.smooth_gain
         self.cal_uncs = self.orbit_uncs / abs(self.gain) #np.abs(self.smooth_gain)
+        self.cal_uncs_masked = np.array(
+            [self.cal_uncs[i] for i in range(len(self.cal_uncs)) if i not in self.entries_to_mask])
 
         self.zs_data = self.cal_data - self.zodi_data
         self.zs_data[self.zs_data < 0.0] = 0.0
-
-        self.zs_data_masked = np.array([self.zs_data[i] for i in range(len(self.zs_data)) if i not in self.entries_to_mask])
+        self.zs_data_masked = np.array(
+            [self.zs_data[i] for i in range(len(self.zs_data)) if i not in self.entries_to_mask])
 
     # def apply_spline_fit(self, gain_spline, offset_spline):
     #     gains = gain_spline(self.orbit_mjd_obs)
