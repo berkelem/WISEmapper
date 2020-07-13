@@ -10,7 +10,8 @@ import pickle
 
 class Orbit:
 
-    coadd_map = None
+    coadd_map_unmasked = None
+    coadd_map_masked = None
 
     def __init__(self, orbit_num, band, mask):
         self.orbit_num = orbit_num
@@ -91,8 +92,8 @@ class Orbit:
         return
 
     def fit(self):
-        if self.coadd_map is not None:
-            prev_itermap = self.coadd_map[self.pixel_inds]
+        if self.coadd_map_unmasked is not None:
+            prev_itermap = self.coadd_map_unmasked[self.pixel_inds]
             t_gal = prev_itermap * self.gain #self.smooth_gain
 
             t_gal_masked = np.array([t_gal[i] for i in range(len(t_gal)) if i not in self.entries_to_mask])
@@ -165,8 +166,10 @@ class Coadder:
         # with open("offset_spline.pkl", "rb") as offset_spline_file:
         #     self.offset_spline = pickle.load(offset_spline_file)
 
-        self.numerator = np.zeros(self.npix)
-        self.denominator = np.zeros_like(self.numerator)
+        self.numerator_masked = np.zeros(self.npix)
+        self.denominator_masked = np.zeros_like(self.numerator_masked)
+        self.numerator_unmasked = np.zeros(self.npix)
+        self.denominator_unmasked = np.zeros_like(self.numerator_unmasked)
 
         self.gains = []
         self.offsets = []
@@ -175,14 +178,22 @@ class Coadder:
         self.all_gains = []
         self.all_offsets = []
 
-        self.fsm = None
-        self.unc_fsm = None
+        self.fsm_masked = None
+        self.unc_fsm_masked = None
+        self.fsm_unmasked = None
+        self.unc_fsm_unmasked = None
 
     def set_output_filenames(self):
-        self.fsm = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_iter_{self.iter}.fits", self.nside)
-        self.unc_fsm = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_iter_{self.iter}.fits", self.nside)
+        self.fsm_masked = FullSkyMap(
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_iter_{self.iter}_masked.fits", self.nside)
+        self.unc_fsm_masked = FullSkyMap(
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_iter_{self.iter}_masked.fits", self.nside)
+        self.fsm_unmasked = FullSkyMap(
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_iter_{self.iter}_unmasked.fits",
+            self.nside)
+        self.unc_fsm_unmasked = FullSkyMap(
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_iter_{self.iter}_unmasked.fits",
+            self.nside)
 
     def mask_galaxy(self):
         """
@@ -216,7 +227,8 @@ class Coadder:
                 orbit.fit()
                 orbit.apply_fit()
                 # orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
-                self.add_orbit(orbit)
+                self.add_orbit_masked(orbit)
+                self.add_orbit_unmasked(orbit)
 
             all_gains = np.array([orb.gain for orb in all_orbits])
             all_offsets = np.array([orb.offset for orb in all_orbits])
@@ -264,7 +276,8 @@ class Coadder:
             self.normalize()
             self.save_maps()
 
-            setattr(Orbit, "coadd_map", self.fsm.mapdata)
+            setattr(Orbit, "coadd_map_unmasked", self.fsm_unmasked.mapdata)
+            setattr(Orbit, "coadd_map_masked", self.fsm_masked.mapdata)
             self.iter += 1
 
         # all_gains = np.array([orb.gain for orb in all_orbits])
@@ -330,20 +343,34 @@ class Coadder:
         plt.savefig("/home/users/mberkeley/wisemapper/data/output_maps/w3/fitted_offsets.png")
         plt.close()
 
-    def add_orbit(self, orbit):
+    def add_orbit_masked(self, orbit):
 
         if len(orbit.orbit_uncs_masked[orbit.orbit_uncs_masked!=0.0]) > 0 and orbit.gain!=0.0:
-            self.numerator[orbit.pixel_inds_masked] += np.divide(orbit.zs_data_masked, np.square(orbit.cal_uncs_masked), where=orbit.cal_uncs_masked != 0.0, out=np.zeros_like(orbit.cal_uncs_masked))
-            self.denominator[orbit.pixel_inds_masked] += np.divide(1, np.square(orbit.cal_uncs_masked), where=orbit.cal_uncs_masked != 0.0, out=np.zeros_like(orbit.cal_uncs_masked))
+            self.numerator_masked[orbit.pixel_inds_masked] += np.divide(orbit.zs_data_masked, np.square(orbit.cal_uncs_masked), where=orbit.cal_uncs_masked != 0.0, out=np.zeros_like(orbit.cal_uncs_masked))
+            self.denominator_masked[orbit.pixel_inds_masked] += np.divide(1, np.square(orbit.cal_uncs_masked), where=orbit.cal_uncs_masked != 0.0, out=np.zeros_like(orbit.cal_uncs_masked))
+        return
+
+    def add_orbit_unmasked(self, orbit):
+
+        if len(orbit.orbit_uncs[orbit.orbit_uncs!=0.0]) > 0 and orbit.gain!=0.0:
+            self.numerator_unmasked[orbit.pixel_inds] += np.divide(orbit.zs_data, np.square(orbit.cal_uncs), where=orbit.cal_uncs != 0.0, out=np.zeros_like(orbit.cal_uncs))
+            self.denominator_unmasked[orbit.pixel_inds] += np.divide(1, np.square(orbit.cal_uncs), where=orbit.cal_uncs != 0.0, out=np.zeros_like(orbit.cal_uncs))
         return
 
     def normalize(self):
-        self.fsm.mapdata = np.divide(self.numerator, self.denominator, where=self.denominator != 0.0, out=np.zeros_like(self.denominator))
-        self.unc_fsm.mapdata = np.divide(1, self.denominator, where=self.denominator != 0.0, out=np.zeros_like(self.denominator))
+        self.fsm_masked.mapdata = np.divide(self.numerator_masked, self.denominator_masked, where=self.denominator_masked != 0.0, out=np.zeros_like(self.denominator_masked))
+        self.unc_fsm_masked.mapdata = np.divide(1, self.denominator_masked, where=self.denominator_masked != 0.0, out=np.zeros_like(self.denominator_masked))
+        self.fsm_unmasked.mapdata = np.divide(self.numerator_unmasked, self.denominator_unmasked,
+                                            where=self.denominator_unmasked != 0.0,
+                                            out=np.zeros_like(self.denominator_unmasked))
+        self.unc_fsm_unmasked.mapdata = np.divide(1, self.denominator_unmasked, where=self.denominator_unmasked != 0.0,
+                                                out=np.zeros_like(self.denominator_unmasked))
 
     def save_maps(self):
-        self.fsm.save_map()
-        self.unc_fsm.save_map()
+        self.fsm_masked.save_map()
+        self.unc_fsm_masked.save_map()
+        self.fsm_unmasked.save_map()
+        self.unc_fsm_unmasked.save_map()
 
 
     def load_zodi_orbit(self, orbit_num, pixel_inds):
