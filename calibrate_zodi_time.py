@@ -47,10 +47,10 @@ class Orbit:
 
     def load_orbit_data(self):
         all_orbit_data = pd.read_csv(self.filename)
-        self.orbit_data = all_orbit_data["pixel_value"]
-        self.orbit_uncs = all_orbit_data["pixel_unc"]
-        self.pixel_inds = all_orbit_data["hp_pixel_index"]
-        self.orbit_mjd_obs = all_orbit_data["pixel_mjd_obs"]
+        self.orbit_data = np.array(all_orbit_data["pixel_value"])
+        self.orbit_uncs = np.array(all_orbit_data["pixel_unc"])
+        self.pixel_inds = np.array(all_orbit_data["hp_pixel_index"])
+        self.orbit_mjd_obs = np.array(all_orbit_data["pixel_mjd_obs"])
         self.mean_mjd_obs = np.mean(self.orbit_mjd_obs)
         self.std_mjd_obs = np.std(self.orbit_mjd_obs)
 
@@ -373,40 +373,40 @@ class Coadder:
         self.unc_fsm_unmasked.save_map()
 
 
-    def load_zodi_orbit(self, orbit_num, pixel_inds):
-        filename = f"/home/users/jguerraa/AME/cal_files/W3/zodi_map_cal_W{self.band}_{orbit_num}.fits"
-        zodi_orbit = WISEMap(filename, self.band)
-        zodi_orbit.read_data()
-        pixels = np.zeros_like(zodi_orbit.mapdata)
-        pixels[pixel_inds] = 1.0
-        zodi_data = zodi_orbit.mapdata[pixels.astype(bool)]
-        if not all(zodi_data.astype(bool)):
-            print(f"Orbit {orbit_num} mismatch with zodi: zeros in zodi orbit")
-        elif any(zodi_orbit.mapdata[~pixels.astype(bool)]):
-            print(f"Orbit {orbit_num} mismatch with zodi: nonzeros outside zodi orbit")
-        return zodi_data
+    # def load_zodi_orbit(self, orbit_num, pixel_inds):
+    #     filename = f"/home/users/jguerraa/AME/cal_files/W3/zodi_map_cal_W{self.band}_{orbit_num}.fits"
+    #     zodi_orbit = WISEMap(filename, self.band)
+    #     zodi_orbit.read_data()
+    #     pixels = np.zeros_like(zodi_orbit.mapdata)
+    #     pixels[pixel_inds] = 1.0
+    #     zodi_data = zodi_orbit.mapdata[pixels.astype(bool)]
+    #     if not all(zodi_data.astype(bool)):
+    #         print(f"Orbit {orbit_num} mismatch with zodi: zeros in zodi orbit")
+    #     elif any(zodi_orbit.mapdata[~pixels.astype(bool)]):
+    #         print(f"Orbit {orbit_num} mismatch with zodi: nonzeros outside zodi orbit")
+    #     return zodi_data
 
-    def load_orbit_data(self, orbit_num):
-        filename = f"/home/users/mberkeley/wisemapper/data/output_maps/w{self.band}/csv_files/band_w{self.band}_orbit_{orbit_num}_pixel_timestamps.csv"
-        all_orbit_data = pd.read_csv(filename)
-        orbit_data = all_orbit_data["pixel_value"]
-        orbit_uncs = all_orbit_data["pixel_unc"]
-        pixel_inds = all_orbit_data["hp_pixel_index"]
-        return orbit_data, orbit_uncs, pixel_inds
+    # def load_orbit_data(self, orbit_num):
+    #     filename = f"/home/users/mberkeley/wisemapper/data/output_maps/w{self.band}/csv_files/band_w{self.band}_orbit_{orbit_num}_pixel_timestamps.csv"
+    #     all_orbit_data = pd.read_csv(filename)
+    #     orbit_data = np.array(all_orbit_data["pixel_value"])
+    #     orbit_uncs = np.array(all_orbit_data["pixel_unc"])
+    #     pixel_inds = np.array(all_orbit_data["hp_pixel_index"])
+    #     return orbit_data, orbit_uncs, pixel_inds
 
-    @staticmethod
-    def weighted_mean_filter(array, weights, size):
-        output = []
-        step = int(size / 2)
-        for p, px in enumerate(array):
-            min_ind = max(0, p - step)
-            max_ind = min(len(array), p + step)
-            window = array[min_ind:max_ind].copy()
-            weights_window = weights[min_ind:max_ind].copy()
-            weights_window = weights_window / np.sum(weights_window)
-            weighted_mean = np.average(window, weights=weights_window)
-            output.append(weighted_mean)
-        return np.array(output)
+    # @staticmethod
+    # def weighted_mean_filter(array, weights, size):
+    #     output = []
+    #     step = int(size / 2)
+    #     for p, px in enumerate(array):
+    #         min_ind = max(0, p - step)
+    #         max_ind = min(len(array), p + step)
+    #         window = array[min_ind:max_ind].copy()
+    #         weights_window = weights[min_ind:max_ind].copy()
+    #         weights_window = weights_window / np.sum(weights_window)
+    #         weighted_mean = np.average(window, weights=weights_window)
+    #         output.append(weighted_mean)
+    #     return np.array(output)
 
 
 class IterativeFitter:
