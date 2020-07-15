@@ -212,6 +212,10 @@ class Coadder:
         all_orbits = []
 
         for it in range(iterations):
+            self.numerator_masked = np.zeros(self.npix)
+            self.denominator_masked = np.zeros_like(self.numerator_masked)
+            self.numerator_unmasked = np.zeros(self.npix)
+            self.denominator_unmasked = np.zeros_like(self.numerator_unmasked)
 
             for i in range(num_orbits):
                 print(f"Iteration {it}; Fitting orbit {i}")
