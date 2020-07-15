@@ -21,6 +21,7 @@ class Orbit:
         self.zodi_filename = f"/home/users/jguerraa/AME/cal_files/W3/zodi_map_cal_W{self.band}_{self.orbit_num}.fits"
         self.mask = mask
         self.mask_inds = np.arange(len(self.mask))[self.mask.astype(bool)]
+        self.outlier_inds = np.array([])
 
         self.orbit_data = None
         self.orbit_uncs = None
@@ -40,9 +41,9 @@ class Orbit:
         self.gain = 1.0
         self.offset = 0.0
 
-        self.cal_data = None
-        self.cal_uncs = None
-        self.zs_data = None
+        self.cal_data_clean = None
+        self.cal_uncs_clean = None
+        self.zs_data_clean = None
 
 
     def load_orbit_data(self):
@@ -83,12 +84,29 @@ class Orbit:
         return
 
     def apply_mask(self):
+        self.pixel_inds_clean = np.array(
+            [self.pixel_inds[i] for i in range(len(self.pixel_inds)) if i not in self.outlier_inds])
+        self.orbit_data_clean = np.array(
+            [self.orbit_data[i] for i in range(len(self.orbit_data)) if i not in self.outlier_inds])
+        self.orbit_uncs_clean = np.array(
+            [self.orbit_uncs[i] for i in range(len(self.orbit_uncs)) if i not in self.outlier_inds])
+        self.orbit_mjd_clean = np.array(
+            [self.orbit_mjd_obs[i] for i in range(len(self.orbit_mjd_obs)) if i not in self.outlier_inds])
+        self.zodi_data_clean = np.array(
+            [self.zodi_data[i] for i in range(len(self.zodi_data)) if i not in self.outlier_inds])
+
         self.entries_to_mask = [i for i in range(len(self.pixel_inds)) if self.pixel_inds[i] in self.mask_inds]
-        self.pixel_inds_masked = np.array([self.pixel_inds[i] for i in range(len(self.pixel_inds)) if i not in self.entries_to_mask])
-        self.orbit_data_masked = np.array([self.orbit_data[i] for i in range(len(self.orbit_data)) if i not in self.entries_to_mask])
-        self.orbit_uncs_masked = np.array([self.orbit_uncs[i] for i in range(len(self.orbit_uncs)) if i not in self.entries_to_mask])
-        self.orbit_mjd_masked = np.array([self.orbit_mjd_obs[i] for i in range(len(self.orbit_mjd_obs)) if i not in self.entries_to_mask])
-        self.zodi_data_masked = np.array([self.zodi_data[i] for i in range(len(self.zodi_data)) if i not in self.entries_to_mask])
+        self.pixel_inds_clean_masked = np.array([self.pixel_inds[i] for i in range(len(self.pixel_inds)) if
+                                                 i not in self.entries_to_mask and i not in self.outlier_inds])
+        self.orbit_data_clean_masked = np.array([self.orbit_data[i] for i in range(len(self.orbit_data)) if
+                                                 i not in self.entries_to_mask and i not in self.outlier_inds])
+        self.orbit_uncs_clean_masked = np.array([self.orbit_uncs[i] for i in range(len(self.orbit_uncs)) if
+                                                 i not in self.entries_to_mask and i not in self.outlier_inds])
+        self.orbit_mjd_clean_masked = np.array([self.orbit_mjd_obs[i] for i in range(len(self.orbit_mjd_obs)) if
+                                                i not in self.entries_to_mask and i not in self.outlier_inds])
+        self.zodi_data_clean_masked = np.array([self.zodi_data[i] for i in range(len(self.zodi_data)) if
+                                                i not in self.entries_to_mask and i not in self.outlier_inds])
+
         return
 
     def fit(self):
@@ -102,19 +120,19 @@ class Orbit:
 
             self.clean_data()
 
-        orbit_fitter = IterativeFitter(self.zodi_data_masked, self.orbit_data_masked, self.orbit_uncs_masked)
+        orbit_fitter = IterativeFitter(self.zodi_data_clean_masked, self.orbit_data_clean_masked, self.orbit_uncs_clean_masked)
         self.gain, self.offset = orbit_fitter.iterate_fit(1)
 
     def apply_fit(self):
-        self.cal_data = (self.orbit_data - self.offset) / self.gain #self.smooth_offset) / self.smooth_gain
-        self.cal_uncs = self.orbit_uncs / abs(self.gain) #np.abs(self.smooth_gain)
-        self.cal_uncs_masked = np.array(
-            [self.cal_uncs[i] for i in range(len(self.cal_uncs)) if i not in self.entries_to_mask])
+        self.cal_data_clean = (self.orbit_data_clean - self.offset) / self.gain
+        self.cal_data_clean_masked = (self.orbit_data_clean_masked - self.offset) / self.gain
+        self.cal_uncs_clean = self.orbit_uncs_clean / abs(self.gain)
+        self.cal_uncs_clean_masked = self.orbit_uncs_clean_masked / abs(self.gain)
 
-        self.zs_data = self.cal_data - self.zodi_data
-        self.zs_data[self.zs_data < 0.0] = 0.0
-        self.zs_data_masked = np.array(
-            [self.zs_data[i] for i in range(len(self.zs_data)) if i not in self.entries_to_mask])
+        self.zs_data_clean = self.cal_data_clean - self.zodi_data_clean
+        self.zs_data_clean[self.zs_data_clean < 0.0] = 0.0
+        self.zs_data_clean_masked = self.cal_data_clean_masked - self.zodi_data_clean_masked
+        self.zs_data_clean_masked[self.zs_data_clean_masked < 0.0] = 0.0
 
     # def apply_spline_fit(self, gain_spline, offset_spline):
     #     gains = gain_spline(self.orbit_mjd_obs)
@@ -131,10 +149,10 @@ class Orbit:
     #     return
 
     def clean_data(self):
-        z = np.abs(stats.zscore(self.zs_data_masked))
+        z = np.abs(stats.zscore(self.zs_data_clean_masked))
         mask = z > 1
-        inds_to_mask = self.pixel_inds_masked[mask]
-        self.mask_inds = np.append(self.mask_inds, inds_to_mask)
+        inds_to_mask = self.pixel_inds_clean_masked[mask]
+        self.outlier_inds = np.append(self.outlier_inds, inds_to_mask)
         self.apply_mask()
         return
 
@@ -349,16 +367,16 @@ class Coadder:
 
     def add_orbit_masked(self, orbit):
 
-        if len(orbit.orbit_uncs_masked[orbit.orbit_uncs_masked!=0.0]) > 0 and orbit.gain!=0.0:
-            self.numerator_masked[orbit.pixel_inds_masked] += np.divide(orbit.zs_data_masked, np.square(orbit.cal_uncs_masked), where=orbit.cal_uncs_masked != 0.0, out=np.zeros_like(orbit.cal_uncs_masked))
-            self.denominator_masked[orbit.pixel_inds_masked] += np.divide(1, np.square(orbit.cal_uncs_masked), where=orbit.cal_uncs_masked != 0.0, out=np.zeros_like(orbit.cal_uncs_masked))
+        if len(orbit.orbit_uncs_clean_masked[orbit.orbit_uncs_clean_masked!=0.0]) > 0 and orbit.gain!=0.0:
+            self.numerator_masked[orbit.pixel_inds_clean_masked] += np.divide(orbit.zs_data_clean_masked, np.square(orbit.cal_uncs_clean_masked), where=orbit.cal_uncs_clean_masked != 0.0, out=np.zeros_like(orbit.cal_uncs_clean_masked))
+            self.denominator_masked[orbit.pixel_inds_clean_masked] += np.divide(1, np.square(orbit.cal_uncs_clean_masked), where=orbit.cal_uncs_clean_masked != 0.0, out=np.zeros_like(orbit.cal_uncs_clean_masked))
         return
 
     def add_orbit_unmasked(self, orbit):
 
-        if len(orbit.orbit_uncs[orbit.orbit_uncs!=0.0]) > 0 and orbit.gain!=0.0:
-            self.numerator_unmasked[orbit.pixel_inds] += np.divide(orbit.zs_data, np.square(orbit.cal_uncs), where=orbit.cal_uncs != 0.0, out=np.zeros_like(orbit.cal_uncs))
-            self.denominator_unmasked[orbit.pixel_inds] += np.divide(1, np.square(orbit.cal_uncs), where=orbit.cal_uncs != 0.0, out=np.zeros_like(orbit.cal_uncs))
+        if len(orbit.orbit_uncs_clean[orbit.orbit_uncs_clean!=0.0]) > 0 and orbit.gain!=0.0:
+            self.numerator_unmasked[orbit.pixel_inds_clean] += np.divide(orbit.zs_data_clean, np.square(orbit.cal_uncs_clean), where=orbit.cal_uncs_clean != 0.0, out=np.zeros_like(orbit.cal_uncs_clean))
+            self.denominator_unmasked[orbit.pixel_inds_clean] += np.divide(1, np.square(orbit.cal_uncs_clean), where=orbit.cal_uncs_clean != 0.0, out=np.zeros_like(orbit.cal_uncs_clean))
         return
 
     def normalize(self):
