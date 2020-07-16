@@ -85,7 +85,7 @@ class Orbit:
 
     def apply_mask(self):
         self.pixel_inds_clean = np.array(
-            [self.pixel_inds[i] for i in range(len(self.pixel_inds)) if i not in self.outlier_inds])
+            [self.pixel_inds[i] for i in range(len(self.pixel_inds)) if i not in self.outlier_inds], dtype=int)
         self.orbit_data_clean = np.array(
             [self.orbit_data[i] for i in range(len(self.orbit_data)) if i not in self.outlier_inds])
         self.orbit_uncs_clean = np.array(
@@ -97,7 +97,7 @@ class Orbit:
 
         self.entries_to_mask = [i for i in range(len(self.pixel_inds)) if self.pixel_inds[i] in self.mask_inds]
         self.pixel_inds_clean_masked = np.array([self.pixel_inds[i] for i in range(len(self.pixel_inds)) if
-                                                 i not in self.entries_to_mask and i not in self.outlier_inds])
+                                                 i not in self.entries_to_mask and i not in self.outlier_inds], dtype=int)
         self.orbit_data_clean_masked = np.array([self.orbit_data[i] for i in range(len(self.orbit_data)) if
                                                  i not in self.entries_to_mask and i not in self.outlier_inds])
         self.orbit_uncs_clean_masked = np.array([self.orbit_uncs[i] for i in range(len(self.orbit_uncs)) if
