@@ -111,14 +111,13 @@ class Orbit:
 
     def fit(self):
         if self.coadd_map_unmasked is not None:
-            prev_itermap = self.coadd_map_unmasked[self.pixel_inds]
-            t_gal = prev_itermap * self.gain #self.smooth_gain
-
-            t_gal_masked = np.array([t_gal[i] for i in range(len(t_gal)) if i not in self.entries_to_mask])
-
-            self.orbit_data_masked -= t_gal_masked
-
             self.clean_data()
+            prev_itermap_clean = self.coadd_map_unmasked[self.pixel_inds_clean]
+            prev_itermap_clean_masked = self.coadd_map_unmasked[self.pixel_inds_clean_masked]
+            t_gal_clean = prev_itermap_clean * self.gain
+            t_gal_clean_masked = prev_itermap_clean_masked * self.gain
+            self.orbit_data_clean -= t_gal_clean
+            self.orbit_data_clean_masked -= t_gal_clean_masked
 
         orbit_fitter = IterativeFitter(self.zodi_data_clean_masked, self.orbit_data_clean_masked, self.orbit_uncs_clean_masked)
         self.gain, self.offset = orbit_fitter.iterate_fit(1)
