@@ -110,6 +110,7 @@ class Orbit:
         return
 
     def fit(self):
+        orbit_data_to_fit_clean_masked = self.orbit_data_clean_masked
         if self.coadd_map_unmasked is not None:
             self.clean_data()
             # prev_itermap_clean = self.coadd_map_unmasked[self.pixel_inds_clean]
