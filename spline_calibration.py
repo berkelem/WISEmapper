@@ -178,10 +178,10 @@ class Coadder:
 
         self.full_mask = self.moon_stripe_mask.mapdata.astype(bool) #| self.galaxy_mask.astype(bool) #| ~self.south_pole_mask.mapdata.astype(bool)
 
-        with open("~/wisemapper/data/output_maps/w3/gain_spline.pkl", "rb") as gain_spline_file:
+        with open("/home/users/mberkeley/wisemapper/data/output_maps/w3/gain_spline.pkl", "rb") as gain_spline_file:
             self.gain_spline = pickle.load(gain_spline_file)
 
-        with open("~/wisemapper/data/output_maps/w3/offset_spline.pkl", "rb") as offset_spline_file:
+        with open("/home/users/mberkeley/wisemapper/data/output_maps/w3/offset_spline.pkl", "rb") as offset_spline_file:
             self.offset_spline = pickle.load(offset_spline_file)
 
         self.numerator_masked = np.zeros(self.npix)
