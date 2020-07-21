@@ -334,7 +334,7 @@ class Coadder:
             z = np.abs(stats.zscore(px_list))
             mask = z > 1
             inds_to_mask = np.arange(len(px_list), dtype=int)[mask]
-            for ind in inds_to_mask:
+            for ind in inds_to_mask[::-1]:
                 px_list.pop(ind)
                 unc_list.pop(ind)
 
