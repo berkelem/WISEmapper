@@ -135,16 +135,16 @@ class Orbit:
     #     self.zs_data_clean_masked[self.zs_data_clean_masked < 0.0] = 0.0
 
     def apply_spline_fit(self, gain_spline, offset_spline):
-        gains = gain_spline(self.orbit_mjd_obs)
-        offsets = offset_spline(self.orbit_mjd_obs)
-        self.cal_data = (self.orbit_data - offsets) / gains
-        self.cal_uncs = self.orbit_uncs / abs(gains)
+        gains = gain_spline(self.orbit_mjd_clean_masked)
+        offsets = offset_spline(self.orbit_mjd_clean_masked)
+        self.cal_data_clean_masked = (self.orbit_data_clean_masked - offsets) / gains
+        self.cal_uncs_clean_masked = self.orbit_uncs_clean_masked / abs(gains)
 
-        self.zs_data = self.cal_data - self.zodi_data
+        self.zs_data_clean_masked = self.cal_data_clean_masked - self.zodi_data_clean_masked
         # self.zs_data[self.zs_data < 0.0] = 0.0
 
-        self.zs_data_masked = np.array(
-            [self.zs_data[i] for i in range(len(self.zs_data)) if i not in self.entries_to_mask])
+        # self.zs_data_clean_masked = np.array(
+        #     [self.zs_data[i] for i in range(len(self.zs_data)) if i not in self.entries_to_mask])
 
         return
 
@@ -241,7 +241,7 @@ class Coadder:
             orbit.apply_mask()
             orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
             self.add_orbit_masked(orbit)
-            self.add_orbit_unmasked(orbit)
+            # self.add_orbit_unmasked(orbit)
 
             # all_gains = np.array([orb.gain for orb in all_orbits])
             # all_offsets = np.array([orb.offset for orb in all_orbits])
