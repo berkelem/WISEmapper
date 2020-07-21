@@ -189,6 +189,9 @@ class Coadder:
         self.numerator_unmasked = np.zeros(self.npix)
         self.denominator_unmasked = np.zeros_like(self.numerator_unmasked)
 
+        self.all_data = [[]]*self.npix
+        self.all_uncs = [[]]*self.npix
+
         self.gains = []
         self.offsets = []
         self.orbit_sizes = []
@@ -233,59 +236,17 @@ class Coadder:
         self.denominator_unmasked = np.zeros_like(self.numerator_unmasked)
 
         for i in range(num_orbits):
-            print(f"Fitting orbit {i}")
+            print(f"Adding orbit {i}")
             self.set_output_filenames()
             orbit = Orbit(i, self.band, self.full_mask)
             orbit.load_orbit_data()
             orbit.load_zodi_orbit_data()
             orbit.apply_mask()
             orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
-            self.add_orbit_masked(orbit)
-            # self.add_orbit_unmasked(orbit)
+            self.add_orbit(orbit)
 
-            # all_gains = np.array([orb.gain for orb in all_orbits])
-            # all_offsets = np.array([orb.offset for orb in all_orbits])
-            # # all_orbit_sizes = np.array([len(orb.orbit_data) for orb in all_orbits])
-            # all_mjd_vals = np.array([orb.orbit_mjd_obs for orb in all_orbits])
-            # print("Saving data for iteration {}".format(it))
-            # with open("fitvals_iter_{}.pkl".format(it), "wb") as f:
-            #     pickle.dump([all_gains, all_offsets, all_mjd_vals], f, protocol=pickle.HIGHEST_PROTOCOL)
-            #
-            # smoothed_gains = self.weighted_mean_filter(all_gains, all_orbit_sizes, 25)
-            # smoothed_offsets = self.weighted_mean_filter(all_offsets, all_orbit_sizes, 25)
-            #
-            # l1, l2 = plt.plot(range(len(all_gains)), all_gains, 'r.', range(len(smoothed_gains)), smoothed_gains, 'b.')
-            # plt.xlabel("Orbit number")
-            # plt.ylabel("Gain")
-            # plt.legend((l1, l2), ("Original fit", "w median filtered"))
-            # plt.savefig("all_gains_iter_{}.png".format(it))
-            # plt.close()
-            #
-            # l1, l2 = plt.plot(range(len(all_offsets)), all_offsets, 'r.', range(len(smoothed_offsets)), smoothed_offsets, 'b.')
-            # plt.xlabel("Orbit number")
-            # plt.ylabel("Offset")
-            # plt.legend((l1, l2), ("Original fit", "w median filtered"))
-            # plt.savefig("all_offsets_iter_{}.png".format(it))
-            # plt.close()
-            #
-            # for i in range(num_orbits-1):
-            #     orbit1 = all_orbits[i]
-            #     orbit2 = all_orbits[i+1]
-            #     orbit1.gain = smoothed_gains[i]
-            #     orbit1.offset = smoothed_offsets[i]
-            #     orbit2.gain = smoothed_gains[i+1]
-            #     orbit2.offset = smoothed_offsets[i+1]
-            #     sg1, sg2, sb1, sb2 = self.smooth_fit_params(orbit1, orbit2)
-            #     orbit1.update_param(orbit1.smooth_gain, sg1)
-            #     orbit2.update_param(orbit2.smooth_gain, sg2)
-            #     orbit1.update_param(orbit1.smooth_offset, sb1)
-            #     orbit2.update_param(orbit2.smooth_offset, sb2)
-
-            # for i in range(num_orbits):
-            #     orbit = all_orbits[i]
-            #     orbit.apply_fit()
-            #     self.add_orbit(orbit)
-
+        self.clean_data()
+        self.compile_map()
         self.normalize()
         self.save_maps()
 
@@ -356,19 +317,47 @@ class Coadder:
         plt.savefig("/home/users/mberkeley/wisemapper/data/output_maps/w3/fitted_offsets.png")
         plt.close()
 
-    def add_orbit_masked(self, orbit):
+    def add_orbit(self, orbit):
+        if len(orbit.orbit_uncs_clean_masked[orbit.orbit_uncs_clean_masked != 0.0]) > 0 and orbit.gain != 0.0:
+            orbit_data = orbit.zs_data_clean_masked
+            orbit_uncs = orbit.cal_uncs_clean_masked
+            orbit_pixels = orbit.pixel_inds_clean_masked
+            for p, px in enumerate(orbit_pixels):
+                self.all_data[px].append(orbit_data[p])
+                self.all_uncs[px].append(orbit_uncs[p])
 
-        if len(orbit.orbit_uncs_clean_masked[orbit.orbit_uncs_clean_masked!=0.0]) > 0 and orbit.gain!=0.0:
-            self.numerator_masked[orbit.pixel_inds_clean_masked] += np.divide(orbit.zs_data_clean_masked, np.square(orbit.cal_uncs_clean_masked), where=orbit.cal_uncs_clean_masked != 0.0, out=np.zeros_like(orbit.cal_uncs_clean_masked))
-            self.denominator_masked[orbit.pixel_inds_clean_masked] += np.divide(1, np.square(orbit.cal_uncs_clean_masked), where=orbit.cal_uncs_clean_masked != 0.0, out=np.zeros_like(orbit.cal_uncs_clean_masked))
-        return
+    def clean_data(self):
+        for p, px_list in self.all_data:
+            unc_list = self.all_uncs[p]
+            z = np.abs(stats.zscore(px_list))
+            mask = z > 1
+            inds_to_mask = np.arange(len(px_list), dtype=int)[mask]
+            for ind in inds_to_mask:
+                px_list.pop(ind)
+                unc_list.pop(ind)
 
-    def add_orbit_unmasked(self, orbit):
+    def compile_map(self):
+        for p, px_list in enumerate(self.all_data):
+            unc_list = self.all_uncs[p]
+            self.numerator_masked[p] += sum(np.array([px_list[i]/(unc_list[i]**2) for i in range(len(px_list))]))
+            self.denominator_masked[p] += sum(np.array([1/(unc_list[i]**2) for i in range(len(px_list))]))
 
-        if len(orbit.orbit_uncs_clean[orbit.orbit_uncs_clean!=0.0]) > 0 and orbit.gain!=0.0:
-            self.numerator_unmasked[orbit.pixel_inds_clean] += np.divide(orbit.zs_data_clean, np.square(orbit.cal_uncs_clean), where=orbit.cal_uncs_clean != 0.0, out=np.zeros_like(orbit.cal_uncs_clean))
-            self.denominator_unmasked[orbit.pixel_inds_clean] += np.divide(1, np.square(orbit.cal_uncs_clean), where=orbit.cal_uncs_clean != 0.0, out=np.zeros_like(orbit.cal_uncs_clean))
-        return
+
+
+
+    # def add_orbit_masked(self, orbit):
+    #
+    #     if len(orbit.orbit_uncs_clean_masked[orbit.orbit_uncs_clean_masked!=0.0]) > 0 and orbit.gain!=0.0:
+    #         self.numerator_masked[orbit.pixel_inds_clean_masked] += np.divide(orbit.zs_data_clean_masked, np.square(orbit.cal_uncs_clean_masked), where=orbit.cal_uncs_clean_masked != 0.0, out=np.zeros_like(orbit.cal_uncs_clean_masked))
+    #         self.denominator_masked[orbit.pixel_inds_clean_masked] += np.divide(1, np.square(orbit.cal_uncs_clean_masked), where=orbit.cal_uncs_clean_masked != 0.0, out=np.zeros_like(orbit.cal_uncs_clean_masked))
+    #     return
+    #
+    # def add_orbit_unmasked(self, orbit):
+    #
+    #     if len(orbit.orbit_uncs_clean[orbit.orbit_uncs_clean!=0.0]) > 0 and orbit.gain!=0.0:
+    #         self.numerator_unmasked[orbit.pixel_inds_clean] += np.divide(orbit.zs_data_clean, np.square(orbit.cal_uncs_clean), where=orbit.cal_uncs_clean != 0.0, out=np.zeros_like(orbit.cal_uncs_clean))
+    #         self.denominator_unmasked[orbit.pixel_inds_clean] += np.divide(1, np.square(orbit.cal_uncs_clean), where=orbit.cal_uncs_clean != 0.0, out=np.zeros_like(orbit.cal_uncs_clean))
+    #     return
 
     def normalize(self):
         self.fsm_masked.mapdata = np.divide(self.numerator_masked, self.denominator_masked, where=self.denominator_masked != 0.0, out=np.zeros_like(self.denominator_masked))
