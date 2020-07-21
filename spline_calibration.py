@@ -228,7 +228,7 @@ class Coadder:
         return galaxy_mask.astype(bool)
 
     def run(self):
-        num_orbits = 6323
+        num_orbits = 10
 
         self.numerator_masked = np.zeros(self.npix)
         self.denominator_masked = np.zeros_like(self.numerator_masked)
