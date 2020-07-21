@@ -189,8 +189,8 @@ class Coadder:
         self.numerator_unmasked = np.zeros(self.npix)
         self.denominator_unmasked = np.zeros_like(self.numerator_unmasked)
 
-        self.all_data = [[]]*self.npix
-        self.all_uncs = [[]]*self.npix
+        self.all_data = [[] for _ in range(self.npix)]
+        self.all_uncs = [[] for _ in range(self.npix)]
 
         self.gains = []
         self.offsets = []
