@@ -327,7 +327,7 @@ class Coadder:
                 self.all_uncs[px].append(orbit_uncs[p])
 
     def clean_data(self):
-        for p, px_list in self.all_data:
+        for p, px_list in enumerate(self.all_data):
             unc_list = self.all_uncs[p]
             z = np.abs(stats.zscore(px_list))
             mask = z > 1
