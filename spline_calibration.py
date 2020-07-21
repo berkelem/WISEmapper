@@ -328,6 +328,8 @@ class Coadder:
 
     def clean_data(self):
         for p, px_list in enumerate(self.all_data):
+            if len(px_list) == 0:
+                continue
             unc_list = self.all_uncs[p]
             z = np.abs(stats.zscore(px_list))
             mask = z > 1
