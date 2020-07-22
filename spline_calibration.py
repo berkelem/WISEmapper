@@ -206,14 +206,14 @@ class Coadder:
 
     def set_output_filenames(self):
         self.fsm_masked = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_iter_{self.iter}_masked.fits", self.nside)
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_jan10_masked.fits", self.nside)
         self.unc_fsm_masked = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_iter_{self.iter}_masked.fits", self.nside)
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_jan10_masked.fits", self.nside)
         self.fsm_unmasked = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_iter_{self.iter}_unmasked.fits",
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_jan10_unmasked.fits",
             self.nside)
         self.unc_fsm_unmasked = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_iter_{self.iter}_unmasked.fits",
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_jan10_unmasked.fits",
             self.nside)
 
     def mask_galaxy(self):
@@ -243,7 +243,8 @@ class Coadder:
             orbit.load_zodi_orbit_data()
             orbit.apply_mask()
             orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
-            self.add_orbit(orbit)
+            if orbit.mean_mjd_obs < 55228:
+                self.add_orbit(orbit)
 
         self.clean_data()
         self.compile_map()

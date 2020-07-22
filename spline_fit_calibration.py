@@ -101,23 +101,34 @@ def fit_spline(iter_num):
     spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=5000, k=5)
     spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets], s=500000, k=5)
 
-    with open("gain_spline.pkl", "wb") as f:
-        pickle.dump(spl_gain, f, protocol=pickle.HIGHEST_PROTOCOL)
+    # with open("gain_spline.pkl", "wb") as f:
+    #     pickle.dump(spl_gain, f, protocol=pickle.HIGHEST_PROTOCOL)
+    #
+    # with open("offset_spline.pkl", "wb") as g:
+    #     pickle.dump(spl_offset, g, protocol=pickle.HIGHEST_PROTOCOL)
 
-    with open("offset_spline.pkl", "wb") as g:
-        pickle.dump(spl_offset, g, protocol=pickle.HIGHEST_PROTOCOL)
+    str_month_list = ['1 Jan 10', '1 Feb 10', '1 Mar 10', '1 Apr 10', '1 May 10', '1 Jun 10', '1 Jul 10', '1 Aug 10']
 
-    plt.plot(times_gain_masked[stripe_gains], gains_masked[stripe_gains], 'bo', ms=5)
-    plt.plot(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], 'ro', ms=5)
-    plt.plot(times_gain_masked, spl_gain(times_gain_masked), 'g', lw=3)
+
+    fig, ax = plt.subplots()
+    ax.plot(times_gain_masked[stripe_gains], gains_masked[stripe_gains], 'bo', ms=5)
+    ax.plot(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], 'ro', ms=5)
+    ax.plot(times_gain_masked, spl_gain(times_gain_masked), 'g', lw=3)
+    ax.set_xticks([55197, 55228, 55256, 55287, 55317, 55348, 55378, 55409])
+    ax.set_xticklabels(str_month_list, rotation=45)
+    plt.subplots_adjust(bottom=0.2)
     plt.xlabel("Orbit median timestamp")
     plt.ylabel("Fitted Gain")
     plt.savefig("spline_gains.png")
     plt.close()
 
-    plt.plot(times_offset_masked[stripe_offsets], offsets_masked[stripe_offsets], 'bo', ms=5)
-    plt.plot(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets], 'ro', ms=5)
-    plt.plot(times_offset_masked, spl_offset(times_offset_masked), 'g', lw=3)
+    fig, ax = plt.subplots()
+    ax.plot(times_offset_masked[stripe_offsets], offsets_masked[stripe_offsets], 'bo', ms=5)
+    ax.plot(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets], 'ro', ms=5)
+    ax.plot(times_offset_masked, spl_offset(times_offset_masked), 'g', lw=3)
+    ax.set_xticks([55197, 55228, 55256, 55287, 55317, 55348, 55378, 55409])
+    ax.set_xticklabels(str_month_list, rotation=45)
+    plt.subplots_adjust(bottom=0.2)
     plt.xlabel("Orbit median timestamp")
     plt.ylabel("Fitted Offset")
     plt.savefig("spline_offsets.png")
