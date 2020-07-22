@@ -206,14 +206,14 @@ class Coadder:
 
     def set_output_filenames(self):
         self.fsm_masked = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_jun10_masked.fits", self.nside)
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_jul10_masked.fits", self.nside)
         self.unc_fsm_masked = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_jun10_masked.fits", self.nside)
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_jul10_masked.fits", self.nside)
         self.fsm_unmasked = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_jun10_unmasked.fits",
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_jul10_unmasked.fits",
             self.nside)
         self.unc_fsm_unmasked = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_jun10_unmasked.fits",
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_jul10_unmasked.fits",
             self.nside)
 
     def mask_galaxy(self):
@@ -240,9 +240,9 @@ class Coadder:
             self.set_output_filenames()
             orbit = Orbit(i, self.band, self.full_mask)
             orbit.load_orbit_data()
-            if not orbit.mean_mjd_obs < 55378:
+            if not orbit.mean_mjd_obs < 55409:
                 break
-            if not orbit.mean_mjd_obs >= 55348:
+            if not orbit.mean_mjd_obs >= 55378:
                 continue
             orbit.load_zodi_orbit_data()
             orbit.apply_mask()
