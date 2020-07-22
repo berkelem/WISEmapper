@@ -240,11 +240,12 @@ class Coadder:
             self.set_output_filenames()
             orbit = Orbit(i, self.band, self.full_mask)
             orbit.load_orbit_data()
+            if not orbit.mean_mjd_obs < 55228:
+                continue
             orbit.load_zodi_orbit_data()
             orbit.apply_mask()
             orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
-            if orbit.mean_mjd_obs < 55228:
-                self.add_orbit(orbit)
+            self.add_orbit(orbit)
 
         self.clean_data()
         self.compile_map()
