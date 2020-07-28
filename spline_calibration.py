@@ -158,8 +158,8 @@ class Orbit:
 
     def plot_fit(self):
         theta, phi = hp.pix2ang(256, self.pixel_inds_clean_masked, lonlat=True)
-        plt.plot(theta, self.orbit_data_clean_masked, 'r')
-        plt.plot(theta, self.zodi_data_clean_masked, 'b')
+        plt.plot(theta, self.orbit_data_clean_masked, 'r.')
+        plt.plot(theta, self.zodi_data_clean_masked, 'b.')
         plt.xlabel("Latitude (degrees)")
         plt.ylabel("MJy/sr")
         plt.savefig("orbit_{}_fit.png".format(self.orbit_num))
