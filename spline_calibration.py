@@ -257,7 +257,7 @@ class Coadder:
             orbit.apply_mask()
             orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
             self.add_orbit(orbit)
-            if i % 10 == 0.0:
+            if i % 15 == 0.0:
                 orbit.plot_fit()
 
         self.clean_data()
