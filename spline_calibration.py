@@ -156,6 +156,15 @@ class Orbit:
         self.apply_mask()
         return
 
+    def plot_fit(self):
+        theta, phi = hp.pix2ang(self.nside, self.pixel_inds_clean_masked, lonlat=True)
+        plt.plot(theta, self.orbit_data_clean_masked, 'r')
+        plt.plot(theta, self.zodi_data_clean_masked, 'b')
+        plt.xlabel("Latitude (degrees)")
+        plt.ylabel("MJy/sr")
+        plt.savefig("orbit_{}_fit.png".format(self.orbit_num))
+        plt.close()
+
 
 class Coadder:
 
@@ -240,13 +249,14 @@ class Coadder:
             self.set_output_filenames()
             orbit = Orbit(i, self.band, self.full_mask)
             orbit.load_orbit_data()
-            if not orbit.mean_mjd_obs < 56000:
+            if not orbit.mean_mjd_obs < 55257:#55287:
                 break
-            if not orbit.mean_mjd_obs >= 55409:
+            if not orbit.mean_mjd_obs >= 55256:
                 continue
             orbit.load_zodi_orbit_data()
             orbit.apply_mask()
             orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
+            orbit.plot_fit()
             self.add_orbit(orbit)
 
         self.clean_data()
