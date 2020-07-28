@@ -249,15 +249,16 @@ class Coadder:
             self.set_output_filenames()
             orbit = Orbit(i, self.band, self.full_mask)
             orbit.load_orbit_data()
-            if not orbit.mean_mjd_obs < 55257:#55287:
+            if not orbit.mean_mjd_obs < 55287:
                 break
             if not orbit.mean_mjd_obs >= 55256:
                 continue
             orbit.load_zodi_orbit_data()
             orbit.apply_mask()
             orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
-            orbit.plot_fit()
             self.add_orbit(orbit)
+            if i % 10 == 0.0:
+                orbit.plot_fit()
 
         self.clean_data()
         self.compile_map()
