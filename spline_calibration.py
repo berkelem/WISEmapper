@@ -249,9 +249,9 @@ class Coadder:
             self.set_output_filenames()
             orbit = Orbit(i, self.band, self.full_mask)
             orbit.load_orbit_data()
-            if not orbit.mean_mjd_obs < 55287:
+            if not orbit.mean_mjd_obs < 55378:
                 break
-            if not orbit.mean_mjd_obs >= 55256:
+            if not orbit.mean_mjd_obs >= 55348:
                 continue
             orbit.load_zodi_orbit_data()
             orbit.apply_mask()
