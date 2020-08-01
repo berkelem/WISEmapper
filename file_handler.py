@@ -1,4 +1,3 @@
-
 """
 :author: Matthew Berkeley
 :date: Jun 9 2019
@@ -49,6 +48,7 @@ class FITSFile(File):
     Attributes
     ----------
     header : Header of FITS file
+    data : Data contained in FITS file
     """
 
     def __init__(self, filename):
@@ -56,6 +56,7 @@ class FITSFile(File):
         super().__init__(filename)
         self._check_file_exists()
         self.header = None
+        self.data = None
 
     def _check_file_exists(self):
         """
@@ -84,6 +85,10 @@ class FITSFile(File):
         wcs_file = wcs.WCS(self.header).wcs_pix2world(coord_array, 0,
                                                       ra_dec_order=True)
         return wcs_file
+
+    def read_data(self):
+        """Read data in FITS file"""
+        self.data = fits.getdata(self.filename)
 
 
 class HealpixMap(File):

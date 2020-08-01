@@ -1,33 +1,99 @@
+"""
+:author: Matthew Berkeley
+:date: Jun 2019
+
+Module for handling raw WISE data.
+
+Main classes
+------------
+
+WISEDataLoader : Loads intensity data, mask data and uncertainty data for a given WISE frame
+
+FileBatcher : Organizes WISE frames into batches that correspond to each WISE orbit
+
+"""
 from file_handler import FITSFile
 import numpy as np
 import numpy.ma as ma
-from astropy.io import fits
 from functools import reduce
+import pandas as pd
 
 
-class WISEDataLoader(object):
+class WISEDataLoader:
+    """
+    Load intensity data, mask data and uncertainty data for a given WISE frame
+
+    Parameters
+    ----------
+
+    filename : str
+        Name of the intensity data file, including full path
+
+    Attributes
+    ----------
+
+    int_filename : str
+        Name of the pixel intensity file, including full path
+    msk_filename : str
+        Name of the pixel mask file, including full path
+    unc_filename : str
+        Name of the pixel uncertainty file, including full path
+    int_file : FITSFile object
+        Corresponding FITSFile object from file_handler module for pixel intensity file
+    msk_file : FITSFile object
+        Corresponding FITSFile object from file_handler module for pixel mask file
+    unc_file : FITSFile object
+        Corresponding FITSFile object from file_handler module for pixel uncertainty file
+    int_data : numpy.array
+        Data from pixel intensity file, flattened to 1-dimensional array
+    msk_data : numpy.array
+        Data from pixel mask file, flattened to 1-dimensional array
+    unc_data : numpy.array
+        Data from pixel uncertainty file, flattened to 1-dimensional array
+    mask : numpy.array
+        Boolean array for masking NaN values in any of the pixel intensity, mask or uncertainty files and negative
+        pixel values in the pixel intensity file
+    wcs_coords : numpy.array
+        Array of tuples containing (RA, Dec) information for every pixel. Array has the same shape as int_data
+    """
 
     def __init__(self, filename):
         self.int_filename = filename
         self.msk_filename = filename.replace('-int-', '-msk-')
         self.unc_filename = filename.replace('-int-', '-unc-')
+
+        self.int_file = None
+        self.msk_file = None
+        self.unc_file = None
+
+        self.int_data = None
+        self.msk_data = None
+        self.unc_data = None
+
         self.mask = None
         self.wcs_coords = None
 
     def load_data(self):
+        """Load raw WISE data and apply mask"""
         self._read_file()
         self._mask_data()
 
     def _read_file(self):
+        """Read raw WISE files (intensity, mask and uncertainty) and flatten to 1 dimension"""
         self.int_file = FITSFile(self.int_filename)
         self.msk_file = FITSFile(self.msk_filename)
         self.unc_file = FITSFile(self.unc_filename)
 
-        self.int_data = fits.getdata(self.int_file.filename).astype(float).flatten()
-        self.msk_data = fits.getdata(self.msk_file.filename).astype(bool).flatten()
-        self.unc_data = fits.getdata(self.unc_file.filename).astype(float).flatten()
+        self.int_file.read_data()
+        self.msk_file.read_data()
+        self.unc_file.read_data()
+
+        self.int_data = self.int_file.data.astype(float).flatten()
+        self.msk_data = self.msk_file.data.astype(bool).flatten()
+        self.unc_data = self.unc_file.data.astype(float).flatten()
 
     def _mask_data(self):
+        """Apply mask of any NaN-valued pixels and any negative-valued pixels in the intensity image"""
         nan_mask = np.isnan(self.int_data)
         nan_mask_unc = np.isnan(self.unc_data)
         neg_mask = ma.masked_less(ma.array(self.int_data, mask=nan_mask), 0.0).mask
@@ -36,9 +102,11 @@ class WISEDataLoader(object):
         self.unc_data = ma.array(self.unc_data, mask=self.mask)
 
     def load_coords(self):
+        """Load the (RA, Dec) coordinates for each pixel based on the FITS header information"""
         self.int_file.read_header()
         self.wcs_coords = self.int_file.wcs2px()
         self.wcs_coords = self.wcs_coords[~self.mask]
+
 
 class FileBatcher:
     """Collection of pixels to be mapped (can be facet or orbit)"""
