@@ -45,10 +45,12 @@ def main():
         try:
             RunRankZero(mapmaker.normalize)
             RunRankZero(mapmaker.save_map)
+            print("Normalized and saved")
             # process_map.run_rank_zero(mapmaker.normalize)
             # process_map.run_rank_zero(mapmaker.save_map)
         except ValueError:
-            continue
+            raise
+            # continue
         n += 1
     print("Finished code")
 

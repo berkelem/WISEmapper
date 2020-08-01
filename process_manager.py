@@ -172,6 +172,7 @@ class RunRankZero(Process):
         job_data = self.get_job_data()
         if job_data is None:
             retvalue = self.func()
+            print("retvalue", retvalue)
         elif self.task_index is not None:
             retvalue = None
             while self.task_index < len(job_data):
