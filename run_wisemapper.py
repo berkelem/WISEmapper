@@ -24,7 +24,7 @@ def main():
     while n < n_orbits:
         # if os.path.exists(f"/home/users/mberkeley/wisemapper/data/output_maps/w{band}/fsm_w{band}_orbit_{n}.fits"):
         #     RunRankZero(print, data=f"Already mapped orbit {n + 1} of {n_orbits}")
-        if os.path.exists(f"/home/users/mberkeley/wisemapper/data/output_maps/w{band}/fsm_w{band}_orbit_{n}.fits"):
+        if os.path.exists(f"/home/users/mberkeley/wisemapper/data/test_output/w{band}/fsm_w{band}_orbit_{n}.fits"):
             RunRankZero(print, data=f"Already mapped orbit {n + 1} of {n_orbits}")
             filelist, mjd_list, orbit_num = next(filelist_gen)
             n += 1
