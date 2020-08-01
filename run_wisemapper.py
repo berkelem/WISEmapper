@@ -40,10 +40,13 @@ def main():
                                  mapmaker.time_numerator_cumul, mapmaker.time_denominator_cumul])
         process_map.run()
         alldata = process_map.retvalue
-        process_map.run_rank_zero(mapmaker.unpack_multiproc_data, data=alldata)
+        RunRankZero(mapmaker.unpack_multiproc_data, data=alldata)
+        # process_map.run_rank_zero(mapmaker.unpack_multiproc_data, data=alldata)
         try:
-            process_map.run_rank_zero(mapmaker.normalize)
-            process_map.run_rank_zero(mapmaker.save_map)
+            RunRankZero(mapmaker.normalize)
+            RunRankZero(mapmaker.save_map)
+            # process_map.run_rank_zero(mapmaker.normalize)
+            # process_map.run_rank_zero(mapmaker.save_map)
         except ValueError:
             continue
         n += 1

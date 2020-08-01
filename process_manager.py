@@ -1,5 +1,18 @@
-import logging
-from enum import Enum
+"""
+Module allowing simple control over actions to be taken in an MPI environment.
+
+Main classes
+------------
+
+RunLinear : Call a function without invoking MPI distribution
+
+RunDistributed : Call a function using MPI to distribute tasks to the number of workers defined in the sbatch command/script
+
+RunRankZero : Call a function that only runs on the processor with rank 0, while using MPI
+
+"""
+
+
 from abc import ABC, abstractmethod
 import types
 import numpy as np
@@ -13,20 +26,9 @@ try:
 except ImportError:
     mpi_available = False
 
-logger = logging.getLogger()
-
-class RunProcess:
-
-    def __init__(self, func, data=None, gather_items=None, parallel=True, iterate=False):
-        if mpi_available and parallel:
-            self.retvalue = RunParallel(func, data=data, gather_items=gather_items, iterate=iterate).retvalue
-        elif mpi_available and not parallel:
-            self.retvalue = RunRankZero(func, data=data, iterate=iterate).retvalue
-        else:
-            self.retvalue = RunLinear(func, data=data, iterate=iterate).retvalue
-
 
 class Process(ABC):
+    """Base class for module. This class handles common requirements like handling data types."""
 
     def __init__(self, func, data=None, gather_items=None, iterate=False):
         super().__init__()
@@ -41,6 +43,7 @@ class Process(ABC):
         pass
 
     def get_job_data(self):
+        """Identify the data type and extract the job data"""
         if self.data is None:
             job_data = None
         elif isinstance(self.data, str) or isinstance(self.data, int):
@@ -58,8 +61,24 @@ class Process(ABC):
         return job_data
 
 
-
 class RunLinear(Process):
+    """
+    Run a function without invoking MPI.
+
+    Parameters
+    ----------
+    :param func: func
+        Function to run
+    :param data: str or int or generator or list or numpy.ndarray or pandas.Series
+        Data to be passed to function (optional)
+    :param iterate: bool
+        Run function iteratively on data (optional)
+
+    Attributes
+    ----------
+    retvalue : Access the return value of the function
+
+    """
 
     def __init__(self, func, **kwargs):
         super().__init__(func, **kwargs)
@@ -70,18 +89,38 @@ class RunLinear(Process):
         if job_data is None:
             retvalue = self.func()
         elif self.task_index is not None:
+            retvalue = None
             while self.task_index < len(job_data):
                 print_progress(self.task_index, len(job_data) + 1)
                 data = job_data[self.task_index]
                 retvalue = self.func(data)
                 self.task_index += 1
-
         else:
             retvalue = self.func(job_data)
         return retvalue
 
 
 class RunDistributed(Process):
+    """
+        Run a function invoking MPI. The number of processes is defined elsewhere, usually in the sbatch command/script.
+
+        Parameters
+        ----------
+        :param func: func
+            Function to run
+        :param data: str or int or generator or list or numpy.ndarray or pandas.Series
+            Data to be passed to function
+        :param gather_items: list
+            Names of items to gather to master
+        :param iterate: bool
+            Run function iteratively on data (optional)
+
+
+        Attributes
+        ----------
+        retvalue : Access the return value of the function
+
+        """
 
     def __init__(self, func, data, **kwargs):
         super().__init__(func, data, **kwargs)
@@ -89,6 +128,7 @@ class RunDistributed(Process):
         self.size = self.comm.Get_size()
         self.rank = self.comm.Get_rank()
         self.data_sublist = data[self.rank::self.size]
+        self.items_to_gather = []
 
     def run(self):
         self.run_jobs()
@@ -104,16 +144,16 @@ class RunDistributed(Process):
         self.items_to_gather = [x for x in self.gather_items]
         self.retvalue = self.comm.gather(self.items_to_gather, root=0)
 
-    def run_rank_zero(self, func, data=None):
-        if self.rank == 0:
-            self.data = data
-            job_data = self.get_job_data()
-            if job_data is None:
-                self.retvalue = func()
-            else:
-                self.retvalue = func(job_data)
-        else:
-            self.retvalue = None
+    # def run_rank_zero(self, func, data=None):
+    #     if self.rank == 0:
+    #         self.data = data
+    #         job_data = self.get_job_data()
+    #         if job_data is None:
+    #             self.retvalue = func()
+    #         else:
+    #             self.retvalue = func(job_data)
+    #     else:
+    #         self.retvalue = None
 
 
 class RunRankZero(Process):
@@ -133,6 +173,7 @@ class RunRankZero(Process):
         if job_data is None:
             retvalue = self.func()
         elif self.task_index is not None:
+            retvalue = None
             while self.task_index < len(job_data):
                 print_progress(self.task_index + 1, len(job_data))
                 data = job_data[self.task_index]
@@ -141,76 +182,3 @@ class RunRankZero(Process):
         else:
             retvalue = self.func(job_data)
         return retvalue
-
-
-class RunParallel(Process):
-
-    tags = Enum('tags', ['READY', 'DONE', 'EXIT', 'START'])
-
-    def __init__(self, func, **kwargs):
-        super().__init__(func, **kwargs)
-        self.comm = MPI.COMM_WORLD
-        self.size = self.comm.Get_size()
-        self.rank = self.comm.Get_rank()
-        self.name = MPI.Get_processor_name()
-        self.status = MPI.Status()
-        if self.rank == 0:
-            self.control_flow()
-            self.alldata = None
-            if self.gather_items:
-                self.gather_to_master()
-        else:
-            self.run_jobs()
-            if self.gather_items:
-                self.gather_to_master()
-
-    def control_flow(self):
-        assert self.rank == 0
-        num_workers = self.size - 1
-        closed_workers = 0
-        job_data = self.get_job_data()
-        if job_data is None:
-            self.func()
-
-        logger.info(f"Master starting with {num_workers} workers")
-        while closed_workers < num_workers:
-            data = self.comm.recv(source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=self.status)
-            source = self.status.Get_source()
-            tag = self.status.Get_tag()
-            if tag == type(self).tags.READY.value:
-                if job_data is None:
-                    self.comm.send(None, dest=source, tag=type(self).tags.EXIT.value)
-                elif self.task_index < len(job_data):
-                    print_progress(self.task_index, len(job_data) + 1)
-                    self.comm.send(job_data[self.task_index], dest=source, tag=type(self).tags.START.value)
-                    self.task_index += 1
-                else:
-                    self.comm.send(None, dest=source, tag=type(self).tags.EXIT.value)
-
-            elif tag == type(self).tags.DONE.value:
-                pass
-
-            elif tag == type(self).tags.EXIT.value:
-                closed_workers += 1
-        return
-
-    def run_jobs(self):
-        assert self.rank > 0
-        while True:
-            self.comm.send(None, dest=0, tag=type(self).tags.READY.value)
-            task_data = self.comm.recv(source=0, tag=MPI.ANY_TAG, status=self.status)
-            tag = self.status.Get_tag()
-            if tag == type(self).tags.START.value:
-                result = self.func(task_data)
-                self.comm.send(result, dest=0, tag=type(self).tags.DONE.value)
-            elif tag == type(self).tags.EXIT.value:
-                break
-            elif tag == type(self).tags.SKIP.value:
-                return
-        self.comm.send(None, dest=0, tag=type(self).tags.EXIT.value)
-        return
-
-    def gather_to_master(self):
-        self.items_to_gather = [x for x in self.gather_items]
-        self.retvalue = self.comm.gather(self.items_to_gather, root=0)
-
