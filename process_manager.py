@@ -1,4 +1,7 @@
 """
+:author: Matthew Berkeley
+:date: Jun 2019
+
 Module allowing simple control over actions to be taken in an MPI environment.
 Each class takes the function to be run as argument. Data can also be passed as a kwarg and will be passed to the
 function. Data types are handled so functions can process single arguments, multiple arguments and multiple arguments
