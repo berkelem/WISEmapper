@@ -41,16 +41,11 @@ def main():
         process_map.run()
         alldata = process_map.retvalue
         RunRankZero(mapmaker.unpack_multiproc_data, data=alldata)
-        # process_map.run_rank_zero(mapmaker.unpack_multiproc_data, data=alldata)
         try:
             RunRankZero(mapmaker.normalize)
             RunRankZero(mapmaker.save_map)
-            print("Normalized and saved")
-            # process_map.run_rank_zero(mapmaker.normalize)
-            # process_map.run_rank_zero(mapmaker.save_map)
         except ValueError:
-            raise
-            # continue
+            continue
         n += 1
     print("Finished code")
 

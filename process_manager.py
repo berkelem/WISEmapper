@@ -1,12 +1,16 @@
 """
 Module allowing simple control over actions to be taken in an MPI environment.
+Each class takes the function to be run as argument. Data can also be passed as a kwarg and will be passed to the
+function. Data types are handled so functions can process single arguments, multiple arguments and multiple arguments
+iteratively.
 
 Main classes
 ------------
 
 RunLinear : Call a function without invoking MPI distribution
 
-RunDistributed : Call a function using MPI to distribute tasks to the number of workers defined in the sbatch command/script
+RunDistributed : Call a function using MPI to distribute tasks to the number of workers defined in the sbatch
+command/script
 
 RunRankZero : Call a function that only runs on the processor with rank 0, while using MPI
 
@@ -102,25 +106,25 @@ class RunLinear(Process):
 
 class RunDistributed(Process):
     """
-        Run a function invoking MPI. The number of processes is defined elsewhere, usually in the sbatch command/script.
+    Run a function invoking MPI. The number of processes is defined elsewhere, usually in the sbatch command/script.
 
-        Parameters
-        ----------
-        :param func: func
-            Function to run
-        :param data: str or int or generator or list or numpy.ndarray or pandas.Series
-            Data to be passed to function
-        :param gather_items: list
-            Names of items to gather to master
-        :param iterate: bool
-            Run function iteratively on data (optional)
+    Parameters
+    ----------
+    :param func: func
+        Function to run
+    :param data: str or int or generator or list or numpy.ndarray or pandas.Series
+        Data to be passed to function
+    :param gather_items: list
+        Names of items to gather to master
+    :param iterate: bool
+        Run function iteratively on data (optional)
 
 
-        Attributes
-        ----------
-        retvalue : Access the return value of the function
+    Attributes
+    ----------
+    retvalue : Access the return value of the function
 
-        """
+    """
 
     def __init__(self, func, data, **kwargs):
         super().__init__(func, data, **kwargs)
@@ -141,22 +145,33 @@ class RunDistributed(Process):
             self.func(item)
 
     def gather_to_master(self):
+        """MPI Gather items to master processor"""
         self.items_to_gather = [x for x in self.gather_items]
         self.retvalue = self.comm.gather(self.items_to_gather, root=0)
 
-    # def run_rank_zero(self, func, data=None):
-    #     if self.rank == 0:
-    #         self.data = data
-    #         job_data = self.get_job_data()
-    #         if job_data is None:
-    #             self.retvalue = func()
-    #         else:
-    #             self.retvalue = func(job_data)
-    #     else:
-    #         self.retvalue = None
-
 
 class RunRankZero(Process):
+    """
+    Run a function on a single processor within an MPI environment.
+    Useful for jobs that cannot/should not be parallelized.
+
+    Parameters
+    ----------
+    :param func: func
+        Function to run
+    :param data: str or int or generator or list or numpy.ndarray or pandas.Series
+        Data to be passed to function
+    :param gather_items: list
+        Names of items to gather to master
+    :param iterate: bool
+        Run function iteratively on data (optional)
+
+
+    Attributes
+    ----------
+    retvalue : Access the return value of the function
+
+    """
 
     def __init__(self, func, **kwargs):
         super().__init__(func, **kwargs)
@@ -172,7 +187,6 @@ class RunRankZero(Process):
         job_data = self.get_job_data()
         if job_data is None:
             retvalue = self.func()
-            print("retvalue", retvalue)
         elif self.task_index is not None:
             retvalue = None
             while self.task_index < len(job_data):
