@@ -29,6 +29,14 @@ class WISEDataLoader:
     filename : str
         Name of the intensity data file, including full path
 
+    Methods
+    -------
+
+    load_coords : [no args]
+        Load the (RA, Dec) coordinates for each pixel based on the FITS header information
+    load_data : [no args]
+        Load raw WISE data and apply mask
+
     Attributes
     ----------
 
@@ -73,6 +81,12 @@ class WISEDataLoader:
         self.mask = None
         self.wcs_coords = None
 
+    def load_coords(self):
+        """Load the (RA, Dec) coordinates for each pixel based on the FITS header information"""
+        self.int_file.read_header()
+        self.wcs_coords = self.int_file.wcs2px()
+        self.wcs_coords = self.wcs_coords[~self.mask]
+
     def load_data(self):
         """Load raw WISE data and apply mask"""
         self._read_file()
@@ -101,22 +115,66 @@ class WISEDataLoader:
         self.int_data = ma.array(self.int_data, mask=self.mask)
         self.unc_data = ma.array(self.unc_data, mask=self.mask)
 
-    def load_coords(self):
-        """Load the (RA, Dec) coordinates for each pixel based on the FITS header information"""
-        self.int_file.read_header()
-        self.wcs_coords = self.int_file.wcs2px()
-        self.wcs_coords = self.wcs_coords[~self.mask]
-
 
 class FileBatcher:
-    """Collection of pixels to be mapped (can be facet or orbit)"""
+    """
+    Group WISE files into batches corresponding to individual days of observation or individual orbits.
+
+    Parameters
+    ----------
+
+    :param filename: str
+        Name of file, including full path, containing metadata table for all orbits in a given band
+
+    Methods
+    -------
+
+    filelist_generator : [no args]
+        Generate batches of files. Use only after creating groups.
+    group_days : [no args]
+        Load metadata and extract file groups corresponding to individual days.
+    group_orbits : [no args]
+        Load metadata and extract file groups corresponding to individual orbits.
+
+    Attributes
+    ----------
+
+    filename : str
+        Name of file, including full path, containing metadata table for all orbits in a given band
+    filtered_data : pandas.DataFrame
+        Table of metadata columns of interest
+    timestamps_df : pandas.DataFrame
+        Table containing just the timestamp information ('date_obs_date', 'date_obs_time', 'mjd_obs') for each orbit ID
+    groups : pandas.groupby object
+        GroupBy object that can be iterated over to access individual groups (by orbit or by day)
+
+    """
+
     def __init__(self, filename):
         self.filename = filename
         self.filtered_data = None
         self.timestamps_df = None
         self.groups = None
 
-    def load_dataframe(self):
+    def filelist_generator(self):
+        """Generate batches of files. Use only after creating groups."""
+        grp_num = 0
+        for name, group in self.groups:
+            yield group["full_filepath"], group["mjd_obs"], grp_num
+            grp_num += 1
+
+    def group_days(self):
+        """Load metadata and extract file groups corresponding to individual days."""
+        self._load_dataframe()
+        self._group_files(groupby='day')
+
+    def group_orbits(self):
+        """Load metadata and extract file groups corresponding to individual orbits."""
+        self._load_dataframe()
+        self._group_files(groupby='orbit')
+
+    def _load_dataframe(self):
+        """Read metadata table into pandas dataframe"""
 
         self.filtered_data = pd.read_csv(self.filename,
                                          names=["band", "crval1", "crval2", "ra1", "dec1", "ra2", "dec2", "ra3", "dec3",
@@ -142,43 +200,40 @@ class FileBatcher:
                                          )
         return
 
-    def filter_timestamps(self):
+    def _filter_timestamps(self):
+        """
+        Filter dataframe so it just contains time data ('date_obs_date', 'date_obs_time', 'mjd_obs') and scan ID
+        data ('scan_id', 'scangrp'). Data is sorted by 'mjd_obs'.
+        """
         self.timestamps_df = self.filtered_data[["date_obs_date", "date_obs_time", "mjd_obs", "scan_id", "scangrp",
                                                 "full_filepath"]].copy().sort_values("mjd_obs")
         return
 
-    def get_orbit(self):
-        self.filter_timestamps()
+    def _get_orbit(self):
+        """
+        Create groups of files - one group per orbit. An orbit is identified by 'scan_id' and in fact represents
+        approximately half a full orbit on the sky.
+        """
+        self._filter_timestamps()
         self.groups = self.timestamps_df.groupby('scan_id')
         return
 
-    def get_day(self):
-        self.filter_timestamps()
+    def _get_day(self):
+        """
+        Create groups of files - one group per day. A day is identified by whole numbers in the 'mjd_obs' field.
+        """
+        self._filter_timestamps()
         self.groups = self.timestamps_df.groupby(self.timestamps_df['mjd_obs'].apply(lambda x: round(x)))
         return
 
-    def group_days(self):
-        self.load_dataframe()
-        self._group_files(groupby='day')
-
-    def group_orbits(self):
-        self.load_dataframe()
-        self._group_files(groupby='orbit')
-
     def _group_files(self, groupby='day'):
+        """
+        Group files by day or by orbit
+        :param groupby: str
+            'day' (default) or 'orbit'
+        """
         # Use orbit parameters to filter WISE images
         if groupby == 'day':
-            self.get_day()
+            self._get_day()
         elif groupby == 'orbit':
-            self.get_orbit()
-        # filegroup_generator = self.filelist_generator()
-
-    def filelist_generator(self):
-        grp_num = 0
-        for name, group in self.groups:
-            yield group["full_filepath"], group["mjd_obs"], grp_num
-            grp_num += 1
-
-    def clean_files(self):
-        # Run files through CNN model. Good files undergo outlier removal.
-        pass
+            self._get_orbit()
