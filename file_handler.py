@@ -100,6 +100,19 @@ class HealpixMap(File):
     :param filename: str
         Name of Healpix file, including full path
 
+    Methods
+    -------
+    read_data :
+        Read data from Healpix file
+    write_data :
+        Write data to Healpix file
+    set_resolution :
+        Set Healpix map resolution by providing NSIDE parameter
+    rotate_map :
+        Rotate Healpix pixel numbering by applying a coordinate system transformation
+    save_map :
+        Save map to file
+
     Attributes
     ----------
     mapdata : numpy.array
@@ -178,6 +191,18 @@ class HealpixMap(File):
         self.phi = phi_rot
         return
 
+    def save_map(self, coord="G"):
+        """
+        Save map to file
+
+        Parameters
+        ----------
+        :param coord: str
+            One of 'G' (galactic, default), 'C' (celestial), 'E' (ecliptic)
+        """
+        hp.fitsfunc.write_map(self.filename, self.mapdata, coord=coord, overwrite=True)
+        return
+
 
 class WISEMap(HealpixMap):
     """
@@ -190,12 +215,21 @@ class WISEMap(HealpixMap):
     :param band: int
         Any of [1,2,3,4]
 
+    Methods
+    -------
+    ind2wcs :
+        Convert pixel index into theta, phi coordinates corresponding to co-latitude and longitude in radians
+    wcs2ind :
+        Convert RA, Dec values into pixel indices on the Healpix grid.
+
     Attributes
     ----------
     band : int
         One of [1,2,3,4]
     mapdata : numpy.array
         1-D array containing data for Healpix pixels
+    timedata : numpy.array
+        1-D array containing timestamps for each pixel
     nside : int
         Healpix NSIDE parameter
     npix : int
@@ -206,9 +240,37 @@ class WISEMap(HealpixMap):
         longitude (in radians)
     """
 
+    r = Rotator(coord=['C', 'G'])
+
     def __init__(self, filename, band):
         super().__init__(filename)
         self.band = band
+        self.nside = 256
+        super().set_resolution(self.nside)
+        self.timedata = np.zeros_like(self.mapdata)
+
+    def ind2wcs(self, index):
+        theta, phi = hp.pixelfunc.pix2ang(self.nside, index)
+        return np.degrees(phi), np.degrees(np.pi / 2. - theta)
+
+    def wcs2ind(self, ra_arr, dec_arr, nest=False):
+        """
+        Define theta and phi in galactic coords, then rotate to celestial coords to determine the correct healpix pixel
+        using ang2pix.
+        hp.ang2pix only converts from celestial lon lat coords to pixels.
+        :param ra_arr: numpy.array
+            Right ascension values
+        :param dec_arr: numpy.array
+            Declination values
+        :param nest: bool
+            Use NEST pixel ordering instead of RING (default is RING)
+        :return: numpy.array
+            Array containing the pixel indices for the given coordinates
+        """
+        theta = [np.radians(-float(dec) + 90.) for dec in dec_arr]
+        phi = [np.radians(float(ra)) for ra in ra_arr]
+        theta_c, phi_c = self.r(theta, phi)
+        return hp.pixelfunc.ang2pix(self.nside, theta_c, phi_c, nest=nest)
 
 
 class ZodiMap(WISEMap):

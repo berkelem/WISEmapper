@@ -4,15 +4,15 @@ from healpy.rotator import Rotator
 import healpy as hp
 
 def select_pole_region(deg):
-    # pole_test_map = FullSkyMap("pole_test.fits", 256)
-    input_map = FullSkyMap(
-            "/home/users/mberkeley/wisemapper/data/output_maps/fsm_attempt6/w3/fullskymap_band3.fits", 256)
+    # pole_test_map = WISEMap("pole_test.fits", 3)
+    input_map = WISEMap(
+            "/home/users/mberkeley/wisemapper/data/output_maps/fsm_attempt6/w3/fullskymap_band3.fits", 3)
     input_map.read_data()
 
     inds = np.arange(input_map.npix)
 
     mask = np.zeros_like(inds)
-    mask_map = FullSkyMap(f"mask_map_{int(deg)}.fits", 256)
+    mask_map = WISEMap(f"mask_map_{int(deg)}.fits", 3)
     mask_map.mapdata = mask
 
     ra_arr, dec_arr = input_map.ind2wcs(inds)

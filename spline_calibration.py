@@ -214,14 +214,14 @@ class Coadder:
         self.unc_fsm_unmasked = None
 
     def set_output_filenames(self):
-        self.fsm_masked = FullSkyMap(
+        self.fsm_masked = WISEMap(
             f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_aug10_masked.fits", self.nside)
-        self.unc_fsm_masked = FullSkyMap(
+        self.unc_fsm_masked = WISEMap(
             f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_aug10_masked.fits", self.nside)
-        self.fsm_unmasked = FullSkyMap(
+        self.fsm_unmasked = WISEMap(
             f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_aug10_unmasked.fits",
             self.nside)
-        self.unc_fsm_unmasked = FullSkyMap(
+        self.unc_fsm_unmasked = WISEMap(
             f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_band3_aug10_unmasked.fits",
             self.nside)
 

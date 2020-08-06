@@ -12,7 +12,7 @@ def subtract_zodi():
     wise_map.read_data()
     zodi_map.read_data()
 
-    output_map = FullSkyMap("band_3_zodi_subtracted.fits", 256)
+    output_map = WISEMap("band_3_zodi_subtracted.fits", 3)
     output_map.mapdata = wise_map.mapdata - zodi_map.mapdata
     output_map.save_map()
 

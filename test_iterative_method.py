@@ -10,10 +10,10 @@ class Coadder:
 
     def __init__(self, band):
         self.band = band
-        self.fsm = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_sim.fits", 256)
-        self.unc_fsm = FullSkyMap(
-            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_sim.fits", 256)
+        self.fsm = WISEMap(
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_sim.fits", 3)
+        self.unc_fsm = WISEMap(
+            f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_unc_sim.fits", 3)
 
         self.moon_stripe_mask = HealpixMap("/home/users/mberkeley/wisemapper/data/masks/stripe_mask_G.fits")
         self.moon_stripe_mask.read_data()

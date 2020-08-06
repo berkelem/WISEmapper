@@ -199,9 +199,9 @@ def mask_outliers(data, threshold=1):
     return mask
 
 def combine_orbits_from_pkl(all_data, all_uncs, gains, offsets, start, end):
-    fsm = FullSkyMap(
-        f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_band3_{start}_{end}.fits", 256)
-    unc_fsm = FullSkyMap(
+    fsm = WISEMap(
+        f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_band3_{start}_{end}.fits", 3)
+    unc_fsm = WISEMap(
         f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_unc_band3_{start}_{end}.fits",
         256)
 
@@ -223,9 +223,9 @@ def combine_orbits_from_pkl(all_data, all_uncs, gains, offsets, start, end):
 def combine_maps_by_pixel(all_data, all_uncs, gains, offsets, start, end, inds):
     import time
     tic = time.time()
-    fsm = FullSkyMap(
-        f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_band3_{start}_{end}.fits", 256)
-    unc_fsm = FullSkyMap(
+    fsm = WISEMap(
+        f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_band3_{start}_{end}.fits", 3)
+    unc_fsm = WISEMap(
         f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_unc_band3_{start}_{end}.fits",
         256)
     numerator = np.zeros(len(all_data[0]), dtype=float)
@@ -248,8 +248,8 @@ def combine_maps_by_pixel(all_data, all_uncs, gains, offsets, start, end, inds):
 
 
 def combine_orbits(start, end, gains, offsets):
-    fsm = FullSkyMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/fullskymap_band3_{start}_{end}.fits", 256)
-    unc_fsm = FullSkyMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/fullskymap_unc_band3_{start}_{end}.fits", 256)
+    fsm = WISEMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/fullskymap_band3_{start}_{end}.fits", 3)
+    unc_fsm = WISEMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/fullskymap_unc_band3_{start}_{end}.fits", 3)
     map_datas = []
     map_uncs = []
     for i in range(start, end):
@@ -500,9 +500,9 @@ def run_calibration():
     with open("offsets.pkl", "wb") as offset_file:
         pickle.dump(offsets, offset_file, pickle.HIGHEST_PROTOCOL)
 
-    fsm = FullSkyMap(
-        f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/fullskymap_band3_{n_orbits}.fits", 256)
-    unc_fsm = FullSkyMap(
+    fsm = WISEMap(
+        f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/fullskymap_band3_{n_orbits}.fits", 3)
+    unc_fsm = WISEMap(
         f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/fullskymap_unc_band3_{n_orbits}.fits",
         256)
 
@@ -585,9 +585,9 @@ def run_create_partial_map():
     moon_mask = zc.moon_stripe_mask.mapdata.astype(bool)
     pole_mask = ~zc.pole_region_mask
 
-    fsm = FullSkyMap(
-        f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_band3_offset_region.fits", 256)
-    unc_fsm = FullSkyMap(
+    fsm = WISEMap(
+        f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_band3_offset_region.fits", 3)
+    unc_fsm = WISEMap(
         f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_unc_band3_offset_region.fits",
         256)
 

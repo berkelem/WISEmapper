@@ -290,9 +290,9 @@ def run_calibration():
     with open("offsets.pkl", "wb") as offset_file:
         pickle.dump(offsets, offset_file, pickle.HIGHEST_PROTOCOL)
 
-    fsm = FullSkyMap(
-        f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/fullskymap_band3_{n_orbits}.fits", 256)
-    unc_fsm = FullSkyMap(
+    fsm = WISEMap(
+        f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/fullskymap_band3_{n_orbits}.fits", 3)
+    unc_fsm = WISEMap(
         f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/fullskymap_unc_band3_{n_orbits}.fits",
         256)
 

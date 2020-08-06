@@ -215,10 +215,10 @@ def adjust_params(npix_limit):
 
 
 def combine_orbits(start, end, gains, offsets):
-    fsm = FullSkyMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_band3_{start}_{end}.fits", 256)
-    unc_fsm = FullSkyMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_unc_band3_{start}_{end}.fits", 256)
-    # fsm = FullSkyMap(f"/Users/Laptop-23950/projects/wisemapping/data/output_maps/orbit_analysis/orbit_batches/fullskymap_band3_{start}_{end}.fits", 256)
-    # unc_fsm = FullSkyMap(f"/Users/Laptop-23950/projects/wisemapping/data/output_maps/orbit_analysis/orbit_batches/fullskymap_unc_band3_{start}_{end}.fits", 256)
+    fsm = WISEMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_band3_{start}_{end}.fits", 3)
+    unc_fsm = WISEMap(f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/fullskymap_unc_band3_{start}_{end}.fits", 3)
+    # fsm = WISEMap(f"/Users/Laptop-23950/projects/wisemapping/data/output_maps/orbit_analysis/orbit_batches/fullskymap_band3_{start}_{end}.fits", 3)
+    # unc_fsm = WISEMap(f"/Users/Laptop-23950/projects/wisemapping/data/output_maps/orbit_analysis/orbit_batches/fullskymap_unc_band3_{start}_{end}.fits", 3)
     map_datas = []
     map_uncs = []
     for i in range(start, end):
@@ -265,7 +265,7 @@ def combine_orbits(start, end, gains, offsets):
     return
 
 def make_index_map():
-    fsm = FullSkyMap("/Users/Laptop-23950/projects/wisemapping/data/output_maps/orbit_analysis/index_map.fits", 256)
+    fsm = WISEMap("/Users/Laptop-23950/projects/wisemapping/data/output_maps/orbit_analysis/index_map.fits", 3)
     for i in range(len(fsm.mapdata)):
         fsm.mapdata[i] = i
     fsm.save_map()
@@ -323,7 +323,7 @@ def pair_orbits():
         orbit_map2_unc = WISEMap(filename2_unc, 3)
         orbit_map2_unc.read_data()
 
-        fsm = FullSkyMap(
+        fsm = WISEMap(
             f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/uncalibrated/fullskymap_band3_fullorbit_{i}_uncalibrated.fits",
             256)
         combined_map = orbit_map1.mapdata + orbit_map2.mapdata
@@ -333,7 +333,7 @@ def pair_orbits():
         fsm.mapdata = combined_map
         fsm.save_map()
 
-        fsm_unc = FullSkyMap(
+        fsm_unc = WISEMap(
             f"/home/users/mberkeley/wisemapper/data/output_maps/pole_fitting/w3/uncalibrated/fullskymap_band3_unc_fullorbit_{i}_uncalibrated.fits",
             256)
         combined_map_unc = orbit_map1_unc.mapdata + orbit_map2_unc.mapdata

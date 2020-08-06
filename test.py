@@ -6,17 +6,17 @@ def main():
 
     # filename = "/Users/Laptop-23950/projects/wisemapping/data/output_maps/orbit_analysis/orbit_maps/fsm_w3_orbit_100_uncalibrated.fits"
     filename1 = "/Users/Laptop-23950/projects/wisemapping/data/output_maps/day_analysis/pole_fitting/fullskymap_band3_200_202.fits"
-    filemap1 = FullSkyMap(filename1, 256)
+    filemap1 = WISEMap(filename1, 3)
     filemap1.read_data()
     mapdata1 = filemap1.mapdata
 
     filename2 = "/Users/Laptop-23950/projects/wisemapping/data/output_maps/day_analysis/pole_fitting/fullskymap_band3_5480_5482.fits"
-    filemap2 = FullSkyMap(filename2, 256)
+    filemap2 = WISEMap(filename2, 3)
     filemap2.read_data()
     mapdata2 = filemap2.mapdata
 
     filename3 = "/Users/Laptop-23950/projects/wisemapping/data/kelsall_maps/kelsall_model_wise_scan_lam_12_v3.fits"
-    filemap3 = FullSkyMap(filename3, 256)
+    filemap3 = WISEMap(filename3, 3)
     filemap3.read_data()
     mapdata3 = filemap3.mapdata
 

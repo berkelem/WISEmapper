@@ -32,9 +32,9 @@ class WISEDataLoader:
     Methods
     -------
 
-    load_coords : [no args]
+    load_coords :
         Load the (RA, Dec) coordinates for each pixel based on the FITS header information
-    load_data : [no args]
+    load_data :
         Load raw WISE data and apply mask
 
     Attributes
@@ -129,11 +129,11 @@ class FileBatcher:
     Methods
     -------
 
-    filelist_generator : [no args]
+    filelist_generator :
         Generate batches of files. Use only after creating groups.
-    group_days : [no args]
+    group_days :
         Load metadata and extract file groups corresponding to individual days.
-    group_orbits : [no args]
+    group_orbits :
         Load metadata and extract file groups corresponding to individual orbits.
 
     Attributes
