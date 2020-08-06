@@ -1,4 +1,4 @@
-from fullskymapping import MapCombiner
+from wise_images_2_orbit_coadd.fullskymapping import MapCombiner
 import os
 import healpy as hp
 import matplotlib.pyplot as plt

@@ -1,8 +1,8 @@
 import numpy as np
 import healpy as hp
 import pandas as pd
-from file_handler import WISEMap
-from data_management import WISEDataLoader
+from wise_images_2_orbit_coadd.file_handler import WISEMap
+from wise_images_2_orbit_coadd.data_management import WISEDataLoader
 from functools import reduce
 import os
 

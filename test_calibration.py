@@ -1,6 +1,5 @@
 from calibration import ZodiCalibrator
-from file_handler import WISEMap
-from fullskymapping import FullSkyMap
+from wise_images_2_orbit_coadd.file_handler import WISEMap
 import matplotlib.pyplot as plt
 import pickle
 import numpy as np

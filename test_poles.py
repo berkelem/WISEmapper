@@ -1,7 +1,5 @@
-from fullskymapping import FullSkyMap
 import numpy as np
-from healpy.rotator import Rotator
-import healpy as hp
+
 
 def select_pole_region(deg):
     # pole_test_map = WISEMap("pole_test.fits", 3)

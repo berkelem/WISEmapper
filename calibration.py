@@ -1,8 +1,8 @@
-from file_handler import ZodiMap, HealpixMap
+from wise_images_2_orbit_coadd.file_handler import ZodiMap, HealpixMap
 import healpy as hp
 import numpy as np
 from scipy import stats
-from scipy.optimize import curve_fit, minimize
+from scipy.optimize import minimize
 import matplotlib.pyplot as plt
 import matplotlib
 matplotlib.use('Agg')

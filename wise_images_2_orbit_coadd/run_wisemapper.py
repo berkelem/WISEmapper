@@ -14,9 +14,9 @@ where
 <metadata_file> is the full path to the table containing WISE metadata for all orbits in the band
 """
 
-from fullskymapping import MapMaker
-from data_management import FileBatcher
-from process_manager import RunLinear, RunRankZero, RunDistributed
+from wise_images_2_orbit_coadd.fullskymapping import MapMaker
+from wise_images_2_orbit_coadd.data_management import FileBatcher
+from wise_images_2_orbit_coadd.process_manager import RunLinear, RunRankZero, RunDistributed
 import sys
 import os
 

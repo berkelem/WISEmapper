@@ -1,12 +1,10 @@
-from file_handler import ZodiMap, HealpixMap, WISEMap
+from wise_images_2_orbit_coadd.file_handler import ZodiMap, HealpixMap, WISEMap
 import numpy as np
 from scipy.optimize import minimize
 import pickle
 import os
 from scipy import stats
-from fullskymapping import FullSkyMap
 from collections import defaultdict
-import matplotlib.pyplot as plt
 
 
 class ZodiCalibrator:

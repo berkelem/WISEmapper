@@ -1,7 +1,6 @@
-from file_handler import WISEMap, HealpixMap
+from wise_images_2_orbit_coadd.file_handler import WISEMap, HealpixMap
 import numpy as np
 from scipy.optimize import minimize
-from fullskymapping import FullSkyMap
 import pandas as pd
 import healpy as hp
 import matplotlib.pyplot as plt

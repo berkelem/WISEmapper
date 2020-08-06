@@ -1,5 +1,5 @@
 import pickle
-from file_handler import WISEMap
+from wise_images_2_orbit_coadd.file_handler import WISEMap
 
 def uncalibrate_file(orbit_id, gain, offset):
     mapfile = WISEMap(f"/home/users/mberkeley/wisemapper/data/output_maps/w3/fsm_w3_orbit_{orbit_id}.fits", 3)

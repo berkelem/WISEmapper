@@ -12,7 +12,7 @@ WISEDataLoader : Loads intensity data, mask data and uncertainty data for a give
 FileBatcher : Organizes WISE frames into batches that correspond to each WISE orbit
 
 """
-from file_handler import FITSFile
+from wise_images_2_orbit_coadd.file_handler import FITSFile
 import numpy as np
 import numpy.ma as ma
 from functools import reduce

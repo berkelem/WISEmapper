@@ -1,9 +1,8 @@
-from file_handler import ZodiMap, HealpixMap, WISEMap
+from wise_images_2_orbit_coadd.file_handler import ZodiMap, HealpixMap, WISEMap
 import numpy as np
 import os
 from scipy.optimize import minimize
 import pickle
-from fullskymapping import FullSkyMap
 from collections import defaultdict
 
 

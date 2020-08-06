@@ -1,5 +1,3 @@
-from fullskymapping import FullSkyMap
-
 def main():
     input_file = "/Users/Laptop-23950/projects/wisemapping/data/masks/stripe_mask.fits"
     mask_map = WISEMap(input_file, 3)

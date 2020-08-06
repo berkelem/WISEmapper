@@ -1,5 +1,4 @@
-from file_handler import HealpixMap
-from fullskymapping import FullSkyMap
+from wise_images_2_orbit_coadd.file_handler import HealpixMap
 
 file1 = HealpixMap("/Users/Laptop-23950/projects/wisemapping/data/output_maps/orbit_analysis/may18_smooth525_iterations50/fullskymap_band3_iter_49.fits")
 file2 = HealpixMap("/Users/Laptop-23950/projects/wisemapping/data/output_maps/orbit_analysis/fullskymap_band3_iter_42.fits")
