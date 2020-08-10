@@ -34,9 +34,9 @@ class MapMaker:
         Retrieve all data into current object from other processors when running on a distributed system
     """
 
-    def __init__(self, band, n, nside=256):
+    def __init__(self, band, n, out_path, nside=256):
         self.band = band
-        self.path = f"/home/users/mberkeley/wisemapper/data/output_maps/w{self.band}/"
+        self.path = out_path
         self.label = n
         self.mapname = f'fsm_w{self.band}_orbit_{self.label}.fits'
         self.uncname = self.mapname.replace('orbit', 'unc_orbit')
