@@ -53,7 +53,7 @@ def main(band, filename, output_path):
             filelist, mjd_list, orbit_num = next(filelist_gen)
 
         # Create coadd map of all files in batch
-        mapmaker = MapMaker(band, n)
+        mapmaker = MapMaker(band, n, output_path)
         process_map = RunDistributed(mapmaker.add_image, list(zip(filelist, mjd_list)), iterate=True,
                                      gather_items=[mapmaker.numerator_cumul, mapmaker.denominator_cumul,
                                                    mapmaker.time_numerator_cumul, mapmaker.time_denominator_cumul])
