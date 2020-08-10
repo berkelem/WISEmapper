@@ -6,8 +6,18 @@ from wise_images_2_orbit_coadd.data_management import WISEDataLoader
 from functools import reduce
 import os
 
+class BaseMapper:
 
-class MapMaker:
+    def __init__(self, band, label, path):
+        self.band = band
+        self.label = label
+        self.path = path
+        self.orbit_fits_name = f'fsm_w{self.band}_orbit_{self.label}.fits'
+        self.orbit_unc_fits_name = self.orbit_fits_name.replace('orbit', 'unc_orbit')
+        self.orbit_csv_name = f"band_w{self.band}_orbit_{self.label}_pixel_timestamps.csv"
+
+
+class MapMaker(BaseMapper):
     """
     Class managing how batches of WISE images are co-added to form a single WISE scan (approximately one half-orbit)
 
@@ -34,15 +44,10 @@ class MapMaker:
         Retrieve all data into current object from other processors when running on a distributed system
     """
 
-    def __init__(self, band, n, out_path, nside=256):
-        self.band = band
-        self.path = out_path
-        self.label = n
-        self.mapname = f'fsm_w{self.band}_orbit_{self.label}.fits'
-        self.uncname = self.mapname.replace('orbit', 'unc_orbit')
-        self.csv_name = f"band_w{self.band}_orbit_{self.label}_pixel_timestamps.csv"
-        self.fsm = WISEMap(self.mapname, nside)
-        self.unc_fsm = WISEMap(self.uncname, nside)
+    def __init__(self, band, label, out_path, nside=256):
+        super().__init__(band, label, out_path)
+        self.fsm = WISEMap(self.orbit_fits_name, nside)
+        self.unc_fsm = WISEMap(self.orbit_unc_fits_name, nside)
         self.numerator_cumul = np.zeros_like(self.fsm.mapdata)
         self.denominator_cumul = np.zeros_like(self.fsm.mapdata)
         self.time_numerator_cumul = np.zeros_like(self.fsm.mapdata)
@@ -264,7 +269,7 @@ class MapMaker:
 
     def _save_fits(self):
         """Save orbit data in a full sky Healpix map with most pixels zero-valued."""
-        hp.fitsfunc.write_map(self.path + self.mapname, self.fsm.mapdata,
+        hp.fitsfunc.write_map(self.path + self.orbit_fits_name, self.fsm.mapdata,
                               coord='G', overwrite=True)
-        hp.fitsfunc.write_map(self.path + self.uncname, self.unc_fsm.mapdata,
+        hp.fitsfunc.write_map(self.path + self.orbit_unc_fits_name, self.unc_fsm.mapdata,
                               coord='G', overwrite=True)

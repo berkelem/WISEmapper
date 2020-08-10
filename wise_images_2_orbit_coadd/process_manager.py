@@ -23,7 +23,7 @@ RunRankZero : Call a function that only runs on the processor with rank 0, while
 from abc import ABC, abstractmethod
 import types
 import numpy as np
-from myutils import print_progress
+from wise_images_2_orbit_coadd.myutils import print_progress
 import pandas as pd
 
 
