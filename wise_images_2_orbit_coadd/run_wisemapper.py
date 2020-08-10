@@ -78,4 +78,4 @@ if __name__ == "__main__":
     # The current output path is
     # f"/home/users/mberkeley/wisemapper/data/test_output/w{band}/"
 
-    main()
+    main(band, filename, output_path)
