@@ -7,6 +7,9 @@ from functools import reduce
 import os
 
 class BaseMapper:
+    """
+    Base class shared by other map making classes
+    """
 
     def __init__(self, band, label, path):
         self.band = band
@@ -25,8 +28,10 @@ class MapMaker(BaseMapper):
     ----------
     :param band: int/str
         One of [1,2,3,4]
-    :param n: int/str
+    :param label: int/str
         Orbit label
+    :param out_path: str
+        Directory in which to write output files (default is current directory)
     :param nside: int
         Healpix NSIDE parameter
 

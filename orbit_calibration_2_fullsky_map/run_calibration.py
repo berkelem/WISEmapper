@@ -1,4 +1,5 @@
 from orbit_calibration_2_fullsky_map.coadd_orbits import Coadder
+from orbit_calibration_2_fullsky_map.spline_fit_calibration import SplineFitter
 
 if __name__ == "__main__":
     moon_stripe_file = "/home/users/mberkeley/wisemapper/data/masks/stripe_mask_G.fits"
@@ -9,4 +10,10 @@ if __name__ == "__main__":
     zodi_file_path = "/home/users/jguerraa/AME/cal_files/W3/"
     coadd_map = Coadder(3, moon_stripe_file, gain_pickle_file, offset_pickle_file, fsm_map_file, orbit_file_path,
                         zodi_file_path)
-    coadd_map.run_iterative_fit(num_orbits=6323, iterations=25)
+    coadd_map.run_iterative_fit(iterations=25, month='all')
+
+    sf = SplineFitter(iter_num=24)
+    sf.fit_spline()
+
+    coadd_map.load_splines()
+    coadd_map.add_calibrated_orbits()
