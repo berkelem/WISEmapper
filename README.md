@@ -4,17 +4,17 @@ Create full sky maps using all of the WISE data in each of the four mid-infrared
 
 The pipeline from raw WISE images to full-sky calibrated Healpix maps involves the following major steps:
 
-[1. Filter WISE data](#1.-filter-wise-data):
+[1. Filter WISE data](#1-filter-wise-data):
 Select WISE images that meet certain quality criteria.
 
-[2. Create scan coadds](#2.-create-scan-coadds):
+[2. Create scan coadds](#2-create-scan-coadds):
 Create coadds of individual WISE images that correspond to complete WISE scans (approximately one half-orbit)
 
-[3. Calibration](#3.-calibration):
+[3. Calibration](#3-calibration):
 Calibrate the orbit coadds using a zodiacal light template generated for the same timestamps using the Kelsall model.
 
 
-##1. Filter WISE data
+## 1. Filter WISE data
 
 The code for this step is found in `wise_file_selection.py`
 
@@ -28,7 +28,7 @@ First of all, the metadata for all WISE images was downloaded. The WISE data was
 
 The filtered metadata was stored in a CSV file named `filtered_df_band#.csv` where `#` is replaced by each of `[1,2,3,4]`.
 
-##2. Create scan coadds
+## 2. Create scan coadds
 
 `run_wisemapper.py` is the master script controlling how individual scan coadds are created from the raw WISE data.
 
@@ -77,7 +77,7 @@ where
     (Healpix pixel index, pixel intensity, pixel uncertainty, pixel timestamp). The filename is of the form `band_w<band>_orbit_<orbit_num>_pixel_timestamps.csv`.
 
 
-##3. Calibration
+## 3. Calibration
 
 `run_calibration.py` is the master script controlling the calibration of the scan coadds and the creation of the final full-sky zodi-subtracted map.
 
