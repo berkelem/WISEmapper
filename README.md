@@ -72,8 +72,8 @@ where
     4. The numerator and denominator values for all of the processors are pooled to a single processor. The cumulative numerator is divided by the cumulative denominator to give the final Healpix pixel value.
 
     5. The final maps (intensity and uncertainty) are saved to file. Two types of file are created:
-    - Full-sky Healpix maps: These FITS files are sparse and only contain non-zero pixels in the WISE scan region. There is one for intensity and one for uncertainty. The filenames are of the form `fsm_w<band>_orbit_<orbit_num>.fits` and `fsm_w<band>_unc_orbit_<orbit_num>.fits`.
-    - Table of pixel values: This CSV file contains the following columns, for non-zero pixels only: 
+        - Full-sky Healpix maps: These FITS files are sparse and only contain non-zero pixels in the WISE scan region. There is one for intensity and one for uncertainty. The filenames are of the form `fsm_w<band>_orbit_<orbit_num>.fits` and `fsm_w<band>_unc_orbit_<orbit_num>.fits`.
+        - Table of pixel values: This CSV file contains the following columns, for non-zero pixels only: 
     (Healpix pixel index, pixel intensity, pixel uncertainty, pixel timestamp). The filename is of the form `band_w<band>_orbit_<orbit_num>_pixel_timestamps.csv`.
 
 
