@@ -542,7 +542,7 @@ class Coadder:
                 orbit.apply_fit()
 
                 # Add calibrated orbit to full-sky coadd
-                self._add_orbit(orbit)
+                self._add_orbit_iter(orbit)
                 if plot and i % 15 == 0.0:
                     orbit.plot_fit(self.output_path)
 
@@ -550,8 +550,6 @@ class Coadder:
             self._save_fit_params_to_file(it)
 
             # Finish making full-sky coadd map
-            self._clean_data()
-            self._compile_map()
             self._normalize()
             self._save_maps()
 
@@ -563,6 +561,9 @@ class Coadder:
         """
         As each orbit is added to the final Healpix map, the distribution of values mapping to each Healpix pixel is
         recorded so that outliers can be removed before compiling the full map.
+
+        Parameters
+        ----------
         :param orbit: Orbit object
             Orbit to add
         """
@@ -573,6 +574,30 @@ class Coadder:
             for p, px in enumerate(orbit_pixels):
                 self.all_data[px].append(orbit_data[p])
                 self.all_uncs[px].append(orbit_uncs[p])
+
+    def _add_orbit_iter(self, orbit):
+        """
+        Add zodi-subtracted values of a given orbit to the full-sky coadd map.
+
+        Parameters
+        ----------
+        :param orbit: Orbit object
+            Orbit to add
+        """
+
+        if len(orbit.orbit_uncs_clean_masked[orbit.orbit_uncs_clean_masked != 0.0]) > 0 and orbit.gain != 0.0:
+            self.numerator_masked[orbit.pixel_inds_clean_masked] += np.divide(orbit.zs_data_clean_masked,
+                                                                              np.square(orbit.cal_uncs_clean_masked),
+                                                                              where=orbit.cal_uncs_clean_masked != 0.0,
+                                                                              out=np.zeros_like(
+                                                                                  orbit.cal_uncs_clean_masked))
+            self.denominator_masked[orbit.pixel_inds_clean_masked] += np.divide(1,
+                                                                                np.square(orbit.cal_uncs_clean_masked),
+                                                                                where=orbit.cal_uncs_clean_masked != 0.0,
+                                                                                out=np.zeros_like(
+                                                                                    orbit.cal_uncs_clean_masked))
+
+        return
 
     def _clean_data(self):
         """For each Healpix pixel, remove any values that have a z-score > 1"""

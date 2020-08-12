@@ -44,9 +44,9 @@ where
 
 `<output_path>` is the path to the directory where the output files should be written.
 
-######Note: The script was written to be run in an MPI environment, so the `python` command should be preceded by `mpirun` in a sbatch script file.
+###### Note: The script was written to be run in an MPI environment, so the `python` command should be preceded by `mpirun` in a sbatch script file.
 
-### Steps
+### Scan Coadd Steps
 
 1. Firstly, the WISE images are grouped into scans, using the `FileBatcher` object in the `data_management.py` module. A single WISE image has the following name structure:
 `<scan_id><frame_num>-w<band>-int-1b.fits`. Each scan contains an average of about 201 frames, with a minimum of 7 and a maximum of 273. There are 6323 scans in total. A single scan typically covers roughly half a full orbit. Nevertheless, throughout the code "orbit" and "scan" are used interchangeably, unless specified otherwise.
@@ -79,3 +79,37 @@ where
 
 ##3. Calibration
 
+`run_calibration.py` is the master script controlling the calibration of the scan coadds and the creation of the final full-sky zodi-subtracted map.
+
+The script requires the following paths to be declared:
+
+- `moon_stripe_file`: The path to the file containing the moon stripe mask.
+- `gain_pickle_file`: The filename in which to store the spline for the gain values. It should end in ".pkl" as it is a binary pickle file.
+- `offset_pickle_file`: The filename in which to store the spline for the offset values. As before it should end in ".pkl".
+- `fsm_map_file`: The desired name of the final output file.
+- `orbit_file_path`: The path to the orbit coadd CSV files (see [previous section](#2-create-scan-coadds))
+- `zodi_file_path`: The path to the zodiacal light maps corresponding to the individual orbits, generated using the Kelsall model.
+
+### Calibration Steps
+
+1. A `Coadder` object is initialized from the module `coadd_orbits.py`. This manages the coadding pipeline for all `Orbit` objects from the same module.
+2. The `Orbit` class reads the CSV file for a given orbit and its corresponding zodiacal light template. The moon stripe regions are masked in the data. This class also provides methods for fitting the coadd data to the zodi template.
+3. The iterative fitting procedure proceeds as follows:
+    1. For each orbit, an initial fit for gain and offset is performed in the `Orbit` class.
+    2. The non-negative residual of the fit is taken as a proxy for galactic signal. This positive-definite zodi-subtracted signal is added to a full-sky Healpix map in the same manner as described in [Step 3 of the previous section](#scan-coadd-steps)
+    3. After processing all orbits, the full-sky map containing all the residuals is normalized and passed back to the `Orbit` object as a proxy for galactic signal in the next iteration
+    4. For the next iteration, each orbit is processed as before, but the galactic signal is subtracted from the WISE data in advance of the fitting procedure. This facilitates a better fit with the zodiacal light template. In addition, any pixels in which the residual was an outlier (z-score > 1) were removed before the subsequent fit, as these pixels are likely to contain a strong galactic component.
+    5. The steps i-iv are repeated for as many iterations as specified, and the fit values for gain and offset converge as the iterations continue.
+4. After the specified number of iterations, the converged values for the gain and offset are loaded into a `SplineFitter` object in the `spline_fit_calibration.py` module.
+5. Outlier values are removed, and then by manual inspection other aberrant values are removed. In particular, the moon stripe regions are associated with bad fit parameters for the gain and offset and need to be removed.
+6. A Univariate spline is fit through the remaining points. Two such splines are made - one for gain and one for offset.
+7. The splines are saved and passed back to the previously-created `Coadder` class.
+8. The `Coadder` object loops through all of the orbits one more time, this time telling the `Orbit` class to draw fit parameters from the splines.
+9. The resulting zodi-subtracted residuals (no longer forced to be positive-definite) are used to create the final calibrated full-sky map. This follows the same process as Step 3.ii except the data is cleaned before being added, as follows:
+    1. For every Healpix pixel, the contribution from all orbits mapping to that Healpix pixel are stored in a list, rather than accumulated directly.
+    2. The distribution of values for each Healpix pixel is considered, and any outlier values (z-score > 1) are removed.
+    3. The remaining values go through the accumulation process for numerator and denominator, and subsequent normalization, described [previously](#scan-coadd-steps).
+10. The final map is saved to file.
+    
+
+    
