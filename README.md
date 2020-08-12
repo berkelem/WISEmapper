@@ -4,13 +4,13 @@ Create full sky maps using all of the WISE data in each of the four mid-infrared
 
 The pipeline from raw WISE images to full-sky calibrated Healpix maps involves the following major steps:
 
-[1. Filter WISE data](#1-filter-wise-data):
+[1. Filter WISE data](#1.-filter-wise-data):
 Select WISE images that meet certain quality criteria.
 
-[2. Create scan coadds](#2-create-scan-coadds):
+[2. Create scan coadds](#2.-create-scan-coadds):
 Create coadds of individual WISE images that correspond to complete WISE scans (approximately one half-orbit)
 
-[3. Calibration](#3-calibration):
+[3. Calibration](#3.-calibration):
 Calibrate the orbit coadds using a zodiacal light template generated for the same timestamps using the Kelsall model.
 
 
