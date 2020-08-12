@@ -1,3 +1,13 @@
+"""
+:author: Matthew Berkeley
+:date: Jun 2020
+
+Module for creating coadds on a Healpix grid.
+
+Main classes
+------------
+Mapmaker : Class managing how batches of WISE images are co-added to form a single WISE scan
+"""
 import numpy as np
 import healpy as hp
 import pandas as pd
@@ -5,6 +15,7 @@ from wise_images_2_orbit_coadd.file_handler import WISEMap
 from wise_images_2_orbit_coadd.data_management import WISEDataLoader
 from functools import reduce
 import os
+
 
 class BaseMapper:
     """
@@ -270,7 +281,7 @@ class MapMaker(BaseMapper):
                         "pixel_mjd_obs": self.fsm.timedata[nonzero_inds]}
 
         dataframe = pd.DataFrame(data=data_to_save)
-        dataframe.to_csv(os.path.join(self.path, self.csv_name))
+        dataframe.to_csv(os.path.join(self.path, self.orbit_csv_name))
 
     def _save_fits(self):
         """Save orbit data in a full sky Healpix map with most pixels zero-valued."""
