@@ -2,6 +2,11 @@
 
 Create full sky maps using all of the WISE data in each of the four mid-infrared bands.
 
+To clone this repository, enter 
+
+`git clone https://github.com/berkelem/WISEmapper.git`
+
+___
 The pipeline from raw WISE images to full-sky calibrated Healpix maps involves the following major steps:
 
 [1. Filter WISE data](#1-filter-wise-data):
