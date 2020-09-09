@@ -585,7 +585,7 @@ class Coadder:
             Orbit to add
         """
 
-        if len(orbit.orbit_uncs_clean_masked[orbit.orbit_uncs_clean_masked != 0.0]) > 0 and orbit.gain != 0.0:
+        if len(orbit._orbit_uncs_clean_masked[orbit._orbit_uncs_clean_masked != 0.0]) > 0 and orbit.gain != 0.0:
             self.numerator_masked[orbit.pixel_inds_clean_masked] += np.divide(orbit.zs_data_clean_masked,
                                                                               np.square(orbit.cal_uncs_clean_masked),
                                                                               where=orbit.cal_uncs_clean_masked != 0.0,
