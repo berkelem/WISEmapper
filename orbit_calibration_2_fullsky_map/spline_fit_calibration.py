@@ -38,7 +38,9 @@ class SplineFitter:
     def __init__(self, iter_num, path_to_fitvals=os.getcwd()):
         self.iter_num = iter_num
         self.output_path = path_to_fitvals
-        self.fitvals_file = os.path.join(path_to_fitvals, "fitvals_iter_{}.pkl".format(iter_num))
+        self.fitvals_file = os.path.join(self.output_path, "fitvals_iter_{}.pkl".format(iter_num))
+        self.gain_spline_file = os.path.join(self.output_path, "gain_spline.pkl")
+        self.offset_spline_file = os.path.join(self.output_path, "offset_spline.pkl")
         self.spl_gain = None
         self.spl_offset = None
 
@@ -190,10 +192,10 @@ class SplineFitter:
     def _save_spline(self):
         """Save splines to pickle files, to be read in later by the Coadder object"""
 
-        with open(os.path.join(self.output_path, "gain_spline.pkl"), "wb") as f:
+        with open(self.gain_spline_file, "wb") as f:
             pickle.dump(self.spl_gain, f, protocol=pickle.HIGHEST_PROTOCOL)
 
-        with open(os.path.join(self.output_path, "offset_spline.pkl"), "wb") as g:
+        with open(self.offset_spline_file, "wb") as g:
             pickle.dump(self.spl_offset, g, protocol=pickle.HIGHEST_PROTOCOL)
 
         return

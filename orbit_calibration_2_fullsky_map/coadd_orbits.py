@@ -386,10 +386,6 @@ class Coadder:
         WISE band number (one of [1,2,3,4])
     :param moon_stripe_file: str
         Filename (including full path) of moon stripe mask
-    :param gain_pickle_file: str
-        Name of file in which to store gain spline
-    :param offset_pickle_file: str
-        Name of file in which to store offset spline
     :param fsm_map_file: str
         Name of output full-sky map file
     :param orbit_file_path: str
@@ -409,13 +405,12 @@ class Coadder:
         Run a modified form of the iterative calibration used in WMAP. For details, see method docstring.
     """
 
-    def __init__(self, band, moon_stripe_file, gain_pickle_file, offset_pickle_file, fsm_map_file, orbit_file_path,
+    def __init__(self, band, moon_stripe_file, fsm_map_file, orbit_file_path,
                  zodi_file_path, output_path=os.getcwd()):
         self.band = band
-        self.gain_pickle_file = gain_pickle_file
-        self.offset_pickle_file = offset_pickle_file
         self.fsm_map_file = fsm_map_file
-        self.unc_fsm_map_file = "{}_{}.{}".format(fsm_map_file.rpartition(".")[0], "unc", fsm_map_file.rpartition(".")[-1])
+        self.unc_fsm_map_file = "{}_{}.{}".format(fsm_map_file.rpartition(".")[0], "unc",
+                                                  fsm_map_file.rpartition(".")[-1])
         self.output_path = output_path
         setattr(Orbit, "orbit_file_path", orbit_file_path)
         setattr(Orbit, "zodi_file_path", zodi_file_path)
@@ -475,13 +470,13 @@ class Coadder:
         self._normalize()
         self._save_maps()
 
-    def load_splines(self):
+    def load_splines(self, gain_spline_file, offset_spline_file):
         """Load gain spline and offset spline from '*.pkl' files saved in a file"""
-        with open(os.path.join(self.output_path, self.gain_pickle_file), "rb") as gain_spline_file:
-            self.gain_spline = pickle.load(gain_spline_file)
+        with open(gain_spline_file, "rb") as g1:
+            self.gain_spline = pickle.load(g1)
 
-        with open(os.path.join(self.output_path, self.offset_pickle_file), "rb") as offset_spline_file:
-            self.offset_spline = pickle.load(offset_spline_file)
+        with open(offset_spline_file, "rb") as g2:
+            self.offset_spline = pickle.load(g2)
 
     def run_iterative_fit(self, iterations, month="all", plot=False):
         """
