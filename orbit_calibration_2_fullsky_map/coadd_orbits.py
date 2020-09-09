@@ -415,7 +415,7 @@ class Coadder:
         self.gain_pickle_file = gain_pickle_file
         self.offset_pickle_file = offset_pickle_file
         self.fsm_map_file = fsm_map_file
-        self.unc_fsm_map_file = "{}_{}.{}".format(fsm_map_file.splitext()[0], "unc", fsm_map_file.splitext()[1])
+        self.unc_fsm_map_file = "{}_{}.{}".format(fsm_map_file.rpartition(".")[0], "unc", fsm_map_file.rpartition(".")[-1])
         self.output_path = output_path
         setattr(Orbit, "orbit_file_path", orbit_file_path)
         setattr(Orbit, "zodi_file_path", zodi_file_path)
