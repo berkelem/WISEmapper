@@ -528,7 +528,7 @@ class Coadder:
                 if month == "all":
                     pass
                 else:
-                    if not self._filter_timestamps(month, orbit.mean_mjd_obs):
+                    if not self._filter_timestamps(month, orbit._mean_mjd_obs):
                         print(f"Skipping orbit {i}")
                         continue
 
