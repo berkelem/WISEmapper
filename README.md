@@ -6,6 +6,10 @@ To clone this repository, enter
 
 `git clone https://github.com/berkelem/WISEmapper.git`
 
+If you are running the code in a location other than the cloned repository, you will need to add the path to the repository to your `PYTHONPATH` variable as follows (from within the cloned repository):
+
+`export PYTHONPATH=$(pwd):$PYTHONPATH`
+
 ___
 The pipeline from raw WISE images to full-sky calibrated Healpix maps involves the following major steps:
 
