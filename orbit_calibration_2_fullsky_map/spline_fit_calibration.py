@@ -176,10 +176,10 @@ class SplineFitter:
         median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
 
         z_gains = np.abs(stats.zscore(all_gains))
-        mask_gains = z_gains > 0.1
+        mask_gains = z_gains > 1
 
         z_offsets = np.abs(stats.zscore(all_offsets))
-        mask_offsets = z_offsets > 0.1
+        mask_offsets = z_offsets > 1
 
         times_gain_masked = median_mjd_vals[~mask_gains]
         gains_masked = all_gains[~mask_gains]
