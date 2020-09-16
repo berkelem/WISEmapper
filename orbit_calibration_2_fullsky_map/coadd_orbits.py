@@ -417,6 +417,7 @@ class Coadder:
 
         self.iter = 0
         self.num_orbits = 6323
+        self._selected_orbit_inds = []
 
         self.moon_stripe_mask = HealpixMap(moon_stripe_file)
         self.moon_stripe_mask.read_data()
@@ -532,6 +533,9 @@ class Coadder:
                         print(f"Skipping orbit {i}")
                         continue
 
+                # Record which orbits passed the filter
+                self._selected_orbit_inds.append(i)
+
                 # Perform calibration fit
                 orbit.fit()
                 orbit.apply_fit()
@@ -639,9 +643,9 @@ class Coadder:
     def _save_fit_params_to_file(self, it):
         """Save all fitted gains, fitted offsets and pixel timestamps to file for a given iteration"""
         print("Saving data for iteration {}".format(it))
-        all_gains = np.array([orb.gain for orb in self.all_orbits])
-        all_offsets = np.array([orb.offset for orb in self.all_orbits])
-        all_mjd_vals = np.array([orb.orbit_mjd_obs for orb in self.all_orbits])
+        all_gains = np.array([orb.gain for i, orb in enumerate(self.all_orbits) if i in self._selected_orbit_inds])
+        all_offsets = np.array([orb.offset for i, orb in enumerate(self.all_orbits) if i in self._selected_orbit_inds])
+        all_mjd_vals = np.array([orb.orbit_mjd_obs for i, orb in enumerate(self.all_orbits) if i in self._selected_orbit_inds])
         with open(os.path.join(self.output_path, "fitvals_iter_{}.pkl".format(it)), "wb") as f:
             pickle.dump([all_gains, all_offsets, all_mjd_vals], f, protocol=pickle.HIGHEST_PROTOCOL)
         return
