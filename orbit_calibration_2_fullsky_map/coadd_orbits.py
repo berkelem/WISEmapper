@@ -660,30 +660,35 @@ class Coadder:
         self.fsm_masked = WISEMap(self.fsm_map_file.replace(".fits", f"_{label}.fits"), self.band)
         self.unc_fsm_masked = WISEMap(self.unc_fsm_map_file.replace(".fits", f"_{label}.fits"), self.band)
 
-    def _filter_timestamps(self, month, mjd_obs):
+    def _filter_timestamps(self, month_list, mjd_obs):
         """
         Return True if orbit timestamp is within desired time range ['Jan',...,'Aug'] or 'all'.
         Otherwise return False
         """
-        if month not in self.month_timestamps:
-            print("Unrecognized time period. Please specify one of ['all', 'Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', "
-                  "'Aug']. Proceeding with 'all'.")
-            return True
-        else:
-            months = list(self.month_timestamps.keys())
-            if months.index(month) == len(months) - 1:
-                if mjd_obs >= self.month_timestamps[month]:
-                    return True
-                else:
-                    return False
-            elif months.index(month) == 0:
-                if mjd_obs < self.month_timestamps[months[months.index(month) + 1]]:
-                    return True
-                else:
-                    return False
+
+        if isinstance(month_list, str):
+            month_list = [month_list]
+
+        for month in month_list:
+            if month not in self.month_timestamps:
+                print("Unrecognized time period. Please specify one of ['all', 'Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', "
+                      "'Aug']. Proceeding with 'all'.")
+                return True
             else:
-                current_month_num = months.index(month)
-                if self.month_timestamps[month] <= mjd_obs < self.month_timestamps[months[current_month_num + 1]]:
-                    return True
+                months = list(self.month_timestamps.keys())
+                if months.index(month) == len(months) - 1:
+                    if mjd_obs >= self.month_timestamps[month]:
+                        return True
+                    else:
+                        return False
+                elif months.index(month) == 0:
+                    if mjd_obs < self.month_timestamps[months[months.index(month) + 1]]:
+                        return True
+                    else:
+                        return False
                 else:
-                    return False
+                    current_month_num = months.index(month)
+                    if self.month_timestamps[month] <= mjd_obs < self.month_timestamps[months[current_month_num + 1]]:
+                        return True
+                    else:
+                        return False

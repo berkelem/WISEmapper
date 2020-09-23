@@ -15,6 +15,7 @@ import numpy as np
 from scipy.interpolate import UnivariateSpline
 from scipy import stats
 import os
+from collections import OrderedDict
 
 
 class SplineFitter:
@@ -91,8 +92,11 @@ class SplineFitter:
                                  (55393 < times_offset_masked) & (times_offset_masked < 55402)) | (
                                  (55407 < times_offset_masked) & (times_offset_masked < 55414))
 
-        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=5000, k=5)
-        self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
+        # self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=5000, k=5)
+        # self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
+        #                                    s=500000, k=5)
+        self.spl_gain = UnivariateSpline(times_gain_masked, gains_masked, s=5000, k=5)
+        self.spl_offset = UnivariateSpline(times_offset_masked, offsets_masked,
                                            s=500000, k=5)
 
         self._save_spline()
@@ -222,15 +226,27 @@ class SplineFitter:
             Original offset fit values
         """
 
-        str_month_list = ['1 Jan 10', '1 Feb 10', '1 Mar 10', '1 Apr 10', '1 May 10', '1 Jun 10', '1 Jul 10',
-                          '1 Aug 10']
+        str_month_dict = OrderedDict([(55197, "Jan"), (55228, "Feb"), (55256, "Mar"), (55287, "Apr"),
+                                             (55317, "May"), (55348, "Jun"), (55378, "Jul"), (55409, "Aug")])
+
+        min_time = min(times_gain_masked)
+        max_time = max(times_gain_masked)
+        month_start_times = list(str_month_dict.keys())
+
+        start_month_ind = min(month_start_times, key=lambda x: abs(x - min_time))
+        start_month_ind = start_month_ind if start_month_ind < min_time else start_month_ind-1
+
+        end_month_ind = min(month_start_times, key=lambda x: abs(x - max_time))
+        end_month_ind = end_month_ind if end_month_ind > max_time else end_month_ind+1
+
+        x_ticks = month_start_times[start_month_ind:end_month_ind+1]
 
         fig, ax = plt.subplots()
         ax.plot(times_gain_masked[stripe_gains], gains_masked[stripe_gains], 'bo', ms=5)
         ax.plot(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], 'ro', ms=5)
         ax.plot(times_gain_masked, self.spl_gain(times_gain_masked), 'g', lw=3)
-        ax.set_xticks([55197, 55228, 55256, 55287, 55317, 55348, 55378, 55409])
-        ax.set_xticklabels(str_month_list, rotation=45)
+        ax.set_xticks(x_ticks)
+        ax.set_xticklabels([str_month_dict[x] for x in x_ticks], rotation=45)
         plt.subplots_adjust(bottom=0.2)
         plt.xlabel("Orbit median timestamp")
         plt.ylabel("Fitted Gain")
@@ -241,8 +257,8 @@ class SplineFitter:
         ax.plot(times_offset_masked[stripe_offsets], offsets_masked[stripe_offsets], 'bo', ms=5)
         ax.plot(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets], 'ro', ms=5)
         ax.plot(times_offset_masked, self.spl_offset(times_offset_masked), 'g', lw=3)
-        ax.set_xticks([55197, 55228, 55256, 55287, 55317, 55348, 55378, 55409])
-        ax.set_xticklabels(str_month_list, rotation=45)
+        ax.set_xticks(np.array(x_ticks))
+        ax.set_xticklabels(np.array([str_month_dict[x] for x in x_ticks]), rotation=45)
         plt.subplots_adjust(bottom=0.2)
         plt.xlabel("Orbit median timestamp")
         plt.ylabel("Fitted Offset")
