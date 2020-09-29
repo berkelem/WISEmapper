@@ -512,7 +512,10 @@ class Coadder:
             self.denominator_masked = np.zeros_like(self.numerator_masked)
 
             # For each iteration, iterate over all orbits
-            for i in range(0, self.num_orbits, 2):
+            for i in range(self.num_orbits):
+                if i % 2 == 0:
+                    self.all_orbits.append(None)
+                    continue
                 print(f"Iteration {it}; Fitting orbit {i}")
                 if it == 0:
                     # Initialize Orbit object and load data
@@ -523,7 +526,7 @@ class Coadder:
                     orbit.apply_mask()
                 else:
                     # Look up previously-loaded orbit data
-                    orbit = self.all_orbits[int(i/2)]
+                    orbit = self.all_orbits[i]
 
                 # Check if all orbits should be fitted, or only a subset by month
                 if month == "all":
