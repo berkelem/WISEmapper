@@ -513,7 +513,7 @@ class Coadder:
 
             # For each iteration, iterate over all orbits
             for i in range(self.num_orbits):
-                if i % 2 == 0:
+                if i % 2 != 0:
                     self.all_orbits.append(None)
                     continue
                 print(f"Iteration {it}; Fitting orbit {i}")
