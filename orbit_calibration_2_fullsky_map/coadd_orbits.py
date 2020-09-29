@@ -512,7 +512,7 @@ class Coadder:
             self.denominator_masked = np.zeros_like(self.numerator_masked)
 
             # For each iteration, iterate over all orbits
-            for i in range(self.num_orbits):
+            for i in range(0, self.num_orbits, 2):
                 print(f"Iteration {it}; Fitting orbit {i}")
                 if it == 0:
                     # Initialize Orbit object and load data
