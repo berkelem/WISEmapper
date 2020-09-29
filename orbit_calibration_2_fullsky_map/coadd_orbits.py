@@ -523,7 +523,7 @@ class Coadder:
                     orbit.apply_mask()
                 else:
                     # Look up previously-loaded orbit data
-                    orbit = self.all_orbits[i]
+                    orbit = self.all_orbits[int(i/2)]
 
                 # Check if all orbits should be fitted, or only a subset by month
                 if month == "all":
