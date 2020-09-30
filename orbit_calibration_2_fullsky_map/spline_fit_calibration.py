@@ -92,12 +92,12 @@ class SplineFitter:
                                  (55393 < times_offset_masked) & (times_offset_masked < 55402)) | (
                                  (55407 < times_offset_masked) & (times_offset_masked < 55414))
 
-        # self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=5000, k=5)
-        # self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
-        #                                    s=500000, k=5)
-        self.spl_gain = UnivariateSpline(times_gain_masked, gains_masked, s=5000, k=5)
-        self.spl_offset = UnivariateSpline(times_offset_masked, offsets_masked,
+        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=5000, k=5)
+        self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
                                            s=500000, k=5)
+        # self.spl_gain = UnivariateSpline(times_gain_masked, gains_masked, s=5000, k=5)
+        # self.spl_offset = UnivariateSpline(times_offset_masked, offsets_masked,
+        #                                    s=500000, k=5)
 
         self._save_spline()
 
