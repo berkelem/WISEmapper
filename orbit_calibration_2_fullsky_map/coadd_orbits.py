@@ -458,6 +458,8 @@ class Coadder:
         self.denominator_masked = np.zeros_like(self.numerator_masked)
 
         for i, orbit in enumerate(self.all_orbits):
+            if orbit is None:
+                continue
             print(f"Adding orbit {orbit.orbit_num}")
             orbit.reset_outliers()  # Include pixels in the galactic plane that were removed for fitting
             orbit.apply_mask()
