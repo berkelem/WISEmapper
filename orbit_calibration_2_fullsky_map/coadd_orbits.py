@@ -676,26 +676,30 @@ class Coadder:
         if isinstance(month_list, str):
             month_list = [month_list]
 
+        include = False
         for month in month_list:
+            if include:
+                return include
             if month not in self.month_timestamps:
                 print("Unrecognized time period. Please specify one of ['all', 'Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', "
                       "'Aug']. Proceeding with 'all'.")
-                return True
+                include = True
             else:
                 months = list(self.month_timestamps.keys())
                 if months.index(month) == len(months) - 1:
                     if mjd_obs >= self.month_timestamps[month]:
-                        return True
+                        include = True
                     else:
-                        return False
+                        include = False
                 elif months.index(month) == 0:
                     if mjd_obs < self.month_timestamps[months[months.index(month) + 1]]:
-                        return True
+                        include = True
                     else:
-                        return False
+                        include = False
                 else:
                     current_month_num = months.index(month)
                     if self.month_timestamps[month] <= mjd_obs < self.month_timestamps[months[current_month_num + 1]]:
-                        return True
+                        include = True
                     else:
-                        return False
+                        include = False
+        return include
