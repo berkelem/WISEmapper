@@ -510,10 +510,11 @@ class Coadder:
             # Reset numerator and denominator for keeping track of values using uncertainty propagation
             self.numerator_masked = np.zeros(self.npix)
             self.denominator_masked = np.zeros_like(self.numerator_masked)
+            mapping_region = 0
 
             # For each iteration, iterate over all orbits
             for i in range(self.num_orbits):
-                if i % 2 != 0:
+                if i % 2 != 0 or mapping_region == 2:
                     self.all_orbits.append(None)
                     continue
                 print(f"Iteration {it}; Fitting orbit {i}")
@@ -534,10 +535,13 @@ class Coadder:
                 else:
                     if not self._filter_timestamps(month, orbit._mean_mjd_obs):
                         print(f"Skipping orbit {i}")
+                        if mapping_region:
+                            mapping_region = 2
                         continue
 
                 # Record which orbits passed the filter
                 self._selected_orbit_inds.append(i)
+                mapping_region = 1
 
                 # Perform calibration fit
                 orbit.fit()
