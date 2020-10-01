@@ -474,7 +474,6 @@ class Coadder:
         mapping_region = 0
         for i in range(self.num_orbits):
             if i % 2 != 0 or mapping_region == 2:
-                self.all_orbits.append(None)
                 continue
             print(f"Loading orbit {i}")
             # Initialize Orbit object and load data
