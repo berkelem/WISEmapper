@@ -117,7 +117,7 @@ class Orbit(BaseMapper):
         self._pixel_inds = None
         self.orbit_mjd_obs = None
         self._zodi_data = None
-        self._mean_mjd_obs = None
+        self.mean_mjd_obs = None
 
         self.pixel_inds_clean_masked = None
         self._orbit_data_clean_masked = None
@@ -211,7 +211,7 @@ class Orbit(BaseMapper):
         self._orbit_uncs = np.array(all_orbit_data["pixel_unc"])
         self._pixel_inds = np.array(all_orbit_data["hp_pixel_index"])
         self.orbit_mjd_obs = np.array(all_orbit_data["pixel_mjd_obs"])
-        self._mean_mjd_obs = np.mean(self.orbit_mjd_obs)
+        self.mean_mjd_obs = np.mean(self.orbit_mjd_obs)
 
         return
 
@@ -417,7 +417,6 @@ class Coadder:
 
         self.iter = 0
         self.num_orbits = 6323
-        self._selected_orbit_inds = []
 
         self.moon_stripe_mask = HealpixMap(moon_stripe_file)
         self.moon_stripe_mask.read_data()
@@ -457,21 +456,46 @@ class Coadder:
         self.numerator_masked = np.zeros(self.npix)
         self.denominator_masked = np.zeros_like(self.numerator_masked)
 
-        for i, orbit in enumerate(self.all_orbits):
-            if orbit is None:
-                continue
+        for orbit in self.all_orbits:
             print(f"Adding orbit {orbit.orbit_num}")
             orbit.reset_outliers()  # Include pixels in the galactic plane that were removed for fitting
             orbit.apply_mask()
             orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
             self._add_orbit(orbit)
-            if plot and i % 15 == 0.0:
+            if plot and orbit.orbit_num % 15 == 0.0:
                 orbit.plot_fit()
 
         self._clean_data()
         self._compile_map()
         self._normalize()
         self._save_maps()
+
+    def load_orbits(self, month="all"):
+        mapping_region = 0
+        for i in range(self.num_orbits):
+            if i % 2 != 0 or mapping_region == 2:
+                self.all_orbits.append(None)
+                continue
+            print(f"Loading orbit {i}")
+            # Initialize Orbit object and load data
+            orbit = Orbit(i, self.band, self.full_mask, self.nside)
+            orbit.load_orbit_data()
+
+            # Check if all orbits should be fitted, or only a subset by month
+            if month == "all":
+                pass
+            else:
+                if not self._filter_timestamps(month, orbit.mean_mjd_obs):
+                    print(f"Skipping orbit {i}")
+                    if mapping_region:
+                        mapping_region = 2
+                    continue
+            mapping_region = 1
+            orbit.load_zodi_orbit_data()
+            orbit.apply_mask()
+            self.all_orbits.append(orbit)
+        return
+
 
     def load_splines(self, gain_spline_file, offset_spline_file):
         """Load gain spline and offset spline from '*.pkl' files saved in a file"""
@@ -481,7 +505,7 @@ class Coadder:
         with open(offset_spline_file, "rb") as g2:
             self.offset_spline = pickle.load(g2)
 
-    def run_iterative_fit(self, iterations, month="all", plot=False):
+    def run_iterative_fit(self, iterations, plot=False):
         """
         The aim of the fitting procedure is to calibrate the WISE data to the zodiacal light modelled using the Kelsall
         model.
@@ -512,38 +536,12 @@ class Coadder:
             # Reset numerator and denominator for keeping track of values using uncertainty propagation
             self.numerator_masked = np.zeros(self.npix)
             self.denominator_masked = np.zeros_like(self.numerator_masked)
-            mapping_region = 0
 
             # For each iteration, iterate over all orbits
-            for i in range(self.num_orbits):
-                if i % 2 != 0 or mapping_region == 2:
-                    self.all_orbits.append(None)
+            for i, orbit in enumerate(self.all_orbits):
+                if orbit.orbit_num % 2 != 0:
                     continue
-                print(f"Iteration {it}; Fitting orbit {i}")
-                if it == 0:
-                    # Initialize Orbit object and load data
-                    orbit = Orbit(i, self.band, self.full_mask, self.nside)
-                    self.all_orbits.append(orbit)
-                    orbit.load_orbit_data()
-                    orbit.load_zodi_orbit_data()
-                    orbit.apply_mask()
-                else:
-                    # Look up previously-loaded orbit data
-                    orbit = self.all_orbits[i]
-
-                # Check if all orbits should be fitted, or only a subset by month
-                if month == "all":
-                    pass
-                else:
-                    if not self._filter_timestamps(month, orbit._mean_mjd_obs):
-                        print(f"Skipping orbit {i}")
-                        if mapping_region:
-                            mapping_region = 2
-                        continue
-
-                # Record which orbits passed the filter
-                self._selected_orbit_inds.append(i)
-                mapping_region = 1
+                print(f"Iteration {it}; Fitting orbit {orbit.orbit_num}")
 
                 # Perform calibration fit
                 orbit.fit()
@@ -652,9 +650,9 @@ class Coadder:
     def _save_fit_params_to_file(self, it):
         """Save all fitted gains, fitted offsets and pixel timestamps to file for a given iteration"""
         print("Saving data for iteration {}".format(it))
-        all_gains = np.array([orb.gain for i, orb in enumerate(self.all_orbits) if i in self._selected_orbit_inds])
-        all_offsets = np.array([orb.offset for i, orb in enumerate(self.all_orbits) if i in self._selected_orbit_inds])
-        all_mjd_vals = np.array([orb.orbit_mjd_obs for i, orb in enumerate(self.all_orbits) if i in self._selected_orbit_inds])
+        all_gains = np.array([orb.gain for orb in self.all_orbits])
+        all_offsets = np.array([orb.offset for orb in self.all_orbits])
+        all_mjd_vals = np.array([orb.orbit_mjd_obs for orb in self.all_orbits])
         with open(os.path.join(self.output_path, "fitvals_iter_{}.pkl".format(it)), "wb") as f:
             pickle.dump([all_gains, all_offsets, all_mjd_vals], f, protocol=pickle.HIGHEST_PROTOCOL)
         return
