@@ -230,11 +230,11 @@ class SplineFitter:
         max_time = max(times_gain_masked)
         month_start_times = list(str_month_dict.keys())
 
-        start_month_ind = min(month_start_times, key=lambda x: abs(x - min_time))
-        start_month_ind = start_month_ind if start_month_ind < min_time else start_month_ind-1
+        start_month_ind = month_start_times.index(min(month_start_times, key=lambda x: abs(x - min_time)))
+        start_month_ind = start_month_ind if month_start_times[start_month_ind] < min_time else start_month_ind-1
 
-        end_month_ind = min(month_start_times, key=lambda x: abs(x - max_time))
-        end_month_ind = end_month_ind if end_month_ind > max_time else end_month_ind+1
+        end_month_ind = month_start_times.index(min(month_start_times, key=lambda x: abs(x - max_time)))
+        end_month_ind = end_month_ind if month_start_times[end_month_ind] > max_time else end_month_ind+1
 
         x_ticks = month_start_times[start_month_ind:end_month_ind+1]
 
