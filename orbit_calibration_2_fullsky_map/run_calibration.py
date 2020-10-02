@@ -12,13 +12,13 @@ if __name__ == "__main__":
     # Declare outputs
     output_path = os.getcwd()  # Specify where to store output files from calibration
     # Specify desired name (and path) of output full-sky map
-    fsm_map_file = "/home/users/mberkeley/wisemapper/data/output_maps/w3/fullskymap_band3_masked.fits"
+    fsm_map_file = os.path.join(output_path, "fullskymap_band3_masked.fits")
     iterations = 25
 
     # Initialize Coadder object for managing calibration
     coadd_map = Coadder(3, moon_stripe_file, fsm_map_file, orbit_file_path, zodi_file_path, output_path)
     coadd_map.load_orbits(month=['Mar', 'Apr', 'May'])
-    coadd_map.run_iterative_fit(iterations=iterations)
+    # coadd_map.run_iterative_fit(iterations=iterations)
 
     # Fit a spline through the converged fit values for gains and offsets
     sf = SplineFitter(iter_num=iterations-1, path_to_fitvals=output_path)
