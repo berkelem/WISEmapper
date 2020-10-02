@@ -239,7 +239,7 @@ class SplineFitter:
         x_ticks = month_start_times[start_month_ind:end_month_ind+1]
 
         fig, ax = plt.subplots()
-        ax.plot(times_gain_masked[stripe_gains], gains_masked[stripe_gains], 'bo', ms=5)
+        ax.plot(times_gain_masked[stripe_gains], gains_masked[stripe_gains], 'ko', alpha=0.2, ms=5)
         ax.plot(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], 'ro', ms=5)
         ax.plot(times_gain_masked, self.spl_gain(times_gain_masked), 'g', lw=3)
         ax.set_xticks(x_ticks)
@@ -251,7 +251,7 @@ class SplineFitter:
         plt.close()
 
         fig, ax = plt.subplots()
-        ax.plot(times_offset_masked[stripe_offsets], offsets_masked[stripe_offsets], 'bo', ms=5)
+        ax.plot(times_offset_masked[stripe_offsets], offsets_masked[stripe_offsets], 'ko', alpha=0.2, ms=5)
         ax.plot(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets], 'ro', ms=5)
         ax.plot(times_offset_masked, self.spl_offset(times_offset_masked), 'g', lw=3)
         ax.set_xticks(np.array(x_ticks))
