@@ -538,8 +538,6 @@ class Coadder:
 
             # For each iteration, iterate over all orbits
             for i, orbit in enumerate(self.all_orbits):
-                if orbit.orbit_num % 2 != 0:
-                    continue
                 print(f"Iteration {it}; Fitting orbit {orbit.orbit_num}")
 
                 # Perform calibration fit
