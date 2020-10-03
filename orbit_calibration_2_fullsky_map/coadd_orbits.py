@@ -684,12 +684,12 @@ class Coadder:
             else:
                 months = list(self.month_timestamps.keys())
                 if months.index(month) == len(months) - 1:
-                    if mjd_obs >= self.month_timestamps[month]:
+                    if mjd_obs >= 55240.5:#self.month_timestamps[month]:
                         include = True
                     else:
                         include = False
                 elif months.index(month) == 0:
-                    if mjd_obs < self.month_timestamps[months[months.index(month) + 1]]:
+                    if mjd_obs < 55240.6:#self.month_timestamps[months[months.index(month) + 1]]:
                         include = True
                     else:
                         include = False
