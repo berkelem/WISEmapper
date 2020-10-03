@@ -10,7 +10,9 @@ SplineFitter : Class for fitting a spline to the fitted gains and offsets for al
 """
 
 import pickle
+import matplotlib
 import matplotlib.pyplot as plt
+matplotlib.use('Agg')
 import numpy as np
 from scipy.interpolate import UnivariateSpline
 from scipy import stats
