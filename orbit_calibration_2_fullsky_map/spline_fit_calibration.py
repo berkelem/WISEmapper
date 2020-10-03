@@ -94,11 +94,11 @@ class SplineFitter:
                                  (55393 < times_offset_masked) & (times_offset_masked < 55402)) | (
                                  (55407 < times_offset_masked) & (times_offset_masked < 55414))
 
-        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=5000, k=5)
-        self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
-                                           s=500000, k=5)
-
-        self._save_spline()
+        # self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=5000, k=5)
+        # self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
+        #                                    s=500000, k=5)
+        #
+        # self._save_spline()
 
         if plot:
             self._plot_spline(times_gain_masked, stripe_gains, gains_masked,
@@ -243,7 +243,7 @@ class SplineFitter:
         fig, ax = plt.subplots()
         ax.plot(times_gain_masked[stripe_gains], gains_masked[stripe_gains], 'ko', alpha=0.2, ms=5)
         ax.plot(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], 'ro', ms=5)
-        ax.plot(times_gain_masked, self.spl_gain(times_gain_masked), 'g', lw=3)
+        # ax.plot(times_gain_masked, self.spl_gain(times_gain_masked), 'g', lw=3)
         ax.set_xticks(x_ticks)
         ax.set_xticklabels([str_month_dict[x] for x in x_ticks], rotation=45)
         plt.subplots_adjust(bottom=0.2)
@@ -255,7 +255,7 @@ class SplineFitter:
         fig, ax = plt.subplots()
         ax.plot(times_offset_masked[stripe_offsets], offsets_masked[stripe_offsets], 'ko', alpha=0.2, ms=5)
         ax.plot(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets], 'ro', ms=5)
-        ax.plot(times_offset_masked, self.spl_offset(times_offset_masked), 'g', lw=3)
+        # ax.plot(times_offset_masked, self.spl_offset(times_offset_masked), 'g', lw=3)
         ax.set_xticks(np.array(x_ticks))
         ax.set_xticklabels(np.array([str_month_dict[x] for x in x_ticks]), rotation=45)
         plt.subplots_adjust(bottom=0.2)
