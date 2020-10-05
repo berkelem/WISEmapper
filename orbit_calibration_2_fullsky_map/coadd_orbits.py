@@ -231,14 +231,16 @@ class Orbit(BaseMapper):
             print(f"Orbit {self.orbit_num} mismatch with zodi: nonzeros outside zodi orbit")
         return
 
-    def plot_fit(self, output_path):
+    def plot_fit(self, output_path, iteration=None):
         """Plot calibrated data along with the zodiacal light template with galactic latitude on the x-axis"""
         theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
         plt.plot(phi, self._cal_data_clean_masked, 'r.', ms=0.5)
         plt.plot(phi, self._zodi_data_clean_masked, 'b.', ms=0.5)
         plt.xlabel("Latitude (degrees)")
         plt.ylabel("MJy/sr")
-        plt.savefig(os.path.join(output_path, "orbit_{}_fit.png".format(self.orbit_num)))
+        outfile_name = "orbit_{}_fit_iter_{}.png".format(self.orbit_num, iteration) \
+            if iteration else "orbit_{}_fit.png".format(self.orbit_num)
+        plt.savefig(os.path.join(output_path, outfile_name))
         plt.close()
 
     def reset_outliers(self):
@@ -546,8 +548,8 @@ class Coadder:
 
                 # Add calibrated orbit to full-sky coadd
                 self._add_orbit_iter(orbit)
-                if plot and i % 15 == 0.0:
-                    orbit.plot_fit(self.output_path)
+                # if plot and i % 15 == 0.0:
+                orbit.plot_fit(self.output_path, iteration=it)
 
             # Save gains, offsets and timestamps for current iteration
             self._save_fit_params_to_file(it)
