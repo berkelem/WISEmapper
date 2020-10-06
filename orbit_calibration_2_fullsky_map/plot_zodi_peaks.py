@@ -37,9 +37,9 @@ if __name__ == "__main__":
             odd_peaks.append(peak_zodi)
 
 
-        plt.plot(range(0, n_orbits, 2), even_peaks, 'r.', ms=5)
-        plt.plot(range(1, n_orbits, 2), odd_peaks, 'b.', ms=5)
-        plt.xlabel("Orbit number")
-        plt.yaxis("Peak zodi value (MJy/sr)")
-        plt.savefig(os.path.join(output_path, "peak_zodi.png"))
-        plt.close()
+    plt.plot(range(0, n_orbits, 2), even_peaks, 'r.', ms=5)
+    plt.plot(range(1, n_orbits, 2), odd_peaks, 'b.', ms=5)
+    plt.xlabel("Orbit number")
+    plt.yaxis("Peak zodi value (MJy/sr)")
+    plt.savefig(os.path.join(output_path, "peak_zodi.png"))
+    plt.close()
