@@ -15,7 +15,7 @@ if __name__ == "__main__":
     setattr(Orbit, "orbit_file_path", orbit_file_path)
     setattr(Orbit, "zodi_file_path", zodi_file_path)
 
-    n_orbits = 30
+    n_orbits = 6323
 
     moon_stripe_mask = HealpixMap(moon_stripe_file)
     moon_stripe_mask.read_data()
@@ -26,6 +26,7 @@ if __name__ == "__main__":
     odd_peaks = []
     even_peaks = []
     for i in range(n_orbits):
+        print(f"Loading orbit {i}")
         orbit = Orbit(i, 3, full_mask, 256)
         orbit.load_orbit_data()
         orbit.load_zodi_orbit_data()
