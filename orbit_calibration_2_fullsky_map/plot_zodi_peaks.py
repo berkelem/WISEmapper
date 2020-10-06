@@ -12,6 +12,8 @@ if __name__ == "__main__":
     zodi_file_path = "/home/users/jguerraa/AME/cal_files/W3/"  # Input files, path already exists
 
     output_path = os.getcwd()
+    setattr(Orbit, "orbit_file_path", orbit_file_path)
+    setattr(Orbit, "zodi_file_path", zodi_file_path)
 
     n_orbits = 30
 
