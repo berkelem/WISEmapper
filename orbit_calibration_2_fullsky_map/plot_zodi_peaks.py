@@ -15,7 +15,7 @@ if __name__ == "__main__":
     setattr(Orbit, "orbit_file_path", orbit_file_path)
     setattr(Orbit, "zodi_file_path", zodi_file_path)
 
-    n_orbits = 6323
+    n_orbits = 30
 
     moon_stripe_mask = HealpixMap(moon_stripe_file)
     moon_stripe_mask.read_data()
@@ -38,10 +38,10 @@ if __name__ == "__main__":
             odd_peaks.append(peak_zodi)
 
 
-    l1 = plt.plot(range(0, n_orbits, 2), even_peaks, 'r.', ms=5)
-    l2 = plt.plot(range(1, n_orbits, 2), odd_peaks, 'b.', ms=5)
+    l1 = plt.plot(range(0, n_orbits, 2), even_peaks, 'r.', ms=5, label="Even")
+    l2 = plt.plot(range(1, n_orbits, 2), odd_peaks, 'b.', ms=5, label="Odd")
     plt.xlabel("Orbit number")
     plt.ylabel("Peak zodi value (MJy/sr)")
-    plt.legend((l1, l2), ("Even", "Odd"))
+    plt.legend()
     plt.savefig(os.path.join(output_path, "peak_zodi_legend.png"))
     plt.close()
