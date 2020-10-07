@@ -15,7 +15,7 @@ if __name__ == "__main__":
     setattr(Orbit, "orbit_file_path", orbit_file_path)
     setattr(Orbit, "zodi_file_path", zodi_file_path)
 
-    n_orbits = 30
+    n_orbits = 6323
 
     moon_stripe_mask = HealpixMap(moon_stripe_file)
     moon_stripe_mask.read_data()
