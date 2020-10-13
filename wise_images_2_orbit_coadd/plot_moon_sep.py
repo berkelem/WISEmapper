@@ -22,6 +22,7 @@ if __name__ == "__main__":
     plt.plot(range(1, len(min_seps), 2), min_seps[1::2], 'b.', ms=0.5, label="Odd")
     plt.xlabel("Scan number")
     plt.ylabel("Moon Sep minimum (Deg)")
+    plt.legend()
     plt.savefig("moon_sep_min.png")
     plt.close()
 
@@ -29,6 +30,7 @@ if __name__ == "__main__":
     plt.plot(range(1, len(max_seps), 2), max_seps[1::2], 'b.', ms=0.5, label="Odd")
     plt.xlabel("Scan number")
     plt.ylabel("Moon Sep maximum (Deg)")
+    plt.legend()
     plt.savefig("moon_sep_max.png")
     plt.close()
 
