@@ -1,4 +1,5 @@
 from wise_images_2_orbit_coadd.wise_file_selection import MetaDataReader
+import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
     filename = "~/PAH_Project/all_band3.tbl"
@@ -17,6 +18,12 @@ if __name__ == "__main__":
         min_seps.append(minval)
         max_seps.append(maxval)
 
+    plt.plot(range(0, len(min_seps), 2), min_seps[::2], 'r.', ms=0.5)
+    plt.plot(range(1, len(min_seps), 2), min_seps[1::2], 'b.', ms=0.5)
+    plt.xlabel("Orbit number")
+    plt.ylabel("Moon Sep (Deg)")
+    plt.savefig("moon_sep_min.png")
+    plt.close()
 
-    print(min_seps)
-    print(max_seps)
+    # print(min_seps)
+    # print(max_seps)
