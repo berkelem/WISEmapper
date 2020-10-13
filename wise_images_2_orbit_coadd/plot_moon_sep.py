@@ -18,11 +18,18 @@ if __name__ == "__main__":
         min_seps.append(minval)
         max_seps.append(maxval)
 
-    plt.plot(range(0, len(min_seps), 2), min_seps[::2], 'r.', ms=0.5)
-    plt.plot(range(1, len(min_seps), 2), min_seps[1::2], 'b.', ms=0.5)
-    plt.xlabel("Orbit number")
-    plt.ylabel("Moon Sep (Deg)")
+    plt.plot(range(0, len(min_seps), 2), min_seps[::2], 'r.', ms=0.5, label="Even")
+    plt.plot(range(1, len(min_seps), 2), min_seps[1::2], 'b.', ms=0.5, label="Odd")
+    plt.xlabel("Scan number")
+    plt.ylabel("Moon Sep minimum (Deg)")
     plt.savefig("moon_sep_min.png")
+    plt.close()
+
+    plt.plot(range(0, len(max_seps), 2), max_seps[::2], 'r.', ms=0.5, label="Even")
+    plt.plot(range(1, len(max_seps), 2), max_seps[1::2], 'b.', ms=0.5, label="Odd")
+    plt.xlabel("Scan number")
+    plt.ylabel("Moon Sep maximum (Deg)")
+    plt.savefig("moon_sep_max.png")
     plt.close()
 
     # print(min_seps)
