@@ -5,5 +5,5 @@ if __name__ == "__main__":
     meta_reader = MetaDataReader()
     meta_reader.load_metadata(filename)
 
-    moon_sep = meta_reader.dataframe["moon_sep"]
-    print(moon_sep)
+    moon_sep_by_scan = meta_reader.dataframe[["moon_sep", "scan_id"]]
+    print(moon_sep_by_scan)
