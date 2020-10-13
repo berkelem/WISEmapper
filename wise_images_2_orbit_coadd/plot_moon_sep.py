@@ -13,7 +13,7 @@ if __name__ == "__main__":
     max_seps = []
     for name, group in scan_groups:
         minval = min(group["moon_sep"])
-        maxval = max(group("moon_sep"])
+        maxval = max(group["moon_sep"])
         min_seps.append(minval)
         max_seps.append(maxval)
 
