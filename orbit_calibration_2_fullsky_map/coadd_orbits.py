@@ -677,8 +677,8 @@ class Coadder:
 
         include = False
         for month in month_list:
-            # if include:
-            #     return include
+            if include:
+                return include
             if month not in self.month_timestamps:
                 print("Unrecognized time period. Please specify one of ['all', 'Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', "
                       "'Aug']. Proceeding with 'all'.")
