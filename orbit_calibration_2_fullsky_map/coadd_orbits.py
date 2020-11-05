@@ -697,7 +697,7 @@ class Coadder:
                         include = False
                 else:
                     current_month_num = months.index(month)
-                    if 55240.5 <= mjd_obs < 55240.7:#self.month_timestamps[month] <= mjd_obs < self.month_timestamps[months[current_month_num + 1]]:
+                    if self.month_timestamps[month] <= mjd_obs < self.month_timestamps[months[current_month_num + 1]]:
                         include = True
                     else:
                         include = False
