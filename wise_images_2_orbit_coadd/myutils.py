@@ -23,3 +23,22 @@ def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_lengt
     if iteration == total:
         sys.stdout.write('\n')
     sys.stdout.flush()
+
+
+def diff_maps(file1, file2):
+    from wise_images_2_orbit_coadd.file_handler import HealpixMap
+
+    map1 = HealpixMap(file1)
+    map1.read_data()
+
+    map2 = HealpixMap(file2)
+    map2.read_data()
+
+    diffmap = HealpixMap("diff_map.fits")
+    diffmap.mapdata = map1.mapdata - map2.mapdata
+    diffmap.save_map()
+
+if __name__ == "__main__":
+    file1 = sys.argv[1]
+    file2 = sys.argv[2]
+    diff_maps(file1, file2)
