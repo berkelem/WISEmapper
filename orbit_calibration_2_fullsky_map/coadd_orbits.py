@@ -549,7 +549,7 @@ class Coadder:
                 # Add calibrated orbit to full-sky coadd
                 self._add_orbit_iter(orbit)
                 # if plot and i % 15 == 0.0:
-                orbit.plot_fit(self.output_path, iteration=it)
+                # orbit.plot_fit(self.output_path, iteration=it)
 
             # Save gains, offsets and timestamps for current iteration
             self._save_fit_params_to_file(it)
