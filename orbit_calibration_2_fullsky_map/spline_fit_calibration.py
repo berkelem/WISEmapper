@@ -63,9 +63,9 @@ class SplineFitter:
         all_offsets = all_offsets[apr_mask]
         all_mjd_vals = all_mjd_vals[apr_mask]
 
-        all_gains = all_gains[::2]  # Even orbits
-        all_offsets = all_offsets[::2]
-        all_mjd_vals = all_mjd_vals[::2]
+        all_gains = all_gains[1::2]  # Odd orbits
+        all_offsets = all_offsets[1::2]
+        all_mjd_vals = all_mjd_vals[1::2]
 
         times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self._clean_data(all_gains, all_offsets,
                                                                                                 all_mjd_vals)
