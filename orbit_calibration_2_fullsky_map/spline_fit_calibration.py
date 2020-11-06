@@ -58,7 +58,7 @@ class SplineFitter:
         """
         all_gains, all_offsets, all_mjd_vals = self._load_fitvals()
 
-        apr_mask = all_mjd_vals > 55287
+        apr_mask = [x[0] > 55287 for x in all_mjd_vals]
         all_gains = all_gains[apr_mask]
         all_offsets = all_offsets[apr_mask]
         all_mjd_vals = all_mjd_vals[apr_mask]
