@@ -58,6 +58,11 @@ class SplineFitter:
         """
         all_gains, all_offsets, all_mjd_vals = self._load_fitvals()
 
+        apr_mask = all_mjd_vals > 55287
+        all_gains = all_gains[apr_mask]
+        all_offsets = all_offsets[apr_mask]
+        all_mjd_vals = all_mjd_vals[apr_mask]
+
         all_gains = all_gains[1::2]  # Odd orbits
         all_offsets = all_offsets[1::2]
         all_mjd_vals = all_mjd_vals[1::2]
