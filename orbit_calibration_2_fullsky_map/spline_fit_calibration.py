@@ -58,14 +58,14 @@ class SplineFitter:
         """
         all_gains, all_offsets, all_mjd_vals = self._load_fitvals()
 
-        apr_mask = [x[0] > 55287 for x in all_mjd_vals]
-        all_gains = all_gains[apr_mask]
-        all_offsets = all_offsets[apr_mask]
-        all_mjd_vals = all_mjd_vals[apr_mask]
+        # apr_mask = [x[0] > 55287 for x in all_mjd_vals]
+        # all_gains = all_gains[apr_mask]
+        # all_offsets = all_offsets[apr_mask]
+        # all_mjd_vals = all_mjd_vals[apr_mask]
 
-        all_gains = all_gains[1::2]  # Odd orbits
-        all_offsets = all_offsets[1::2]
-        all_mjd_vals = all_mjd_vals[1::2]
+        all_gains = all_gains[::2]  # Even orbits
+        all_offsets = all_offsets[::2]
+        all_mjd_vals = all_mjd_vals[::2]
 
         times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self._clean_data(all_gains, all_offsets,
                                                                                                 all_mjd_vals)
@@ -250,9 +250,9 @@ class SplineFitter:
         x_ticks = month_start_times[start_month_ind:end_month_ind+1]
 
         fig, ax = plt.subplots()
-        ax.plot(times_gain_masked[stripe_gains], gains_masked[stripe_gains], 'ko', alpha=0.2, ms=5)
-        ax.plot(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], 'ro', ms=5)
-        ax.plot(times_gain_masked, self.spl_gain(times_gain_masked), 'g', lw=3)
+        ax.plot(times_gain_masked[stripe_gains], gains_masked[stripe_gains], 'ko', alpha=0.2, ms=3)
+        ax.plot(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], 'ro', ms=3)
+        ax.plot(times_gain_masked, self.spl_gain(times_gain_masked), 'g', lw=2)
         ax.set_xticks(x_ticks)
         ax.set_xticklabels([str_month_dict[x] for x in x_ticks], rotation=45)
         plt.subplots_adjust(bottom=0.2)
@@ -262,9 +262,9 @@ class SplineFitter:
         plt.close()
 
         fig, ax = plt.subplots()
-        ax.plot(times_offset_masked[stripe_offsets], offsets_masked[stripe_offsets], 'ko', alpha=0.2, ms=5)
-        ax.plot(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets], 'ro', ms=5)
-        ax.plot(times_offset_masked, self.spl_offset(times_offset_masked), 'g', lw=3)
+        ax.plot(times_offset_masked[stripe_offsets], offsets_masked[stripe_offsets], 'ko', alpha=0.2, ms=3)
+        ax.plot(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets], 'ro', ms=3)
+        ax.plot(times_offset_masked, self.spl_offset(times_offset_masked), 'g', lw=2)
         ax.set_xticks(np.array(x_ticks))
         ax.set_xticklabels(np.array([str_month_dict[x] for x in x_ticks]), rotation=45)
         plt.subplots_adjust(bottom=0.2)
