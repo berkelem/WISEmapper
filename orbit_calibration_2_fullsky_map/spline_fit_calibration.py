@@ -71,41 +71,72 @@ class SplineFitter:
                                                                                                 all_mjd_vals)
 
         # Mask all gain and offset values that have aberrant values due to moon stripe regions causing a bad fit
-        stripe_gains = ((55200 < times_gain_masked) & (times_gain_masked < 55205)) | (
-                (55218 < times_gain_masked) & (times_gain_masked < 55224)) | (
-                               (55230 < times_gain_masked) & (times_gain_masked < 55236)) | (
-                               (55247 < times_gain_masked) & (times_gain_masked < 55255)) | (
-                               (55259 < times_gain_masked) & (times_gain_masked < 55264)) | (
-                               (55276 < times_gain_masked) & (times_gain_masked < 55284)) | (
-                               (55287 < times_gain_masked) & (times_gain_masked < 55295)) | (
-                               (55306 < times_gain_masked) & (times_gain_masked < 55313)) | (
-                               (55318 < times_gain_masked) & (times_gain_masked < 55324)) | (
-                               (55335 < times_gain_masked) & (times_gain_masked < 55343)) | (
-                               (55348 < times_gain_masked) & (times_gain_masked < 55354)) | (
-                               (55364 < times_gain_masked) & (times_gain_masked < 55370)) | (
-                               (55378 < times_gain_masked) & (times_gain_masked < 55384)) | (
-                               (55393 < times_gain_masked) & (times_gain_masked < 55402)) | (
-                               (55408 < times_gain_masked) & (times_gain_masked < 55414))
+        stripe_gains = ((55200 < times_gain_masked) & (times_gain_masked < 55207.5)) | (
+                    (55218 < times_gain_masked) & (times_gain_masked < 55220)) | (
+                                   (55227 < times_gain_masked) & (times_gain_masked < 55236)) | (
+                                   (55247 < times_gain_masked) & (times_gain_masked < 55255)) | (
+                                   (55276 < times_gain_masked) & (times_gain_masked < 55284)) | (
+                                   (55306 < times_gain_masked) & (times_gain_masked < 55313.5)) | (
+                                   (55335 < times_gain_masked) & (times_gain_masked < 55343)) | (
+                                   (55362 < times_gain_masked) & (times_gain_masked < 55372)) | (
+                                   (55376 < times_gain_masked) & (times_gain_masked < 55384)) | (
+                                   (55393 < times_gain_masked) & (times_gain_masked < 55402)) | (
+                                   (55407 < times_gain_masked) & (times_gain_masked < 55414))
+        gains_masked[0:5] = np.mean(gains_masked[~stripe_gains][0:5])
+        stripe_gains[0:5] = False
 
         stripe_offsets = ((55200 < times_offset_masked) & (times_offset_masked < 55208)) | (
-                (55218 < times_offset_masked) & (times_offset_masked < 55224)) | (
-                                 (55230 < times_offset_masked) & (times_offset_masked < 55236)) | (
-                                 (55247 < times_offset_masked) & (times_offset_masked < 55255)) | (
-                                 (55259 < times_offset_masked) & (times_offset_masked < 55266)) | (
-                                 (55276 < times_offset_masked) & (times_offset_masked < 55284)) | (
-                                 (55287 < times_offset_masked) & (times_offset_masked < 55295)) | (
-                                 (55306 < times_offset_masked) & (times_offset_masked < 55313)) | (
-                                 (55318 < times_offset_masked) & (times_offset_masked < 55324)) | (
-                                 (55335 < times_offset_masked) & (times_offset_masked < 55343)) | (
-                                 (55348 < times_offset_masked) & (times_offset_masked < 55354)) | (
-                                 (55364 < times_offset_masked) & (times_offset_masked < 55370)) | (
-                                 (55378 < times_offset_masked) & (times_offset_masked < 55384)) | (
-                                 (55393 < times_offset_masked) & (times_offset_masked < 55402)) | (
-                                 (55407 < times_offset_masked) & (times_offset_masked < 55414))
+                    (55218 < times_offset_masked) & (times_offset_masked < 55220)) | (
+                                     (55228 < times_offset_masked) & (times_offset_masked < 55236)) | (
+                                     (55247 < times_offset_masked) & (times_offset_masked < 55255)) | (
+                                     (55276 < times_offset_masked) & (times_offset_masked < 55284)) | (
+                                     (55305 < times_offset_masked) & (times_offset_masked < 55314)) | (
+                                     (55335 < times_offset_masked) & (times_offset_masked < 55343)) | (
+                                     (55362 < times_offset_masked) & (times_offset_masked < 55372)) | (
+                                     (55376 < times_offset_masked) & (times_offset_masked < 55382)) | (
+                                     (55393 < times_offset_masked) & (times_offset_masked < 55402)) | (
+                                     (55407 < times_offset_masked) & (times_offset_masked < 55414))
 
-        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=1000, k=5)
+        offsets_masked[0:5] = np.mean(offsets_masked[~stripe_offsets][0:5])
+        stripe_offsets[0:5] = False
+
+
+
+        # stripe_gains = ((55200 < times_gain_masked) & (times_gain_masked < 55205)) | (
+        #         (55218 < times_gain_masked) & (times_gain_masked < 55224)) | (
+        #                        (55230 < times_gain_masked) & (times_gain_masked < 55236)) | (
+        #                        (55247 < times_gain_masked) & (times_gain_masked < 55255)) | (
+        #                        (55259 < times_gain_masked) & (times_gain_masked < 55264)) | (
+        #                        (55276 < times_gain_masked) & (times_gain_masked < 55284)) | (
+        #                        (55287 < times_gain_masked) & (times_gain_masked < 55295)) | (
+        #                        (55306 < times_gain_masked) & (times_gain_masked < 55313)) | (
+        #                        (55318 < times_gain_masked) & (times_gain_masked < 55324)) | (
+        #                        (55335 < times_gain_masked) & (times_gain_masked < 55343)) | (
+        #                        (55348 < times_gain_masked) & (times_gain_masked < 55354)) | (
+        #                        (55364 < times_gain_masked) & (times_gain_masked < 55370)) | (
+        #                        (55378 < times_gain_masked) & (times_gain_masked < 55384)) | (
+        #                        (55393 < times_gain_masked) & (times_gain_masked < 55402)) | (
+        #                        (55408 < times_gain_masked) & (times_gain_masked < 55414))
+        #
+        # stripe_offsets = ((55200 < times_offset_masked) & (times_offset_masked < 55208)) | (
+        #         (55218 < times_offset_masked) & (times_offset_masked < 55224)) | (
+        #                          (55230 < times_offset_masked) & (times_offset_masked < 55236)) | (
+        #                          (55247 < times_offset_masked) & (times_offset_masked < 55255)) | (
+        #                          (55259 < times_offset_masked) & (times_offset_masked < 55266)) | (
+        #                          (55276 < times_offset_masked) & (times_offset_masked < 55284)) | (
+        #                          (55287 < times_offset_masked) & (times_offset_masked < 55295)) | (
+        #                          (55306 < times_offset_masked) & (times_offset_masked < 55313)) | (
+        #                          (55318 < times_offset_masked) & (times_offset_masked < 55324)) | (
+        #                          (55335 < times_offset_masked) & (times_offset_masked < 55343)) | (
+        #                          (55348 < times_offset_masked) & (times_offset_masked < 55354)) | (
+        #                          (55364 < times_offset_masked) & (times_offset_masked < 55370)) | (
+        #                          (55378 < times_offset_masked) & (times_offset_masked < 55384)) | (
+        #                          (55393 < times_offset_masked) & (times_offset_masked < 55402)) | (
+        #                          (55407 < times_offset_masked) & (times_offset_masked < 55414))
+
+        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=300, k=5)
         self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
-                                           s=150000, k=5)
+                                           s=68000, k=5)
 
         self._save_spline()
 
