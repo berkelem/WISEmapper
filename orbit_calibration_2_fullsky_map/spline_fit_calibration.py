@@ -63,9 +63,14 @@ class SplineFitter:
         # all_offsets = all_offsets[apr_mask]
         # all_mjd_vals = all_mjd_vals[apr_mask]
 
-        all_gains = all_gains[::2]  # Even orbits
-        all_offsets = all_offsets[::2]
-        all_mjd_vals = all_mjd_vals[::2]
+        # all_gains = all_gains[::2]  # Even orbits
+        # all_offsets = all_offsets[::2]
+        # all_mjd_vals = all_mjd_vals[::2]
+
+        # off galaxy orbits
+        all_gains = np.r_[all_gains[1:1295:2], all_gains[1295:5000:2], all_gains[5001::2]]
+        all_offsets = np.r_[all_offsets[1:1295:2], all_offsets[1295:5000:2], all_offsets[5001::2]]
+        all_mjd_vals = np.r_[all_mjd_vals[1:1295:2], all_mjd_vals[1295:5000:2], all_mjd_vals[5001::2]]
 
         times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self._clean_data(all_gains, all_offsets,
                                                                                                 all_mjd_vals)
