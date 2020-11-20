@@ -68,31 +68,62 @@ class SplineFitter:
         # all_mjd_vals = all_mjd_vals[::2]
 
         # off galaxy orbits
-        all_gains = np.r_[all_gains[1:1295:2], all_gains[1295:5000:2], all_gains[5001::2]]
-        all_offsets = np.r_[all_offsets[1:1295:2], all_offsets[1295:5000:2], all_offsets[5001::2]]
-        all_mjd_vals = np.r_[all_mjd_vals[1:1295:2], all_mjd_vals[1295:5000:2], all_mjd_vals[5001::2]]
+        all_gains = np.r_[all_gains[1:1295:2], all_gains[1296:5000:2], all_gains[5001::2]]
+        all_offsets = np.r_[all_offsets[1:1295:2], all_offsets[1296:5000:2], all_offsets[5001::2]]
+        all_mjd_vals = np.r_[all_mjd_vals[1:1295:2], all_mjd_vals[1296:5000:2], all_mjd_vals[5001::2]]
 
         times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self._clean_data(all_gains, all_offsets,
                                                                                                 all_mjd_vals)
 
+        # Off galaxy orbits
         stripe_gains = ((55217 < times_gain_masked) & (times_gain_masked < 55225)) | (
-                               (55246 < times_gain_masked) & (times_gain_masked < 55296)) | (
-                               (55316 < times_gain_masked) & (times_gain_masked < 55325)) | (
-                               (55345 < times_gain_masked) & (times_gain_masked < 55357)) | (
-                               (55374 < times_gain_masked) & (times_gain_masked < 55386)) | (
+                               (55246 < times_gain_masked) & (times_gain_masked < 55286)) | (
+                               (55304 < times_gain_masked) & (times_gain_masked < 55315)) | (
+                               (55335 < times_gain_masked) & (times_gain_masked < 55343)) | (
+                               (55362 < times_gain_masked) & (times_gain_masked < 55387)) | (
                                (55405 < times_gain_masked) & (times_gain_masked < 55414))
 
         gains_masked[-15:] = np.mean(gains_masked[~stripe_gains][-15:])
         stripe_gains[-15:] = False
 
         stripe_offsets = ((55217 < times_offset_masked) & (times_offset_masked < 55225)) | (
-                               (55246 < times_offset_masked) & (times_offset_masked < 55296)) | (
-                               (55316 < times_offset_masked) & (times_offset_masked < 55325)) | (
-                               (55345 < times_offset_masked) & (times_offset_masked < 55357)) | (
-                               (55374 < times_offset_masked) & (times_offset_masked < 55386)) | (
+                               (55246 < times_offset_masked) & (times_offset_masked < 55286)) | (
+                               (55304 < times_offset_masked) & (times_offset_masked < 55315)) | (
+                               (55335 < times_offset_masked) & (times_offset_masked < 55343)) | (
+                               (55362 < times_offset_masked) & (times_offset_masked < 55387)) | (
                                (55405 < times_offset_masked) & (times_offset_masked < 55414))
-        #
 
+        # on galaxy orbits
+        # all_gains = np.r_[all_gains[1:1295:2], all_gains[1295:5000:2], all_gains[5001::2]]
+        # all_offsets = np.r_[all_offsets[1:1295:2], all_offsets[1295:5000:2], all_offsets[5001::2]]
+        # all_mjd_vals = np.r_[all_mjd_vals[1:1295:2], all_mjd_vals[1295:5000:2], all_mjd_vals[5001::2]]
+        #
+        # times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self._clean_data(all_gains, all_offsets,
+        #                                                                                         all_mjd_vals)
+
+        # Odd mask
+        # stripe_gains = ((55217 < times_gain_masked) & (times_gain_masked < 55225)) | (
+        #                        (55246 < times_gain_masked) & (times_gain_masked < 55296)) | (
+        #                        (55316 < times_gain_masked) & (times_gain_masked < 55325)) | (
+        #                        (55345 < times_gain_masked) & (times_gain_masked < 55357)) | (
+        #                        (55374 < times_gain_masked) & (times_gain_masked < 55386)) | (
+        #                        (55405 < times_gain_masked) & (times_gain_masked < 55414))
+        #
+        # gains_masked[-15:] = np.mean(gains_masked[~stripe_gains][-15:])
+        # stripe_gains[-15:] = False
+        #
+        # stripe_offsets = ((55217 < times_offset_masked) & (times_offset_masked < 55225)) | (
+        #                        (55246 < times_offset_masked) & (times_offset_masked < 55296)) | (
+        #                        (55316 < times_offset_masked) & (times_offset_masked < 55325)) | (
+        #                        (55345 < times_offset_masked) & (times_offset_masked < 55357)) | (
+        #                        (55374 < times_offset_masked) & (times_offset_masked < 55386)) | (
+        #                        (55405 < times_offset_masked) & (times_offset_masked < 55414))
+        #
+        # self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=500, k=3)
+        # self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
+        #                                    s=100000, k=3)
+
+        # Even mask
         # Mask all gain and offset values that have aberrant values due to moon stripe regions causing a bad fit
         # stripe_gains = ((55200 < times_gain_masked) & (times_gain_masked < 55207.5)) | (
         #             (55218 < times_gain_masked) & (times_gain_masked < 55220)) | (
@@ -157,9 +188,9 @@ class SplineFitter:
         #                          (55393 < times_offset_masked) & (times_offset_masked < 55402)) | (
         #                          (55407 < times_offset_masked) & (times_offset_masked < 55414))
 
-        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=500, k=3)
+        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=1000, k=5)
         self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
-                                           s=100000, k=3)
+                                           s=70000, k=3)
 
         self._save_spline()
 
