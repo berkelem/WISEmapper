@@ -107,7 +107,9 @@ class Orbit(BaseMapper):
         self._band = band
         self._nside = nside
         self._filename = os.path.join(self.orbit_file_path, self.orbit_csv_name)
-        self._zodi_filename = os.path.join(self.zodi_file_path, f"zodi_map_cal_W{self._band}_{self.orbit_num}.fits")
+        self._zodi_filename = os.path.join(
+            self.zodi_file_path, f"zodi_map_cal_W{self._band}_{self.orbit_num}.fits"
+        )
         self._mask = mask
         self._mask_inds = np.arange(len(self._mask))[self._mask.astype(bool)]
         self._outlier_inds = np.array([])
@@ -134,27 +136,60 @@ class Orbit(BaseMapper):
 
     def apply_fit(self):
         """Apply calibration using current values for gain and offset."""
-        self._cal_data_clean_masked = (self._orbit_data_clean_masked - self.offset) / self.gain
+        self._cal_data_clean_masked = (
+            self._orbit_data_clean_masked - self.offset
+        ) / self.gain
         self.cal_uncs_clean_masked = self._orbit_uncs_clean_masked / abs(self.gain)
 
-        self.zs_data_clean_masked = self._cal_data_clean_masked - self._zodi_data_clean_masked
+        self.zs_data_clean_masked = (
+            self._cal_data_clean_masked - self._zodi_data_clean_masked
+        )
         self.zs_data_clean_masked[self.zs_data_clean_masked < 0.0] = 0.0
 
     def apply_mask(self):
         """Remove all masked pixels along with any pixels flagged as outliers"""
 
-        entries_to_mask = [i for i in range(len(self._pixel_inds)) if self._pixel_inds[i] in self._mask_inds]
-        self.pixel_inds_clean_masked = np.array([self._pixel_inds[i] for i in range(len(self._pixel_inds)) if
-                                                 i not in entries_to_mask and i not in self._outlier_inds],
-                                                dtype=int)
-        self._orbit_data_clean_masked = np.array([self._orbit_data[i] for i in range(len(self._orbit_data)) if
-                                                 i not in entries_to_mask and i not in self._outlier_inds])
-        self._orbit_uncs_clean_masked = np.array([self._orbit_uncs[i] for i in range(len(self._orbit_uncs)) if
-                                                 i not in entries_to_mask and i not in self._outlier_inds])
-        self._orbit_mjd_clean_masked = np.array([self.orbit_mjd_obs[i] for i in range(len(self.orbit_mjd_obs)) if
-                                                i not in entries_to_mask and i not in self._outlier_inds])
-        self._zodi_data_clean_masked = np.array([self._zodi_data[i] for i in range(len(self._zodi_data)) if
-                                                i not in entries_to_mask and i not in self._outlier_inds])
+        entries_to_mask = [
+            i
+            for i in range(len(self._pixel_inds))
+            if self._pixel_inds[i] in self._mask_inds
+        ]
+        self.pixel_inds_clean_masked = np.array(
+            [
+                self._pixel_inds[i]
+                for i in range(len(self._pixel_inds))
+                if i not in entries_to_mask and i not in self._outlier_inds
+            ],
+            dtype=int,
+        )
+        self._orbit_data_clean_masked = np.array(
+            [
+                self._orbit_data[i]
+                for i in range(len(self._orbit_data))
+                if i not in entries_to_mask and i not in self._outlier_inds
+            ]
+        )
+        self._orbit_uncs_clean_masked = np.array(
+            [
+                self._orbit_uncs[i]
+                for i in range(len(self._orbit_uncs))
+                if i not in entries_to_mask and i not in self._outlier_inds
+            ]
+        )
+        self._orbit_mjd_clean_masked = np.array(
+            [
+                self.orbit_mjd_obs[i]
+                for i in range(len(self.orbit_mjd_obs))
+                if i not in entries_to_mask and i not in self._outlier_inds
+            ]
+        )
+        self._zodi_data_clean_masked = np.array(
+            [
+                self._zodi_data[i]
+                for i in range(len(self._zodi_data))
+                if i not in entries_to_mask and i not in self._outlier_inds
+            ]
+        )
 
         return
 
@@ -174,7 +209,9 @@ class Orbit(BaseMapper):
         self._cal_data_clean_masked = (self._orbit_data_clean_masked - offsets) / gains
         self.cal_uncs_clean_masked = self._orbit_uncs_clean_masked / abs(gains)
 
-        self.zs_data_clean_masked = self._cal_data_clean_masked - self._zodi_data_clean_masked
+        self.zs_data_clean_masked = (
+            self._cal_data_clean_masked - self._zodi_data_clean_masked
+        )
 
         return
 
@@ -193,10 +230,15 @@ class Orbit(BaseMapper):
             self._clean_data()
             prev_itermap_clean_masked = self.coadd_map[self.pixel_inds_clean_masked]
             t_gal_clean_masked = prev_itermap_clean_masked * self.gain
-            orbit_data_to_fit_clean_masked = self._orbit_data_clean_masked - t_gal_clean_masked
+            orbit_data_to_fit_clean_masked = (
+                self._orbit_data_clean_masked - t_gal_clean_masked
+            )
 
-        orbit_fitter = IterativeFitter(self._zodi_data_clean_masked, orbit_data_to_fit_clean_masked,
-                                       self._orbit_uncs_clean_masked)
+        orbit_fitter = IterativeFitter(
+            self._zodi_data_clean_masked,
+            orbit_data_to_fit_clean_masked,
+            self._orbit_uncs_clean_masked,
+        )
         self.gain, self.offset = orbit_fitter.iterate_fit(1)
         return
 
@@ -228,18 +270,23 @@ class Orbit(BaseMapper):
         if not all(self._zodi_data.astype(bool)):
             print(f"Orbit {self.orbit_num} mismatch with zodi: zeros in zodi orbit")
         elif any(zodi_orbit.mapdata[~pixels.astype(bool)]):
-            print(f"Orbit {self.orbit_num} mismatch with zodi: nonzeros outside zodi orbit")
+            print(
+                f"Orbit {self.orbit_num} mismatch with zodi: nonzeros outside zodi orbit"
+            )
         return
 
     def plot_fit(self, output_path, iteration=None):
         """Plot calibrated data along with the zodiacal light template with galactic latitude on the x-axis"""
         theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
-        plt.plot(phi, self._cal_data_clean_masked, 'r.', ms=0.5)
-        plt.plot(phi, self._zodi_data_clean_masked, 'b.', ms=0.5)
+        plt.plot(phi, self._cal_data_clean_masked, "r.", ms=0.5)
+        plt.plot(phi, self._zodi_data_clean_masked, "b.", ms=0.5)
         plt.xlabel("Latitude (degrees)")
         plt.ylabel("MJy/sr")
-        outfile_name = "orbit_{}_fit_iter_{}.png".format(self.orbit_num, iteration) \
-            if iteration else "orbit_{}_fit.png".format(self.orbit_num)
+        outfile_name = (
+            "orbit_{}_fit_iter_{}.png".format(self.orbit_num, iteration)
+            if iteration
+            else "orbit_{}_fit.png".format(self.orbit_num)
+        )
         plt.savefig(os.path.join(output_path, outfile_name))
         plt.close()
 
@@ -306,7 +353,9 @@ class IterativeFitter:
         gain = offset = 0.0
         if len(data_to_fit) > 0:
             while i < n:
-                gain, offset = self._fit_to_zodi(data_to_fit, self.zodi_data, uncs_to_fit)
+                gain, offset = self._fit_to_zodi(
+                    data_to_fit, self.zodi_data, uncs_to_fit
+                )
                 data_to_fit = self._adjust_data(gain, offset, data_to_fit)
                 i += 1
         else:
@@ -333,7 +382,9 @@ class IterativeFitter:
         """
         residual = x_data - ((y_data * params[0]) + params[1])
         weighted_residual = residual / (np.mean(sigma) ** 2)
-        chi_sq = (np.sum(weighted_residual ** 2) / len(x_data)) if len(x_data) > 0 else 0.0
+        chi_sq = (
+            (np.sum(weighted_residual ** 2) / len(x_data)) if len(x_data) > 0 else 0.0
+        )
         return chi_sq
 
     def _adjust_data(self, gain, offset, data):
@@ -351,8 +402,8 @@ class IterativeFitter:
         :return new_data: numpy.array
             Array containing original data with fitted residual subtracted
         """
-        residual = ((data - offset)/gain) - self.zodi_data
-        new_data = data - gain*residual
+        residual = ((data - offset) / gain) - self.zodi_data
+        new_data = data - gain * residual
         return new_data
 
     def _fit_to_zodi(self, orbit_data, zodi_data, orbit_uncs):
@@ -372,8 +423,12 @@ class IterativeFitter:
         """
         init_gain = 1.0
         init_offset = 0.0
-        popt = minimize(self._chi_sq, np.array([init_gain, init_offset]), args=(orbit_data, zodi_data, orbit_uncs),
-                        method='Nelder-Mead').x
+        popt = minimize(
+            self._chi_sq,
+            np.array([init_gain, init_offset]),
+            args=(orbit_data, zodi_data, orbit_uncs),
+            method="Nelder-Mead",
+        ).x
         gain, offset = popt
         return gain, offset
 
@@ -407,12 +462,20 @@ class Coadder:
         Run a modified form of the iterative calibration used in WMAP. For details, see method docstring.
     """
 
-    def __init__(self, band, moon_stripe_file, fsm_map_file, orbit_file_path,
-                 zodi_file_path, output_path=os.getcwd()):
+    def __init__(
+        self,
+        band,
+        moon_stripe_file,
+        fsm_map_file,
+        orbit_file_path,
+        zodi_file_path,
+        output_path=os.getcwd(),
+    ):
         self.band = band
         self.fsm_map_file = fsm_map_file
-        self.unc_fsm_map_file = "{}_{}.{}".format(fsm_map_file.rpartition(".")[0], "unc",
-                                                  fsm_map_file.rpartition(".")[-1])
+        self.unc_fsm_map_file = "{}_{}.{}".format(
+            fsm_map_file.rpartition(".")[0], "unc", fsm_map_file.rpartition(".")[-1]
+        )
         self.output_path = output_path
         setattr(Orbit, "orbit_file_path", orbit_file_path)
         setattr(Orbit, "zodi_file_path", zodi_file_path)
@@ -422,8 +485,9 @@ class Coadder:
 
         self.moon_stripe_mask = HealpixMap(moon_stripe_file)
         self.moon_stripe_mask.read_data()
-        self.moon_stripe_inds = \
-            np.arange(len(self.moon_stripe_mask.mapdata))[self.moon_stripe_mask.mapdata.astype(bool)]
+        self.moon_stripe_inds = np.arange(len(self.moon_stripe_mask.mapdata))[
+            self.moon_stripe_mask.mapdata.astype(bool)
+        ]
 
         self.full_mask = self.moon_stripe_mask.mapdata.astype(bool)
         self.npix = self.moon_stripe_mask.npix
@@ -442,8 +506,18 @@ class Coadder:
         self.fsm_masked = None
         self.unc_fsm_masked = None
 
-        self.month_timestamps = OrderedDict([("Jan", 55197), ("Feb", 55228), ("Mar", 55256), ("Apr", 55287),
-                                             ("May", 55317), ("Jun", 55348), ("Jul", 55378), ("Aug", 55409)])
+        self.month_timestamps = OrderedDict(
+            [
+                ("Jan", 55197),
+                ("Feb", 55228),
+                ("Mar", 55256),
+                ("Apr", 55287),
+                ("May", 55317),
+                ("Jun", 55348),
+                ("Jul", 55378),
+                ("Aug", 55409),
+            ]
+        )
 
         self.all_orbits = []
 
@@ -475,7 +549,7 @@ class Coadder:
     def load_orbits(self, month="all"):
         mapping_region = 0
         for i in range(self.num_orbits):
-            if mapping_region == 2:# or i % 2 != 0:
+            if mapping_region == 2:  # or i % 2 != 0:
                 continue
             print(f"Loading orbit {i}")
             # Initialize Orbit object and load data
@@ -496,7 +570,6 @@ class Coadder:
             orbit.apply_mask()
             self.all_orbits.append(orbit)
         return
-
 
     def load_splines(self, gain_spline_file, offset_spline_file):
         """Load gain spline and offset spline from '*.pkl' files saved in a file"""
@@ -572,7 +645,10 @@ class Coadder:
         :param orbit: Orbit object
             Orbit to add
         """
-        if len(orbit.cal_uncs_clean_masked[orbit.cal_uncs_clean_masked != 0.0]) > 0 and orbit.gain != 0.0:
+        if (
+            len(orbit.cal_uncs_clean_masked[orbit.cal_uncs_clean_masked != 0.0]) > 0
+            and orbit.gain != 0.0
+        ):
             orbit_data = orbit.zs_data_clean_masked
             orbit_uncs = orbit.cal_uncs_clean_masked
             orbit_pixels = orbit.pixel_inds_clean_masked
@@ -590,17 +666,23 @@ class Coadder:
             Orbit to add
         """
 
-        if len(orbit._orbit_uncs_clean_masked[orbit._orbit_uncs_clean_masked != 0.0]) > 0 and orbit.gain != 0.0:
-            self.numerator_masked[orbit.pixel_inds_clean_masked] += np.divide(orbit.zs_data_clean_masked,
-                                                                              np.square(orbit.cal_uncs_clean_masked),
-                                                                              where=orbit.cal_uncs_clean_masked != 0.0,
-                                                                              out=np.zeros_like(
-                                                                                  orbit.cal_uncs_clean_masked))
-            self.denominator_masked[orbit.pixel_inds_clean_masked] += np.divide(1,
-                                                                                np.square(orbit.cal_uncs_clean_masked),
-                                                                                where=orbit.cal_uncs_clean_masked != 0.0,
-                                                                                out=np.zeros_like(
-                                                                                    orbit.cal_uncs_clean_masked))
+        if (
+            len(orbit._orbit_uncs_clean_masked[orbit._orbit_uncs_clean_masked != 0.0])
+            > 0
+            and orbit.gain != 0.0
+        ):
+            self.numerator_masked[orbit.pixel_inds_clean_masked] += np.divide(
+                orbit.zs_data_clean_masked,
+                np.square(orbit.cal_uncs_clean_masked),
+                where=orbit.cal_uncs_clean_masked != 0.0,
+                out=np.zeros_like(orbit.cal_uncs_clean_masked),
+            )
+            self.denominator_masked[orbit.pixel_inds_clean_masked] += np.divide(
+                1,
+                np.square(orbit.cal_uncs_clean_masked),
+                where=orbit.cal_uncs_clean_masked != 0.0,
+                out=np.zeros_like(orbit.cal_uncs_clean_masked),
+            )
 
         return
 
@@ -631,20 +713,30 @@ class Coadder:
         """
         for p, px_list in enumerate(self.all_data):
             unc_list = self.all_uncs[p]
-            self.numerator_masked[p] += sum(np.array([px_list[i] / (unc_list[i] ** 2) for i in range(len(px_list))]))
-            self.denominator_masked[p] += sum(np.array([1 / (unc_list[i] ** 2) for i in range(len(px_list))]))
+            self.numerator_masked[p] += sum(
+                np.array([px_list[i] / (unc_list[i] ** 2) for i in range(len(px_list))])
+            )
+            self.denominator_masked[p] += sum(
+                np.array([1 / (unc_list[i] ** 2) for i in range(len(px_list))])
+            )
 
     def _normalize(self):
         """
         Following _compile_map(), here the numerator is divided by the denominator to give the final value for each
         Healpix pixel
         """
-        self.fsm_masked.mapdata = np.divide(self.numerator_masked, self.denominator_masked,
-                                            where=self.denominator_masked != 0.0,
-                                            out=np.zeros_like(self.denominator_masked))
-        self.unc_fsm_masked.mapdata = np.divide(1, self.denominator_masked,
-                                                where=self.denominator_masked != 0.0,
-                                                out=np.zeros_like(self.denominator_masked))
+        self.fsm_masked.mapdata = np.divide(
+            self.numerator_masked,
+            self.denominator_masked,
+            where=self.denominator_masked != 0.0,
+            out=np.zeros_like(self.denominator_masked),
+        )
+        self.unc_fsm_masked.mapdata = np.divide(
+            1,
+            self.denominator_masked,
+            where=self.denominator_masked != 0.0,
+            out=np.zeros_like(self.denominator_masked),
+        )
 
     def _save_fit_params_to_file(self, it):
         """Save all fitted gains, fitted offsets and pixel timestamps to file for a given iteration"""
@@ -652,8 +744,14 @@ class Coadder:
         all_gains = np.array([orb.gain for orb in self.all_orbits])
         all_offsets = np.array([orb.offset for orb in self.all_orbits])
         all_mjd_vals = np.array([orb.orbit_mjd_obs for orb in self.all_orbits])
-        with open(os.path.join(self.output_path, "fitvals_iter_{}.pkl".format(it)), "wb") as f:
-            pickle.dump([all_gains, all_offsets, all_mjd_vals], f, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(
+            os.path.join(self.output_path, "fitvals_iter_{}.pkl".format(it)), "wb"
+        ) as f:
+            pickle.dump(
+                [all_gains, all_offsets, all_mjd_vals],
+                f,
+                protocol=pickle.HIGHEST_PROTOCOL,
+            )
         return
 
     def _save_maps(self):
@@ -663,8 +761,12 @@ class Coadder:
 
     def _set_output_filenames(self, label):
         """Initialize WISEMap objects for the full-sky maps (intensity and uncertainty)"""
-        self.fsm_masked = WISEMap(self.fsm_map_file.replace(".fits", f"_{label}.fits"), self.band)
-        self.unc_fsm_masked = WISEMap(self.unc_fsm_map_file.replace(".fits", f"_{label}.fits"), self.band)
+        self.fsm_masked = WISEMap(
+            self.fsm_map_file.replace(".fits", f"_{label}.fits"), self.band
+        )
+        self.unc_fsm_masked = WISEMap(
+            self.unc_fsm_map_file.replace(".fits", f"_{label}.fits"), self.band
+        )
 
     def _filter_timestamps(self, month_list, mjd_obs):
         """
@@ -680,8 +782,10 @@ class Coadder:
             if include:
                 return include
             if month not in self.month_timestamps:
-                print("Unrecognized time period. Please specify one of ['all', 'Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', "
-                      "'Aug']. Proceeding with 'all'.")
+                print(
+                    "Unrecognized time period. Please specify one of ['all', 'Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', "
+                    "'Aug']. Proceeding with 'all'."
+                )
                 include = True
             else:
                 months = list(self.month_timestamps.keys())
@@ -697,7 +801,11 @@ class Coadder:
                         include = False
                 else:
                     current_month_num = months.index(month)
-                    if self.month_timestamps[month] <= mjd_obs < self.month_timestamps[months[current_month_num + 1]]:
+                    if (
+                        self.month_timestamps[month]
+                        <= mjd_obs
+                        < self.month_timestamps[months[current_month_num + 1]]
+                    ):
                         include = True
                     else:
                         include = False
