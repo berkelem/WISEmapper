@@ -175,10 +175,10 @@ def create_mask():
 if __name__ == "__main__":
     moon_stripe_mask = MoonStripeMask("moon_stripe_mask_E.fits")
     stripe_pixels = moon_stripe_mask.set_stripe_locations()
-    stripe_pixels = moon_stripe_mask.set_stripe_thickness(5, stripe_pixels)
+    stripe_pixels = moon_stripe_mask.set_stripe_thickness(6, stripe_pixels)
     moon_stripe_mask.fill_mask(stripe_pixels)
     moon_stripe_mask.save_map(coord="E")
 
     moon_stripe_mask.rotate_map(old_coord="E", new_coord="G")
-    moon_stripe_mask.filename = "moon_stripe_mask_G.fits"
+    moon_stripe_mask.filename = "moon_stripe_mask_G_thick6.fits"
     moon_stripe_mask.save_map(coord="G")

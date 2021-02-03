@@ -5,7 +5,7 @@ import os
 if __name__ == "__main__":
 
     # Declare paths to important input files/directories
-    moon_stripe_file = "/home/users/mberkeley/wisemapper/data/masks/stripe_mask_G.fits"  # Input file, already exists
+    moon_stripe_file = "/home/users/mberkeley/wisemapper/data/masks/moon_stripe_mask_G_thick5.fits"  # Input file, already exists
     orbit_file_path = "/home/users/mberkeley/wisemapper/data/output_maps/w3/csv_files/"  # Input files, path already exists
     zodi_file_path = "/home/users/jguerraa/AME/cal_files/W3/"  # Input files, path already exists
 
