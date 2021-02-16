@@ -44,7 +44,7 @@ def main(band, filename, output_path):
             continue
 
 
-        RunRankZero(print, data=f"Mapping orbit {n + 1} of {n_orbits}")
+        RunRankZero(print, data=f"Mapping day {n + 1} of {n_orbits}")
         filelist = []
         mjd_list = []
 
