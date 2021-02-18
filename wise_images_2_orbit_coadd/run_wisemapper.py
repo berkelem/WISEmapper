@@ -37,7 +37,7 @@ def main(band, filename, output_path):
     orbit_num = None
     while n < n_orbits:
         # If coadd map for this orbit already exists, skip
-        if os.path.exists(os.path.join(output_path, f"fsm_w{band}_day_{n}.fits")):
+        if os.path.exists(os.path.join(output_path, f"fsm_w{band}_orbit_{n}.fits")):
             RunRankZero(print, data=f"Already mapped orbit {n + 1} of {n_orbits}")
             filelist, mjd_list, orbit_num = next(filelist_gen)
             n += 1
