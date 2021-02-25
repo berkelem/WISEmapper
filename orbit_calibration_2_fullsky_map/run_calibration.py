@@ -6,8 +6,8 @@ if __name__ == "__main__":
 
     # Declare paths to important input files/directories
     moon_stripe_file = "/home/users/mberkeley/wisemapper/data/masks/moon_stripe_mask_G_thick3.fits"  # Input file, already exists
-    orbit_file_path = "/home/users/mberkeley/wisemapper/data/output_maps/w3/csv_files/"  # Input files, path already exists
-    zodi_file_path = "/home/users/jguerraa/AME/cal_files/W3/"  # Input files, path already exists
+    orbit_file_path = "/home/users/mberkeley/wisemapper/data/output_maps/w3_days/csv_files/"  # Input files, path already exists
+    zodi_file_path = "/home/users/jguerraa/AME/cal_files/W3_days/"  # Input files, path already exists
 
     # Declare outputs
     output_path = os.getcwd()  # Specify where to store output files from calibration
@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     # Initialize Coadder object for managing calibration
     coadd_map = Coadder(3, moon_stripe_file, fsm_map_file, orbit_file_path, zodi_file_path, output_path)
-    coadd_map.load_orbits(month=["Mar", "Apr", "May", "Jun", "Jul", "Aug"])
+    coadd_map.load_orbits(month="all")
     # coadd_map.run_iterative_fit(iterations=iterations)
 
     # Fit a spline through the converged fit values for gains and offsets
