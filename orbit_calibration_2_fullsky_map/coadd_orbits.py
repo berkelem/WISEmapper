@@ -481,7 +481,7 @@ class Coadder:
         setattr(Orbit, "zodi_file_path", zodi_file_path)
 
         self.iter = 0
-        self.num_orbits = 6323
+        self.num_orbits = 212#6323
 
         self.moon_stripe_mask = HealpixMap(moon_stripe_file)
         self.moon_stripe_mask.read_data()
