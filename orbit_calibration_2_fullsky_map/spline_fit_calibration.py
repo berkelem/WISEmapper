@@ -133,9 +133,9 @@ class SplineFitter:
         offsets_masked[-15:] = np.mean(offsets_masked[~stripe_offsets][-15:])
         stripe_offsets[-15:] = False
 
-        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=1, k=5)
-        self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
-                                           s=100000, k=3)
+        # self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=1, k=5)
+        # self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
+        #                                    s=100000, k=3)
 
         # Even mask
         # Mask all gain and offset values that have aberrant values due to moon stripe regions causing a bad fit
