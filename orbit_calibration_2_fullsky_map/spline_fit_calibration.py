@@ -247,6 +247,7 @@ class SplineFitter:
         gains = []
         offsets = []
         for it in range(25):
+            self.fitvals_file = os.path.join(self.output_path, "fitvals_iter_{}.pkl".format(it))
             all_gains, all_offsets, all_mjd_vals = self._load_fitvals()
             gains.append(all_gains)
             offsets.append(all_offsets)
