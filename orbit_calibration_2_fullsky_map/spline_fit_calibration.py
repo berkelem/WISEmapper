@@ -114,10 +114,10 @@ class SplineFitter:
                                (55370 < times_gain_masked) & (times_gain_masked < 55386)) | (
                                (55393 < times_gain_masked) & (times_gain_masked < 55414))
 
-        gains_masked[:15] = np.mean(gains_masked[~stripe_gains][:15])
-        stripe_gains[:15] = False
-        gains_masked[-15:] = np.mean(gains_masked[~stripe_gains][-15:])
-        stripe_gains[-15:] = False
+        # gains_masked[:15] = np.mean(gains_masked[~stripe_gains][:15])
+        # stripe_gains[:15] = False
+        # gains_masked[-15:] = np.mean(gains_masked[~stripe_gains][-15:])
+        # stripe_gains[-15:] = False
 
         stripe_offsets = ((55200 < times_offset_masked) & (times_offset_masked < 55207.5)) | (
                 (55217 < times_offset_masked) & (times_offset_masked < 55221)) | (
@@ -128,10 +128,10 @@ class SplineFitter:
                                (55370 < times_offset_masked) & (times_offset_masked < 55386)) | (
                                (55393 < times_offset_masked) & (times_offset_masked < 55414))
 
-        offsets_masked[:15] = np.mean(offsets_masked[~stripe_offsets][:15])
-        stripe_offsets[:15] = False
-        offsets_masked[-15:] = np.mean(offsets_masked[~stripe_offsets][-15:])
-        stripe_offsets[-15:] = False
+        # offsets_masked[:15] = np.mean(offsets_masked[~stripe_offsets][:15])
+        # stripe_offsets[:15] = False
+        # offsets_masked[-15:] = np.mean(offsets_masked[~stripe_offsets][-15:])
+        # stripe_offsets[-15:] = False
 
         # self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=1, k=5)
         # self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
