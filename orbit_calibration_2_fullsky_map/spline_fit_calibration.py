@@ -246,7 +246,7 @@ class SplineFitter:
         """
         gains = []
         offsets = []
-        for it in range(orbit_num+1):
+        for it in range(self.iter_num):
             self.fitvals_file = os.path.join(self.output_path, "fitvals_iter_{}.pkl".format(it))
             all_gains, all_offsets, all_mjd_vals = self._load_fitvals()
             gains.append(all_gains)
@@ -255,13 +255,13 @@ class SplineFitter:
         orbit_gains = [gains[i][orbit_num] for i in range(len(gains))]
         orbit_offsets = [offsets[i][orbit_num] for i in range(len(offsets))]
 
-        plt.plot(range(orbit_num+1), orbit_gains, "r.")
+        plt.plot(range(self.iter_num), orbit_gains, "r.")
         plt.xlabel("Iteration")
         plt.ylabel("Fitted gain")
         plt.savefig(os.path.join(self.output_path, "orbit_{}_gains.png".format(orbit_num)))
         plt.close()
 
-        plt.plot(range(orbit_num+1), orbit_offsets, "r.")
+        plt.plot(range(self.iter_num), orbit_offsets, "r.")
         plt.xlabel("Iteration")
         plt.ylabel("Fitted gain")
         plt.savefig(os.path.join(self.output_path, "orbit_{}_offsets.png".format(orbit_num)))
