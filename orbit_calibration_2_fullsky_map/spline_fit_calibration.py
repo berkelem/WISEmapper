@@ -228,12 +228,14 @@ class SplineFitter:
         plt.plot(median_mjd_vals, all_gains, "r.")
         plt.xlabel("Median MJD value")
         plt.ylabel("Fitted gain")
+        plt.ylim((65,105))
         plt.savefig(os.path.join(self.output_path, "all_gains_iter_{}.png".format(self.iter_num)))
         plt.close()
 
         plt.plot(median_mjd_vals, all_offsets, "r.")
         plt.xlabel("Median MJD value")
         plt.ylabel("Fitted offset")
+        plt.ylim((-300, 150))
         plt.savefig(os.path.join(self.output_path, "all_offsets_iter_{}.png".format(self.iter_num)))
         plt.close()
 
