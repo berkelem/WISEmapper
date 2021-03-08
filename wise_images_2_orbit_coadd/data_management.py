@@ -236,7 +236,7 @@ class FileBatcher:
         """
         self._filter_timestamps()
         week_timestamps = list(range(int(min(self.timestamps_df['mjd_obs'])), int(max(self.timestamps_df['mjd_obs'])) + 7, 7))
-        labels = list(range(len(week_timestamps)))
+        labels = list(range(len(week_timestamps)-1))
         self.timestamps_df["weeks"] = pd.cut(self.timestamps_df["mjd_obs"], bins=week_timestamps, labels=labels)
         self.groups = self.timestamps_df.groupby(self.timestamps_df["weeks"])
 
