@@ -173,6 +173,10 @@ class FileBatcher:
         self._load_dataframe()
         self._group_files(groupby='orbit')
 
+    def group_weeks(self):
+        self._load_dataframe()
+        self._group_files(groupby="week")
+
     def _load_dataframe(self):
         """Read metadata table into pandas dataframe"""
 
@@ -226,6 +230,17 @@ class FileBatcher:
         self.groups = self.timestamps_df.groupby(self.timestamps_df['mjd_obs'].apply(lambda x: round(x)))
         return
 
+    def _get_week(self):
+        """
+        Create groups of files - one group per week.
+        """
+        self._filter_timestamps()
+        week_timestamps = [min(self.timestamps_df['mjd_obs']), max(self.timestamps_df['mjd_obs']) + 7.0, 7]
+        labels = list(range(len(week_timestamps)))
+        self.timestamps_df["weeks"] = pd.cut(self.timestamps_df["mjd_obs"], bins=week_timestamps, labels=labels)
+        self.groups = self.timestamps_df.groupby(self.timestamps_df["weeks"])
+
+
     def _group_files(self, groupby='day'):
         """
         Group files by day or by orbit
@@ -237,3 +252,5 @@ class FileBatcher:
             self._get_day()
         elif groupby == 'orbit':
             self._get_orbit()
+        elif groupby == "week":
+            self._get_week()
