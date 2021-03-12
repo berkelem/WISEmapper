@@ -72,8 +72,8 @@ class SplineFitter:
         # all_offsets = np.r_[all_offsets[1:1295:2], all_offsets[1296:5000:2], all_offsets[5001::2]]
         # all_mjd_vals = np.r_[all_mjd_vals[1:1295:2], all_mjd_vals[1296:5000:2], all_mjd_vals[5001::2]]
         #
-        # times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self._clean_data(all_gains, all_offsets,
-        #                                                                                         all_mjd_vals)
+        times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self._clean_data(all_gains, all_offsets,
+                                                                                                all_mjd_vals)
 
         # Off galaxy orbits
         # stripe_gains = ((55217 < times_gain_masked) & (times_gain_masked < 55225)) | (
@@ -98,35 +98,35 @@ class SplineFitter:
         #                                    s=70000, k=3)
 
         # on galaxy orbits
-        all_gains = np.r_[all_gains[0:1295:2], all_gains[1295:5000:2], all_gains[5000::2]]
-        all_offsets = np.r_[all_offsets[0:1295:2], all_offsets[1295:5000:2], all_offsets[5000::2]]
-        all_mjd_vals = np.r_[all_mjd_vals[0:1295:2], all_mjd_vals[1295:5000:2], all_mjd_vals[5000::2]]
+        # all_gains = np.r_[all_gains[0:1295:2], all_gains[1295:5000:2], all_gains[5000::2]]
+        # all_offsets = np.r_[all_offsets[0:1295:2], all_offsets[1295:5000:2], all_offsets[5000::2]]
+        # all_mjd_vals = np.r_[all_mjd_vals[0:1295:2], all_mjd_vals[1295:5000:2], all_mjd_vals[5000::2]]
+        #
+        # times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self._clean_data(all_gains, all_offsets,
+        #                                                                                         all_mjd_vals)
 
-        times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self._clean_data(all_gains, all_offsets,
-                                                                                                all_mjd_vals)
-
-        stripe_gains = ((55200 < times_gain_masked) & (times_gain_masked < 55207.5)) | (
-                (55217 < times_gain_masked) & (times_gain_masked < 55221)) | (
-                               (55227 < times_gain_masked) & (times_gain_masked < 55236)) | (
-                               (55246 < times_gain_masked) & (times_gain_masked < 55296)) | (
-                               (55316 < times_gain_masked) & (times_gain_masked < 55325)) | (
-                               (55345 < times_gain_masked) & (times_gain_masked < 55357)) | (
-                               (55370 < times_gain_masked) & (times_gain_masked < 55386)) | (
-                               (55393 < times_gain_masked) & (times_gain_masked < 55414))
+        # stripe_gains = ((55200 < times_gain_masked) & (times_gain_masked < 55207.5)) | (
+        #         (55217 < times_gain_masked) & (times_gain_masked < 55221)) | (
+        #                        (55227 < times_gain_masked) & (times_gain_masked < 55236)) | (
+        #                        (55246 < times_gain_masked) & (times_gain_masked < 55296)) | (
+        #                        (55316 < times_gain_masked) & (times_gain_masked < 55325)) | (
+        #                        (55345 < times_gain_masked) & (times_gain_masked < 55357)) | (
+        #                        (55370 < times_gain_masked) & (times_gain_masked < 55386)) | (
+        #                        (55393 < times_gain_masked) & (times_gain_masked < 55414))
 
         # gains_masked[:15] = np.mean(gains_masked[~stripe_gains][:15])
         # stripe_gains[:15] = False
         # gains_masked[-15:] = np.mean(gains_masked[~stripe_gains][-15:])
         # stripe_gains[-15:] = False
 
-        stripe_offsets = ((55200 < times_offset_masked) & (times_offset_masked < 55207.5)) | (
-                (55217 < times_offset_masked) & (times_offset_masked < 55221)) | (
-                               (55227 < times_offset_masked) & (times_offset_masked < 55236)) | (
-                               (55246 < times_offset_masked) & (times_offset_masked < 55296)) | (
-                               (55316 < times_offset_masked) & (times_offset_masked < 55325)) | (
-                               (55345 < times_offset_masked) & (times_offset_masked < 55357)) | (
-                               (55370 < times_offset_masked) & (times_offset_masked < 55386)) | (
-                               (55393 < times_offset_masked) & (times_offset_masked < 55414))
+        # stripe_offsets = ((55200 < times_offset_masked) & (times_offset_masked < 55207.5)) | (
+        #         (55217 < times_offset_masked) & (times_offset_masked < 55221)) | (
+        #                        (55227 < times_offset_masked) & (times_offset_masked < 55236)) | (
+        #                        (55246 < times_offset_masked) & (times_offset_masked < 55296)) | (
+        #                        (55316 < times_offset_masked) & (times_offset_masked < 55325)) | (
+        #                        (55345 < times_offset_masked) & (times_offset_masked < 55357)) | (
+        #                        (55370 < times_offset_masked) & (times_offset_masked < 55386)) | (
+        #                        (55393 < times_offset_masked) & (times_offset_masked < 55414))
 
         # offsets_masked[:15] = np.mean(offsets_masked[~stripe_offsets][:15])
         # stripe_offsets[:15] = False
@@ -201,6 +201,9 @@ class SplineFitter:
         #                          (55378 < times_offset_masked) & (times_offset_masked < 55384)) | (
         #                          (55393 < times_offset_masked) & (times_offset_masked < 55402)) | (
         #                          (55407 < times_offset_masked) & (times_offset_masked < 55414))
+
+        stripe_gains = ~times_gain_masked.astype(bool)
+        stripe_offsets = ~times_offset_masked.astype(bool)
 
         self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=1000, k=5)
         self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
