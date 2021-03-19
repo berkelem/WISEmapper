@@ -111,7 +111,7 @@ class Orbit(BaseMapper):
             self.zodi_file_path, f"zodi_map_cal_W{self._band}_{self.orbit_num}.fits"
         )
         self._mask = mask
-        self._mask_inds = np.arange(len(self._mask))[self._mask.astype(bool)]
+        self._mask_inds = np.array([])#np.arange(len(self._mask))[self._mask.astype(bool)]
         self._outlier_inds = np.array([])
 
         self._orbit_data = None
