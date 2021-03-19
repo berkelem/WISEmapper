@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     # Initialize Coadder object for managing calibration
     coadd_map = Coadder(3, moon_stripe_file, fsm_map_file, orbit_file_path, zodi_file_path, output_path)
-    coadd_map.load_orbits(month="all")
+    coadd_map.load_orbits(month=["Jan", "Feb", "Mar", "Apr", "May", "Jun"])#"all")
     # coadd_map.run_iterative_fit(iterations=iterations)
 
     # Fit a spline through the converged fit values for gains and offsets
