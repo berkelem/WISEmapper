@@ -60,10 +60,10 @@ class SplineFitter:
 
         median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
 
-        # june_data = (55348 <= median_mjd_vals) & (median_mjd_vals < 55378)
-        # all_gains = all_gains[june_data]
-        # all_offsets = all_offsets[june_data]
-        # all_mjd_vals = all_mjd_vals[june_data]
+        june_data = (55348 <= median_mjd_vals) & (median_mjd_vals < 55378)
+        all_gains = all_gains[june_data]
+        all_offsets = all_offsets[june_data]
+        all_mjd_vals = all_mjd_vals[june_data]
 
 
         # apr_mask = [x[0] > 55287 for x in all_mjd_vals]
@@ -213,8 +213,8 @@ class SplineFitter:
         stripe_gains = ~times_gain_masked.astype(bool)
         stripe_offsets = ~times_offset_masked.astype(bool)
 
-        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=1, k=3)
-        self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
+        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], np.ones(31)*np.mean(gains_masked[~stripe_gains][:10]), s=1, k=3)
+        self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], np.ones(31)*np.mean(offsets_masked[~stripe_offsets][:10]),
                                            s=1, k=3)
 
         self._save_spline()
