@@ -205,9 +205,9 @@ class SplineFitter:
         stripe_gains = ~times_gain_masked.astype(bool)
         stripe_offsets = ~times_offset_masked.astype(bool)
 
-        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=100, k=3)
+        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=1, k=3)
         self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
-                                           s=10000, k=3)
+                                           s=1, k=3)
 
         self._save_spline()
 
