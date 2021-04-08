@@ -25,7 +25,7 @@ def main(band, filename, output_path):
 
     # Create batches of raw WISE images corresponding to individual WISE scans/half-orbits.
     batch = FileBatcher(filename)
-    RunLinear(batch.group_days)
+    RunLinear(batch.group_orbits)
     n_orbits = len(batch.groups)
     print("{} orbits".format(n_orbits))
 
