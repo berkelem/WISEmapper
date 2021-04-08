@@ -44,13 +44,17 @@ def main(band, filename, output_path):
             continue
 
 
-        RunRankZero(print, data=f"Mapping week {n + 1} of {n_orbits}")
+        RunRankZero(print, data=f"Mapping orbit {n + 1} of {n_orbits}")
         filelist = []
         mjd_list = []
 
         # Generate next batch of files
         while orbit_num != n:
             filelist, mjd_list, orbit_num = next(filelist_gen)
+
+        if not ((max(mjd_list) < 55378) and (min(mjd_list) > 55348)):  # Select June
+            n += 1
+            continue
 
         # Create coadd map of all files in batch
         mapmaker = MapMaker(band, n, output_path)
