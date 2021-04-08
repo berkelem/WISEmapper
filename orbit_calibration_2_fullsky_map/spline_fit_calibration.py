@@ -58,6 +58,14 @@ class SplineFitter:
         """
         all_gains, all_offsets, all_mjd_vals = self._load_fitvals()
 
+        median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
+
+        june_data = (55348 <= median_mjd_vals) & (median_mjd_vals < 55378)
+        all_gains = all_gains[june_data]
+        all_offsets = all_offsets[june_data]
+        all_mjd_vals = all_mjd_vals[june_data]
+
+
         # apr_mask = [x[0] > 55287 for x in all_mjd_vals]
         # all_gains = all_gains[apr_mask]
         # all_offsets = all_offsets[apr_mask]
