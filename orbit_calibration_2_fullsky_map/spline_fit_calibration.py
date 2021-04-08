@@ -228,7 +228,7 @@ class SplineFitter:
         all_gains, all_offsets, all_mjd_vals = self._load_fitvals()
         median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
 
-        june_data = 55348 <= median_mjd_vals < 55378
+        june_data = (55348 <= median_mjd_vals) & (median_mjd_vals < 55378)
 
         plt.plot(median_mjd_vals[june_data], all_gains[june_data], "r.")
         plt.xlabel("Median MJD value")
