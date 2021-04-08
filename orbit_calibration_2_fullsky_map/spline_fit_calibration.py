@@ -228,14 +228,16 @@ class SplineFitter:
         all_gains, all_offsets, all_mjd_vals = self._load_fitvals()
         median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
 
-        plt.plot(median_mjd_vals, all_gains, "r.")
+        june_data = 55348 <= median_mjd_vals < 55378
+
+        plt.plot(median_mjd_vals[june_data], all_gains[june_data], "r.")
         plt.xlabel("Median MJD value")
         plt.ylabel("Fitted gain")
         plt.ylim((65,105))
         plt.savefig(os.path.join(self.output_path, "all_gains_iter_{}.png".format(self.iter_num)))
         plt.close()
 
-        plt.plot(median_mjd_vals, all_offsets, "r.")
+        plt.plot(median_mjd_vals[june_data], all_offsets[june_data], "r.")
         plt.xlabel("Median MJD value")
         plt.ylabel("Fitted offset")
         plt.ylim((-300, 150))
