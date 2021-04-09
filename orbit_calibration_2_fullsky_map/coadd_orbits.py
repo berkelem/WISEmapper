@@ -569,6 +569,7 @@ class Coadder:
             if 15 <= j < 28:
                 j += 1
                 continue
+            j += 1
             mapping_region = 1
             orbit.load_zodi_orbit_data()
             orbit.apply_mask()
