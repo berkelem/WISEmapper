@@ -548,6 +548,7 @@ class Coadder:
 
     def load_orbits(self, month="all"):
         mapping_region = 0
+        j = 0
         for i in range(self.num_orbits):
             if mapping_region == 2:  # or i % 2 != 0:
                 continue
@@ -565,6 +566,9 @@ class Coadder:
                     if mapping_region:
                         mapping_region = 2
                     continue
+            if 15 <= j < 28:
+                j += 1
+                continue
             mapping_region = 1
             orbit.load_zodi_orbit_data()
             orbit.apply_mask()
