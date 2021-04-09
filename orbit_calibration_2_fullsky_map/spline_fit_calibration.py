@@ -58,14 +58,6 @@ class SplineFitter:
         """
         all_gains, all_offsets, all_mjd_vals = self._load_fitvals()
 
-        median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
-
-        june_data = (55348 <= median_mjd_vals) & (median_mjd_vals < 55378)
-        all_gains = all_gains[june_data]
-        all_offsets = all_offsets[june_data]
-        all_mjd_vals = all_mjd_vals[june_data]
-
-
         # apr_mask = [x[0] > 55287 for x in all_mjd_vals]
         # all_gains = all_gains[apr_mask]
         # all_offsets = all_offsets[apr_mask]
@@ -213,9 +205,9 @@ class SplineFitter:
         stripe_gains = ~times_gain_masked.astype(bool)
         stripe_offsets = ~times_offset_masked.astype(bool)
 
-        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=1, k=3)
+        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=100, k=3)
         self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
-                                           s=1, k=3)
+                                           s=10000, k=3)
 
         self._save_spline()
 
@@ -236,16 +228,16 @@ class SplineFitter:
         all_gains, all_offsets, all_mjd_vals = self._load_fitvals()
         median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
 
-        june_data = (55348 <= median_mjd_vals) & (median_mjd_vals < 55378)
+        selected_data = (55197 <= median_mjd_vals) & (median_mjd_vals < 55228)
 
-        plt.plot(median_mjd_vals[june_data], all_gains[june_data], "r.")
+        plt.plot(median_mjd_vals[selected_data], all_gains[selected_data], "r.")
         plt.xlabel("Median MJD value")
         plt.ylabel("Fitted gain")
         plt.ylim((65,105))
         plt.savefig(os.path.join(self.output_path, "all_gains_iter_{}.png".format(self.iter_num)))
         plt.close()
 
-        plt.plot(median_mjd_vals[june_data], all_offsets[june_data], "r.")
+        plt.plot(median_mjd_vals[selected_data], all_offsets[selected_data], "r.")
         plt.xlabel("Median MJD value")
         plt.ylabel("Fitted offset")
         plt.ylim((-300, 150))
