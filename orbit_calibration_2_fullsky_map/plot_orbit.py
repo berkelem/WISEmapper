@@ -23,10 +23,9 @@ if __name__ == "__main__":
     orbit.load_zodi_orbit_data()
     orbit.apply_mask()
 
+
     # Fit a spline through the converged fit values for gains and offsets
     sf = SplineFitter(iter_num=iterations-1, path_to_fitvals=output_path)
 
-    # Load the spline back into the Coadder and do a final calibration
-    coadd_map.load_splines(sf.gain_spline_file, sf.offset_spline_file)
-
+    orbit.apply_spline_fit(sf.gain_spline_file, sf.offset_spline_file)
     orbit.plot_fit(output_path)
