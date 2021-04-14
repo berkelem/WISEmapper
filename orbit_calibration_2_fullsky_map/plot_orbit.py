@@ -21,6 +21,7 @@ if __name__ == "__main__":
     orbit = Orbit(141, 3, None, 256)
     orbit.load_orbit_data()
     orbit.load_zodi_orbit_data()
+    orbit.apply_mask()
 
     # Fit a spline through the converged fit values for gains and offsets
     sf = SplineFitter(iter_num=iterations-1, path_to_fitvals=output_path)
