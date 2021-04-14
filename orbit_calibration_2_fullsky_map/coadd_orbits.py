@@ -278,8 +278,9 @@ class Orbit(BaseMapper):
     def plot_fit(self, output_path, iteration=None):
         """Plot calibrated data along with the zodiacal light template with galactic latitude on the x-axis"""
         theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
-        plt.plot(phi, self._cal_data_clean_masked, "r.", ms=0.5)
-        plt.plot(phi, self._zodi_data_clean_masked, "b.", ms=0.5)
+        plt.plot(phi, self._cal_data_clean_masked, "r.", ms=0.5, label="Calibrated data")
+        plt.plot(phi, self._zodi_data_clean_masked, "b.", ms=0.5, label="Zodi model")
+        plt.legend()
         plt.xlabel("Latitude (degrees)")
         plt.ylabel("MJy/sr")
         outfile_name = (
