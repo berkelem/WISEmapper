@@ -1,7 +1,16 @@
 from orbit_calibration_2_fullsky_map.coadd_orbits import Orbit, Coadder
 from orbit_calibration_2_fullsky_map.spline_fit_calibration import SplineFitter
 import os
+import pickle
 
+def load_splines(gain_spline_file, offset_spline_file):
+    """Load gain spline and offset spline from '*.pkl' files saved in a file"""
+    with open(gain_spline_file, "rb") as g1:
+        gain_spline = pickle.load(g1)
+
+    with open(offset_spline_file, "rb") as g2:
+        offset_spline = pickle.load(g2)
+    return gain_spline, offset_spline
 
 if __name__ == "__main__":
 
@@ -26,6 +35,6 @@ if __name__ == "__main__":
 
     # Fit a spline through the converged fit values for gains and offsets
     sf = SplineFitter(iter_num=iterations-1, path_to_fitvals=output_path)
-
-    orbit.apply_spline_fit(sf.gain_spline_file, sf.offset_spline_file)
+    gain_spline, offset_spline = load_splines(sf.gain_spline_file, sf.offset_spline_file)
+    orbit.apply_spline_fit(gain_spline, offset_spline)
     orbit.plot_fit(output_path)
