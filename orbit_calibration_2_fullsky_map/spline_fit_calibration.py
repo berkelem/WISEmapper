@@ -212,9 +212,9 @@ class SplineFitter:
         stripe_gains = ~times_gain_masked.astype(bool)
         stripe_offsets = ~times_offset_masked.astype(bool)
 
-        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=100, k=3)
+        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=200, k=3)
         self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
-                                           s=10000, k=3)
+                                           s=20000, k=3)
 
         self._save_spline()
 
@@ -300,21 +300,21 @@ class SplineFitter:
         """
 
         median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
-        return median_mjd_vals, median_mjd_vals, all_gains, all_offsets
+        # return median_mjd_vals, median_mjd_vals, all_gains, all_offsets
 
-        # z_gains = np.abs(stats.zscore(all_gains))
-        # mask_gains = z_gains > 1
-        #
-        # z_offsets = np.abs(stats.zscore(all_offsets))
-        # mask_offsets = z_offsets > 1
-        #
-        # times_gain_masked = median_mjd_vals[~mask_gains]
-        # gains_masked = all_gains[~mask_gains]
-        #
-        # times_offset_masked = median_mjd_vals[~mask_offsets]
-        # offsets_masked = all_offsets[~mask_offsets]
-        #
-        # return times_gain_masked, times_offset_masked, gains_masked, offsets_masked
+        z_gains = np.abs(stats.zscore(all_gains))
+        mask_gains = (z_gains > 1) | (all_gains > 80) | (all_gains < 70)
+
+        z_offsets = np.abs(stats.zscore(all_offsets))
+        mask_offsets = (z_offsets > 1) | (all_gains > 80) | (all_gains < 70)
+
+        times_gain_masked = median_mjd_vals[~mask_gains]
+        gains_masked = all_gains[~mask_gains]
+
+        times_offset_masked = median_mjd_vals[~mask_offsets]
+        offsets_masked = all_offsets[~mask_offsets]
+
+        return times_gain_masked, times_offset_masked, gains_masked, offsets_masked
 
     def _save_spline(self):
         """Save splines to pickle files, to be read in later by the Coadder object"""
