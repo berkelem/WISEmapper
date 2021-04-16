@@ -63,12 +63,12 @@ class SplineFitter:
         # all_offsets = all_offsets[apr_mask]
         # all_mjd_vals = all_mjd_vals[apr_mask]
 
-        median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
-
-        selected_data = (55228 <= median_mjd_vals) & (median_mjd_vals < 55287)
-        all_gains = all_gains[selected_data]
-        all_offsets = all_offsets[selected_data]
-        all_mjd_vals = all_mjd_vals[selected_data]
+        # median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
+        #
+        # selected_data = (55228 <= median_mjd_vals) & (median_mjd_vals < 55287)
+        # all_gains = all_gains[selected_data]
+        # all_offsets = all_offsets[selected_data]
+        # all_mjd_vals = all_mjd_vals[selected_data]
 
         # all_gains = all_gains[::2]  # Even orbits
         # all_offsets = all_offsets[::2]
