@@ -28,4 +28,4 @@ def mask_southern_latitudes():
     fsm.save_map()
 
 if __name__ == "__main__":
-    mask_southern_latitudes()o
+    mask_southern_latitudes()
