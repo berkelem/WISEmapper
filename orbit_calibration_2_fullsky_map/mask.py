@@ -24,7 +24,7 @@ def mask_southern_latitudes():
     fsm = HealpixMap("south_mask.fits")
     fsm.set_resolution(256)
     fsm.rotate_map(old_coord="G", new_coord="G")
-    mask = fsm.theta < np.pi
+    mask = fsm.theta < np.pi/2
     fsm.mapdata[mask] = 1
     fsm.save_map()
 
