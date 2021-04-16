@@ -537,7 +537,7 @@ class Coadder:
         for orbit in self.all_orbits:
             print(f"Adding orbit {orbit.orbit_num}")
             orbit.reset_outliers()  # Include pixels in the galactic plane that were removed for fitting
-            orbit.apply_mask()
+            # orbit.apply_mask()
             orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
             self._add_orbit(orbit)
             if plot and orbit.orbit_num % 15 == 0.0:
