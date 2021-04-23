@@ -136,7 +136,7 @@ class Orbit(BaseMapper):
         self.zs_data_clean_masked = None
 
     @staticmethod
-    def rotate_data(old_coord, new_coord, data, nside):
+    def rotate_data(old_coord, new_coord, data, pix_inds, nside):
         """
         Rotate Healpix pixel numbering by applying a coordinate system transformation
 
@@ -148,12 +148,16 @@ class Orbit(BaseMapper):
             One of 'G' (galactic), 'C' (celestial), 'E' (ecliptic, default)
         """
         npix = hp.nside2npix(nside)
+        map_arr = np.zeros(npix)
+        map_arr[pix_inds] = data
         theta, phi = hp.pix2ang(nside, np.arange(npix))
         r = Rotator(coord=[new_coord, old_coord])  # Transforms galactic to ecliptic coordinates
         theta_rot, phi_rot = r(theta, phi)  # Apply the conversion
         rot_pixorder = hp.ang2pix(hp.npix2nside(npix), theta_rot, phi_rot)
-        rot_data = data[rot_pixorder]
-        return rot_data, theta_rot, phi_rot
+        rot_data = map_arr[rot_pixorder]
+        nonzero_mask = rot_data != 0.0
+        rot_data_pix_inds = np.arange(npix)[nonzero_mask]
+        return rot_data[nonzero_mask], rot_data_pix_inds, theta_rot, phi_rot
 
     def apply_fit(self):
         """Apply calibration using current values for gain and offset."""
