@@ -1,5 +1,6 @@
 from orbit_calibration_2_fullsky_map.coadd_orbits import Orbit, Coadder
 from orbit_calibration_2_fullsky_map.spline_fit_calibration import SplineFitter
+from wise_images_2_orbit_coadd.file_handler import WISEMap
 import os
 import pickle
 
@@ -11,6 +12,12 @@ def load_splines(gain_spline_file, offset_spline_file):
     with open(offset_spline_file, "rb") as g2:
         offset_spline = pickle.load(g2)
     return gain_spline, offset_spline
+
+def save_orbit_map(orbit, label):
+    orbit_map = WISEMap("orbit_{}_{}.fits".format(orbit.orbit_num, label), orbit.band)
+    orbit_map.mapdata[orbit.pixel_inds_clean_masked] = orbit.zs_data_clean_masked
+    orbit_map.save_map()
+    return
 
 if __name__ == "__main__":
 
@@ -38,3 +45,10 @@ if __name__ == "__main__":
     gain_spline, offset_spline = load_splines(sf.gain_spline_file, sf.offset_spline_file)
     orbit.apply_spline_fit(gain_spline, offset_spline)
     orbit.plot_fit(output_path)
+
+    save_orbit_map(orbit, "subtraction")
+    orbit.zs_data_clean_masked = orbit.zs_data_clean_masked.astype(bool)
+
+    save_orbit_map(orbit, "region")
+
+
