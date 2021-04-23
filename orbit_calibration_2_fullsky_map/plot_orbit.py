@@ -45,6 +45,7 @@ if __name__ == "__main__":
     gain_spline, offset_spline = load_splines(sf.gain_spline_file, sf.offset_spline_file)
     orbit.apply_spline_fit(gain_spline, offset_spline)
     orbit.plot_fit(output_path)
+    orbit.plot_diff(output_path)
 
     save_orbit_map(orbit, "subtraction")
     orbit.zs_data_clean_masked = orbit.zs_data_clean_masked.astype(bool)
