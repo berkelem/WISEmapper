@@ -308,6 +308,12 @@ class Orbit(BaseMapper):
         self.apply_mask()
         return
 
+    def save_orbit_map(self, label):
+        orbit_map = WISEMap("orbit_{}_{}.fits".format(self.orbit_num, label), self.band)
+        orbit_map.mapdata = self.zs_data_clean_masked
+        orbit_map.save_map()
+        return
+
 
 class IterativeFitter:
     """
@@ -620,6 +626,8 @@ class Coadder:
                 # Perform calibration fit
                 orbit.fit()
                 orbit.apply_fit()
+
+                orbit._save_orbit_map(label=it)
 
                 # Add calibrated orbit to full-sky coadd
                 self._add_orbit_iter(orbit)
