@@ -56,6 +56,7 @@ if __name__ == "__main__":
     orbit.zs_data_clean_masked = rot_zs_data
     orbit._cal_data_clean_masked = rot_cal_data
     orbit._zodi_data_clean_masked = rot_zodi_data
+    orbit.pixel_inds_clean_masked = rot_pix_inds
     orbit.plot_fit(output_path, label="_ecl")
 
     orbit.zs_data_clean_masked = orbit.zs_data_clean_masked.astype(bool)
