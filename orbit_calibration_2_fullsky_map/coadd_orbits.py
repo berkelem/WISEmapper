@@ -136,7 +136,7 @@ class Orbit(BaseMapper):
         self.zs_data_clean_masked = None
 
     @staticmethod
-    def rotate_data(old_coord='G', new_coord='E', data, nside):
+    def rotate_data(old_coord, new_coord, data, nside):
         """
         Rotate Healpix pixel numbering by applying a coordinate system transformation
 
