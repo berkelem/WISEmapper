@@ -150,14 +150,16 @@ class Orbit(BaseMapper):
         npix = hp.nside2npix(nside)
         map_arr = np.zeros(npix)
         map_arr[pix_inds] = data
+        px_region_map = np.zeros(npix)
+        px_region_map[pix_inds] = 1
         theta, phi = hp.pix2ang(nside, np.arange(npix))
         r = Rotator(coord=[new_coord, old_coord])  # Transforms galactic to ecliptic coordinates
         theta_rot, phi_rot = r(theta, phi)  # Apply the conversion
         rot_pixorder = hp.ang2pix(hp.npix2nside(npix), theta_rot, phi_rot)
         rot_data = map_arr[rot_pixorder]
-        nonzero_mask = rot_data != 0.0
-        rot_data_pix_inds = np.arange(npix)[nonzero_mask]
-        return rot_data[nonzero_mask], rot_data_pix_inds, theta_rot, phi_rot
+        px_region_map_rot = px_region_map[rot_pixorder]
+        rot_data_pix_inds = np.arange(npix)[px_region_map_rot.astype(bool)]
+        return rot_data[px_region_map_rot.astype(bool)], rot_data_pix_inds, theta_rot, phi_rot
 
     def apply_fit(self):
         """Apply calibration using current values for gain and offset."""
