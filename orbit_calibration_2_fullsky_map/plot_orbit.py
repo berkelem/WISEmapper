@@ -48,7 +48,7 @@ if __name__ == "__main__":
     orbit.plot_diff(output_path)
     save_orbit_map(orbit, "subtraction")
 
-    rot_data, theta_rot, phi_rot = orbit.rotate_data("G", "E", orbit.zs_data_clean_masked, orbit._nside)
+    rot_data, theta_rot, phi_rot = orbit.rotate_data("G", "E", orbit.zs_data_clean_masked, orbit.pixel_inds_clean_masked, orbit._nside)
     orbit.zs_data_clean_masked = rot_data
     orbit.plot_fit(output_path, label="_ecl")
 
