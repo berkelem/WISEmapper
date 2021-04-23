@@ -48,8 +48,14 @@ if __name__ == "__main__":
     orbit.plot_diff(output_path)
     save_orbit_map(orbit, "subtraction")
 
-    rot_data, rot_pix_inds, theta_rot, phi_rot = orbit.rotate_data("G", "E", orbit.zs_data_clean_masked, orbit.pixel_inds_clean_masked, orbit._nside)
-    orbit.zs_data_clean_masked = rot_data
+    rot_zs_data, rot_pix_inds, theta_rot, phi_rot = orbit.rotate_data("G", "E", orbit.zs_data_clean_masked, orbit.pixel_inds_clean_masked, orbit._nside)
+    rot_cal_data, rot_pix_inds, theta_rot, phi_rot = orbit.rotate_data("G", "E", orbit._cal_data_clean_masked,
+                                                                   orbit.pixel_inds_clean_masked, orbit._nside)
+    rot_zodi_data, rot_pix_inds, theta_rot, phi_rot = orbit.rotate_data("G", "E", orbit._zodi_data_clean_masked,
+                                                                   orbit.pixel_inds_clean_masked, orbit._nside)
+    orbit.zs_data_clean_masked = rot_zs_data
+    orbit._cal_data_clean_masked = rot_cal_data
+    orbit._zodi_data_clean_masked = rot_zodi_data
     orbit.plot_fit(output_path, label="_ecl")
 
     orbit.zs_data_clean_masked = orbit.zs_data_clean_masked.astype(bool)
