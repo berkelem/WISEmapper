@@ -29,6 +29,7 @@ import pickle
 from wise_images_2_orbit_coadd.fullskymapping import BaseMapper
 import os
 from collections import OrderedDict
+from healpy.rotator import Rotator
 
 
 class Orbit(BaseMapper):
@@ -133,6 +134,26 @@ class Orbit(BaseMapper):
         self._cal_data_clean_masked = None
         self.cal_uncs_clean_masked = None
         self.zs_data_clean_masked = None
+
+    @staticmethod
+    def rotate_data(old_coord='G', new_coord='E', data, nside):
+        """
+        Rotate Healpix pixel numbering by applying a coordinate system transformation
+
+        Parameters
+        ----------
+        :param old_coord: str
+            One of 'G' (galactic, default), 'C' (celestial), 'E' (ecliptic)
+        :param new_coord: str
+            One of 'G' (galactic), 'C' (celestial), 'E' (ecliptic, default)
+        """
+        npix = hp.nside2npix(nside)
+        theta, phi = hp.pix2ang(nside, np.arange(npix))
+        r = Rotator(coord=[new_coord, old_coord])  # Transforms galactic to ecliptic coordinates
+        theta_rot, phi_rot = r(theta, phi)  # Apply the conversion
+        rot_pixorder = hp.ang2pix(hp.npix2nside(npix), theta_rot, phi_rot)
+        rot_data = data[rot_pixorder]
+        return rot_data, theta_rot, phi_rot
 
     def apply_fit(self):
         """Apply calibration using current values for gain and offset."""
@@ -275,7 +296,7 @@ class Orbit(BaseMapper):
             )
         return
 
-    def plot_fit(self, output_path, iteration=None):
+    def plot_fit(self, output_path, iteration=None, label=None):
         """Plot calibrated data along with the zodiacal light template with galactic latitude on the x-axis"""
         theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
         plt.plot(phi, self._cal_data_clean_masked, "r.", ms=0.5, alpha=0.5, label="Calibrated data")
@@ -285,9 +306,9 @@ class Orbit(BaseMapper):
         plt.xlabel("Latitude (degrees)")
         plt.ylabel("MJy/sr")
         outfile_name = (
-            "orbit_{}_fit_iter_{}.png".format(self.orbit_num, iteration)
+            "orbit_{}_fit_iter_{}{}.png".format(self.orbit_num, iteration, label)
             if iteration
-            else "orbit_{}_fit.png".format(self.orbit_num)
+            else "orbit_{}_fit{}.png".format(self.orbit_num, label)
         )
         plt.savefig(os.path.join(output_path, outfile_name))
         plt.close()
