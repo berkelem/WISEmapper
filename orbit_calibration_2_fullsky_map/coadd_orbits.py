@@ -627,7 +627,7 @@ class Coadder:
                 orbit.fit()
                 orbit.apply_fit()
 
-                orbit._save_orbit_map(label=it)
+                orbit.save_orbit_map(label=it)
 
                 # Add calibrated orbit to full-sky coadd
                 self._add_orbit_iter(orbit)
