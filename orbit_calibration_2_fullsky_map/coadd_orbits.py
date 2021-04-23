@@ -310,7 +310,7 @@ class Orbit(BaseMapper):
 
     def save_orbit_map(self, label):
         orbit_map = WISEMap("orbit_{}_{}.fits".format(self.orbit_num, label), self.band)
-        orbit_map.mapdata = self.zs_data_clean_masked
+        orbit_map.mapdata[self.pixel_inds_clean_masked] = self.zs_data_clean_masked
         orbit_map.save_map()
         return
 
