@@ -32,34 +32,36 @@ if __name__ == "__main__":
     fsm_map_file = os.path.join(output_path, "fullskymap_band3_masked.fits")
     iterations = 15
 
-    # Initialize Coadder object for managing calibration
-    coadd_map = Coadder(3, moon_stripe_file, fsm_map_file, orbit_file_path, zodi_file_path, output_path)
-    orbit = Orbit(141, 3, None, 256)
-    orbit.load_orbit_data()
-    orbit.load_zodi_orbit_data()
-    orbit.apply_mask()
-
-
-    # Fit a spline through the converged fit values for gains and offsets
-    sf = SplineFitter(iter_num=iterations-1, path_to_fitvals=output_path)
+    sf = SplineFitter(iter_num=iterations - 1, path_to_fitvals=output_path)
     gain_spline, offset_spline = load_splines(sf.gain_spline_file, sf.offset_spline_file)
-    orbit.apply_spline_fit(gain_spline, offset_spline)
-    orbit.plot_fit(output_path)
-    orbit.plot_diff(output_path)
-    save_orbit_map(orbit, "subtraction")
 
-    rot_zs_data, rot_pix_inds, theta_rot, phi_rot = orbit.rotate_data("G", "E", orbit.zs_data_clean_masked, orbit.pixel_inds_clean_masked, orbit._nside)
-    rot_cal_data, rot_pix_inds, theta_rot, phi_rot = orbit.rotate_data("G", "E", orbit._cal_data_clean_masked,
-                                                                   orbit.pixel_inds_clean_masked, orbit._nside)
-    rot_zodi_data, rot_pix_inds, theta_rot, phi_rot = orbit.rotate_data("G", "E", orbit._zodi_data_clean_masked,
-                                                                   orbit.pixel_inds_clean_masked, orbit._nside)
-    orbit.zs_data_clean_masked = rot_zs_data
-    orbit._cal_data_clean_masked = rot_cal_data
-    orbit._zodi_data_clean_masked = rot_zodi_data
-    orbit.pixel_inds_clean_masked = rot_pix_inds
-    orbit.plot_fit(output_path, label="_ecl")
+    for orb_num in range(212):
+        # Initialize Coadder object for managing calibration
+        coadd_map = Coadder(3, moon_stripe_file, fsm_map_file, orbit_file_path, zodi_file_path, output_path)
+        orbit = Orbit(orb_num, 3, None, 256)
+        orbit.load_orbit_data()
+        orbit.load_zodi_orbit_data()
+        orbit.apply_mask()
 
-    orbit.zs_data_clean_masked = orbit.zs_data_clean_masked.astype(bool)
-    save_orbit_map(orbit, "region")
+
+        # Fit a spline through the converged fit values for gains and offsets
+        orbit.apply_spline_fit(gain_spline, offset_spline)
+        orbit.plot_fit(output_path)
+        orbit.plot_diff(output_path)
+        save_orbit_map(orbit, "subtraction")
+
+        rot_zs_data, rot_pix_inds, theta_rot, phi_rot = orbit.rotate_data("G", "E", orbit.zs_data_clean_masked, orbit.pixel_inds_clean_masked, orbit._nside)
+        rot_cal_data, rot_pix_inds, theta_rot, phi_rot = orbit.rotate_data("G", "E", orbit._cal_data_clean_masked,
+                                                                       orbit.pixel_inds_clean_masked, orbit._nside)
+        rot_zodi_data, rot_pix_inds, theta_rot, phi_rot = orbit.rotate_data("G", "E", orbit._zodi_data_clean_masked,
+                                                                       orbit.pixel_inds_clean_masked, orbit._nside)
+        orbit.zs_data_clean_masked = rot_zs_data
+        orbit._cal_data_clean_masked = rot_cal_data
+        orbit._zodi_data_clean_masked = rot_zodi_data
+        orbit.pixel_inds_clean_masked = rot_pix_inds
+        orbit.plot_fit(output_path, label="_ecl")
+
+        orbit.zs_data_clean_masked = orbit.zs_data_clean_masked.astype(bool)
+        save_orbit_map(orbit, "region")
 
 
