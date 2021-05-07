@@ -27,6 +27,7 @@ def print_progress(iteration, total, prefix='', suffix='', decimals=1, bar_lengt
 
 def diff_maps(file1, file2):
     from wise_images_2_orbit_coadd.file_handler import HealpixMap
+    import numpy as np
 
     map1 = HealpixMap(file1)
     map1.read_data()
@@ -35,7 +36,9 @@ def diff_maps(file1, file2):
     map2.read_data()
 
     diffmap = HealpixMap("diff_map.fits")
-    diffmap.mapdata = map1.mapdata - map2.mapdata
+    mask = (map1.mapdata == 0.0) | (map2.mapdata == 0.0)
+    diffmap.mapdata = np.zeros_like(map1.mapdata)
+    diffmap.mapdata[~mask] = map1.mapdata[~mask] - map2.mapdata[~mask]
     diffmap.save_map()
 
 if __name__ == "__main__":
