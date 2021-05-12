@@ -16,7 +16,7 @@ if __name__ == "__main__":
     iterations = 15
 
     # Initialize Coadder object for managing calibration
-    coadd_map = Coadder(3, moon_stripe_file, fsm_map_file, orbit_file_path, zodi_file_path, output_path)
+    coadd_map = Coadder(4, moon_stripe_file, fsm_map_file, orbit_file_path, zodi_file_path, output_path)
     coadd_map.load_orbits(month=["Feb", "Aug"])
     coadd_map.run_iterative_fit(iterations=iterations)
 
