@@ -37,7 +37,7 @@ class MetaDataReader:
                      & (self.dataframe['qual_scan'] > 0)
                      & (self.dataframe['saa_sep'] > 0)
                      & (self.dataframe['dtanneal'] > 2000)
-                     & (self.dataframe['moon_sep'] > 90)
+                     & (self.dataframe['moon_sep'] > 24)
                      )
 
         self.filtered_df = self.dataframe[selection].copy()
