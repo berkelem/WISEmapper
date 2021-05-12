@@ -37,38 +37,38 @@ def main(band, filename, output_path):
     orbit_num = None
     while n < n_orbits:
         # If coadd map for this orbit already exists, skip
-    if os.path.exists(os.path.join(output_path, f"fsm_w{band}_orbit_{n}.fits")) or n < 150:
-            RunRankZero(print, data=f"Already mapped orbit {n + 1} of {n_orbits}")
-            filelist, mjd_list, orbit_num = next(filelist_gen)
+        if os.path.exists(os.path.join(output_path, f"fsm_w{band}_orbit_{n}.fits")) or n < 150:
+                RunRankZero(print, data=f"Already mapped orbit {n + 1} of {n_orbits}")
+                filelist, mjd_list, orbit_num = next(filelist_gen)
+                n += 1
+                continue
+
+
+            RunRankZero(print, data=f"Mapping orbit {n + 1} of {n_orbits}")
+            filelist = []
+            mjd_list = []
+
+            # Generate next batch of files
+            while orbit_num != n:
+                filelist, mjd_list, orbit_num = next(filelist_gen)
+
+            # if not ((max(mjd_list) < 55378) and (min(mjd_list) > 55348)):  # Select June
+            #     n += 1
+            #     continue
+
+            # Create coadd map of all files in batch
+            mapmaker = MapMaker(band, n, output_path)
+            process_map = RunDistributed(mapmaker.add_image, list(zip(filelist, mjd_list)), iterate=True,
+                                         gather_items=[mapmaker.numerator_cumul, mapmaker.denominator_cumul,
+                                                       mapmaker.time_numerator_cumul, mapmaker.time_denominator_cumul])
+            process_map.run()
+            alldata = process_map.retvalue
+            RunRankZero(mapmaker.unpack_multiproc_data, data=alldata)
+            RunRankZero(mapmaker.normalize)
+            RunRankZero(mapmaker.save_map)
+
             n += 1
-            continue
-
-
-        RunRankZero(print, data=f"Mapping orbit {n + 1} of {n_orbits}")
-        filelist = []
-        mjd_list = []
-
-        # Generate next batch of files
-        while orbit_num != n:
-            filelist, mjd_list, orbit_num = next(filelist_gen)
-
-        # if not ((max(mjd_list) < 55378) and (min(mjd_list) > 55348)):  # Select June
-        #     n += 1
-        #     continue
-
-        # Create coadd map of all files in batch
-        mapmaker = MapMaker(band, n, output_path)
-        process_map = RunDistributed(mapmaker.add_image, list(zip(filelist, mjd_list)), iterate=True,
-                                     gather_items=[mapmaker.numerator_cumul, mapmaker.denominator_cumul,
-                                                   mapmaker.time_numerator_cumul, mapmaker.time_denominator_cumul])
-        process_map.run()
-        alldata = process_map.retvalue
-        RunRankZero(mapmaker.unpack_multiproc_data, data=alldata)
-        RunRankZero(mapmaker.normalize)
-        RunRankZero(mapmaker.save_map)
-
-        n += 1
-    print("Finished code")
+        print("Finished code")
 
 
 if __name__ == "__main__":
