@@ -44,31 +44,31 @@ def main(band, filename, output_path):
                 continue
 
 
-            RunRankZero(print, data=f"Mapping orbit {n + 1} of {n_orbits}")
-            filelist = []
-            mjd_list = []
+        RunRankZero(print, data=f"Mapping orbit {n + 1} of {n_orbits}")
+        filelist = []
+        mjd_list = []
 
-            # Generate next batch of files
-            while orbit_num != n:
-                filelist, mjd_list, orbit_num = next(filelist_gen)
+        # Generate next batch of files
+        while orbit_num != n:
+            filelist, mjd_list, orbit_num = next(filelist_gen)
 
-            # if not ((max(mjd_list) < 55378) and (min(mjd_list) > 55348)):  # Select June
-            #     n += 1
-            #     continue
+        # if not ((max(mjd_list) < 55378) and (min(mjd_list) > 55348)):  # Select June
+        #     n += 1
+        #     continue
 
-            # Create coadd map of all files in batch
-            mapmaker = MapMaker(band, n, output_path)
-            process_map = RunDistributed(mapmaker.add_image, list(zip(filelist, mjd_list)), iterate=True,
-                                         gather_items=[mapmaker.numerator_cumul, mapmaker.denominator_cumul,
-                                                       mapmaker.time_numerator_cumul, mapmaker.time_denominator_cumul])
-            process_map.run()
-            alldata = process_map.retvalue
-            RunRankZero(mapmaker.unpack_multiproc_data, data=alldata)
-            RunRankZero(mapmaker.normalize)
-            RunRankZero(mapmaker.save_map)
+        # Create coadd map of all files in batch
+        mapmaker = MapMaker(band, n, output_path)
+        process_map = RunDistributed(mapmaker.add_image, list(zip(filelist, mjd_list)), iterate=True,
+                                     gather_items=[mapmaker.numerator_cumul, mapmaker.denominator_cumul,
+                                                   mapmaker.time_numerator_cumul, mapmaker.time_denominator_cumul])
+        process_map.run()
+        alldata = process_map.retvalue
+        RunRankZero(mapmaker.unpack_multiproc_data, data=alldata)
+        RunRankZero(mapmaker.normalize)
+        RunRankZero(mapmaker.save_map)
 
-            n += 1
-        print("Finished code")
+        n += 1
+    print("Finished code")
 
 
 if __name__ == "__main__":
