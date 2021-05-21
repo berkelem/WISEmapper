@@ -65,6 +65,7 @@ if __name__ == "__main__":
             north_orbit_pixels_mask = np.array([ind in north_pixels for ind in rot_pix_inds])
             north_excess = rot_zs_data[north_orbit_pixels_mask]
             excess_map = HealpixMap("excess.fits")
+            excess_map.set_resolution(256)
             excess_map.mapdata[rot_pix_inds[north_orbit_pixels_mask]] = north_excess
             excess_map.save_map("E")
 
