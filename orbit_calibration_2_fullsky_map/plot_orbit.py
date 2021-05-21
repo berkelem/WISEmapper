@@ -1,8 +1,9 @@
 from orbit_calibration_2_fullsky_map.coadd_orbits import Orbit, Coadder
 from orbit_calibration_2_fullsky_map.spline_fit_calibration import SplineFitter
-from wise_images_2_orbit_coadd.file_handler import WISEMap
+from wise_images_2_orbit_coadd.file_handler import WISEMap, HealpixMap
 import os
 import pickle
+import itertools
 
 def load_splines(gain_spline_file, offset_spline_file):
     """Load gain spline and offset spline from '*.pkl' files saved in a file"""
@@ -18,6 +19,7 @@ def save_orbit_map(orbit, label):
     orbit_map.mapdata[orbit.pixel_inds_clean_masked] = orbit.zs_data_clean_masked
     orbit_map.save_map()
     return
+
 
 if __name__ == "__main__":
 
@@ -55,6 +57,14 @@ if __name__ == "__main__":
                                                                        orbit.pixel_inds_clean_masked, orbit._nside)
         rot_zodi_data, rot_pix_inds, theta_rot, phi_rot = orbit.rotate_data("G", "E", orbit._zodi_data_clean_masked,
                                                                        orbit.pixel_inds_clean_masked, orbit._nside)
+
+        if orbit.orbit_num in itertools.chain(range(53, 70), range(83, 98), range(113, 127), range(142, 157), range(172, 187), range(201, 212)):
+            north_mask = phi_rot > 0
+            north_excess = rot_zs_data[north_mask]
+            excess_map = HealpixMap("excess.fits")
+            excess_map.mapdata[rot_pix_inds[north_mask]] = north_excess
+            excess_map.save_map("E")
+
         orbit.zs_data_clean_masked = rot_zs_data
         orbit._cal_data_clean_masked = rot_cal_data
         orbit._zodi_data_clean_masked = rot_zodi_data
