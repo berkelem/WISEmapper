@@ -4,6 +4,7 @@ from wise_images_2_orbit_coadd.file_handler import WISEMap, HealpixMap
 import os
 import pickle
 import itertools
+import numpy as np
 
 def load_splines(gain_spline_file, offset_spline_file):
     """Load gain spline and offset spline from '*.pkl' files saved in a file"""
@@ -60,9 +61,11 @@ if __name__ == "__main__":
 
         if orbit.orbit_num in itertools.chain(range(53, 70), range(83, 98), range(113, 127), range(142, 157), range(172, 187), range(201, 212)):
             north_mask = phi_rot > 0
-            north_excess = rot_zs_data[north_mask]
+            north_pixels = np.arange(orbit.npix, dtype=int)[phi_rot]
+            north_orbit_pixels_mask = (rot_pix_inds in north_pixels)
+            north_excess = rot_zs_data[north_orbit_pixels_mask]
             excess_map = HealpixMap("excess.fits")
-            excess_map.mapdata[rot_pix_inds[north_mask]] = north_excess
+            excess_map.mapdata[rot_pix_inds[north_orbit_pixels_mask]] = north_excess
             excess_map.save_map("E")
 
         orbit.zs_data_clean_masked = rot_zs_data
