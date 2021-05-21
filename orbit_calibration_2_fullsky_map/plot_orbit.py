@@ -61,7 +61,7 @@ if __name__ == "__main__":
 
         if orbit.orbit_num in itertools.chain(range(53, 70), range(83, 98), range(113, 127), range(142, 157), range(172, 187), range(201, 212)):
             north_mask = phi_rot > 0
-            north_pixels = np.arange(orbit.npix, dtype=int)[phi_rot]
+            north_pixels = np.arange(coadd_map.npix, dtype=int)[phi_rot]
             north_orbit_pixels_mask = (rot_pix_inds in north_pixels)
             north_excess = rot_zs_data[north_orbit_pixels_mask]
             excess_map = HealpixMap("excess.fits")
