@@ -60,6 +60,7 @@ if __name__ == "__main__":
                                                                        orbit.pixel_inds_clean_masked, orbit._nside)
 
         if orbit.orbit_num in itertools.chain(range(53, 70), range(83, 98), range(113, 127), range(142, 157), range(172, 187), range(201, 212)):
+            print("Getting excess for orbit {}".format(orbit.orbit_num))
             north_mask = phi_rot > 0
             north_pixels = np.arange(coadd_map.npix, dtype=int)[north_mask]
             north_orbit_pixels_mask = np.array([ind in north_pixels for ind in rot_pix_inds])
