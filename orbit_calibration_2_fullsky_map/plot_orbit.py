@@ -51,7 +51,7 @@ if __name__ == "__main__":
         orbit.apply_spline_fit(gain_spline, offset_spline)
         orbit.plot_fit(output_path)
         orbit.plot_diff(output_path)
-        save_orbit_map("calibrated")
+        save_orbit_map(orbit, "calibrated")
         # save_orbit_map(orbit, "subtraction")
         #
         # rot_zs_data, rot_pix_inds, theta_rot, phi_rot = orbit.rotate_data("G", "E", orbit.zs_data_clean_masked, orbit.pixel_inds_clean_masked, orbit._nside)
