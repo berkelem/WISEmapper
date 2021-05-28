@@ -373,7 +373,7 @@ class SplineFitter:
         plt.subplots_adjust(bottom=0.2)
         plt.xlabel("Orbit median timestamp")
         plt.ylabel("Fitted Gain")
-        plt.ylim((65, 105))
+        # plt.ylim((65, 105))
         plt.savefig(os.path.join(self.output_path, "spline_gains.png"))
         plt.close()
 
@@ -386,7 +386,7 @@ class SplineFitter:
         plt.subplots_adjust(bottom=0.2)
         plt.xlabel("Orbit median timestamp")
         plt.ylabel("Fitted Offset")
-        plt.ylim((-300, 150))
+        # plt.ylim((-300, 150))
         plt.savefig(os.path.join(self.output_path, "spline_offsets.png"))
         plt.close()
 
