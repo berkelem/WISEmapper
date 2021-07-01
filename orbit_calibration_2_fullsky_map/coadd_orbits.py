@@ -273,7 +273,8 @@ class Orbit(BaseMapper):
     def mask_ecliptic_crossover(self):
         rot_data, rot_pix_inds, theta_rot, phi_rot = self.rotate_data("G", "E", self._orbit_data,
                                                                           self._pixel_inds, self._nside)
-        crossover_pixels = rot_pix_inds[-5 < phi_rot < 5]
+        px_theta, px_phi = hp.pix2ang(self._nside, rot_pix_inds, lonlat=True)
+        crossover_pixels = self._pixel_inds[-5 < px_phi < 5]
         self._mask_inds.extend(crossover_pixels)
 
     def load_orbit_data(self):
