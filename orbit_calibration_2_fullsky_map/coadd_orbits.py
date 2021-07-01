@@ -176,6 +176,7 @@ class Orbit(BaseMapper):
     def apply_mask(self):
         """Remove all masked pixels along with any pixels flagged as outliers"""
 
+        self.mask_ecliptic_crossover()
         entries_to_mask = [
             i
             for i in range(len(self._pixel_inds))
@@ -268,6 +269,12 @@ class Orbit(BaseMapper):
         )
         self.gain, self.offset = orbit_fitter.iterate_fit(1)
         return
+
+    def mask_ecliptic_crossover(self):
+        rot_data, rot_pix_inds, theta_rot, phi_rot = self.rotate_data("G", "E", self._orbit_data,
+                                                                          self._pixel_inds, self._nside)
+        crossover_pixels = rot_pix_inds[-5 < phi_rot < 5]
+        self._mask_inds.extend(crossover_pixels)
 
     def load_orbit_data(self):
         """

@@ -36,9 +36,10 @@ if __name__ == "__main__":
     iterations = 15
 
     sf = SplineFitter(iter_num=iterations - 1, path_to_fitvals=output_path)
-    gain_spline, offset_spline = load_splines(sf.gain_spline_file, sf.offset_spline_file)
+    # gain_spline, offset_spline = load_splines(sf.gain_spline_file, sf.offset_spline_file)
 
     for orb_num in range(212):
+        print("Fitting orbit {}".format(orb_num))
         # Initialize Coadder object for managing calibration
         coadd_map = Coadder(3, moon_stripe_file, fsm_map_file, orbit_file_path, zodi_file_path, output_path)
         orbit = Orbit(orb_num, 3, None, 256)
