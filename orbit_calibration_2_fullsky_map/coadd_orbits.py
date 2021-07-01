@@ -278,7 +278,7 @@ class Orbit(BaseMapper):
         rerot_data, rerot_pix_inds, theta_rerot, phi_rerot = self.rotate_data("E", "G", rot_data[crossover_pixels],
                                                                               rot_pix_inds[crossover_pixels],
                                                                               self._nside)
-        self._mask_inds.extend(rerot_pix_inds)
+        self._mask_inds = np.append(self._mask_inds, rerot_pix_inds)
 
     def load_orbit_data(self):
         """
