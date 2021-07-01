@@ -274,7 +274,7 @@ class Orbit(BaseMapper):
         rot_data, rot_pix_inds, theta_rot, phi_rot = self.rotate_data("G", "E", self._orbit_data,
                                                                           self._pixel_inds, self._nside)
         px_theta, px_phi = hp.pix2ang(self._nside, rot_pix_inds, lonlat=True)
-        crossover_pixels = self._pixel_inds[-5 < px_phi < 5]
+        crossover_pixels = self._pixel_inds[(-5 < px_phi) & (px_phi < 5)]
         self._mask_inds.extend(crossover_pixels)
 
     def load_orbit_data(self):
