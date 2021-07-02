@@ -36,7 +36,7 @@ if __name__ == "__main__":
     iterations = 15
 
     sf = SplineFitter(iter_num=iterations - 1, path_to_fitvals=output_path)
-    # gain_spline, offset_spline = load_splines(sf.gain_spline_file, sf.offset_spline_file)
+    gain_spline, offset_spline = load_splines(sf.gain_spline_file, sf.offset_spline_file)
 
     for orb_num in range(212):
         print("Fitting orbit {}".format(orb_num))
