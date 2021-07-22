@@ -485,7 +485,9 @@ class IterativeFitter:
         gains = []
         offsets = []
         for bin in bins:
-            start_phi, end_phi = bin
+            start_phi_deg, end_phi_deg = bin
+            start_phi = start_phi_deg*np.pi/180.0
+            end_phi = end_phi_deg*np.pi/180.0
             segment_mask = (self.phi >= start_phi) & (self.phi < end_phi)
             segment_data = orbit_data[segment_mask]
             segment_uncs = orbit_uncs[segment_mask]
