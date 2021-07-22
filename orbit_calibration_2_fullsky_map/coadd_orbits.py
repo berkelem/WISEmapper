@@ -426,10 +426,10 @@ class IterativeFitter:
         gain = offset = 0.0
         if len(data_to_fit) > 0:
             while i < n:
-                gain, offset = self._segmented_fit(data_to_fit, uncs_to_fit)
-                # gain, offset = self._fit_to_zodi(
-                #     data_to_fit, self.zodi_data, uncs_to_fit
-                # )
+                gains, offsets = self._segmented_fit(data_to_fit, uncs_to_fit)
+                gain, offset = self._fit_to_zodi(
+                    data_to_fit, self.zodi_data, uncs_to_fit
+                )
                 data_to_fit = self._adjust_data(gain, offset, data_to_fit)
                 i += 1
         else:
@@ -497,6 +497,7 @@ class IterativeFitter:
             offsets.append(segment_offset)
         print("gains", gains)
         print("offsets", offsets)
+        return gains, offsets
 
 
     def _fit_to_zodi(self, orbit_data, zodi_data, orbit_uncs):
