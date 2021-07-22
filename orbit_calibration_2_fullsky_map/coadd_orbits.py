@@ -218,6 +218,10 @@ class Orbit(BaseMapper):
                 if i not in entries_to_mask and i not in self._outlier_inds
             ]
         )
+        self._theta_clean_masked = np.array([self.theta[i] for i in range(len(self.theta)) if i not in entries_to_mask and i not in self._outlier_inds])
+
+        self._phi_clean_masked = np.array(
+            [self.phi[i] for i in range(len(self.phi)) if i not in entries_to_mask and i not in self._outlier_inds])
 
         return
 
@@ -266,6 +270,8 @@ class Orbit(BaseMapper):
             self._zodi_data_clean_masked,
             orbit_data_to_fit_clean_masked,
             self._orbit_uncs_clean_masked,
+            self._theta_clean_masked,
+            self._phi_clean_masked,
         )
         self.gain, self.offset = orbit_fitter.iterate_fit(1)
         return
@@ -292,6 +298,11 @@ class Orbit(BaseMapper):
         self._pixel_inds = np.array(all_orbit_data["hp_pixel_index"])
         self.orbit_mjd_obs = np.array(all_orbit_data["pixel_mjd_obs"])
         self.mean_mjd_obs = np.mean(self.orbit_mjd_obs)
+
+        npix = hp.nside2npix(self._nside)
+        theta, phi = hp.pix2ang(self._nside, np.arange(npix))
+        self.theta = theta[self._pixel_inds]
+        self.phi = phi[self._pixel_inds]
 
         return
 
@@ -386,10 +397,12 @@ class IterativeFitter:
         Perform an iterative fit on the data. The iteration procedure is described in the method docstring
     """
 
-    def __init__(self, zodi_data, raw_data, raw_uncs):
+    def __init__(self, zodi_data, raw_data, raw_uncs, theta, phi):
         self.zodi_data = zodi_data
         self.raw_data = raw_data
         self.raw_uncs = raw_uncs
+        self.theta = theta
+        self.phi = phi
 
     def iterate_fit(self, n):
         """
@@ -413,9 +426,10 @@ class IterativeFitter:
         gain = offset = 0.0
         if len(data_to_fit) > 0:
             while i < n:
-                gain, offset = self._fit_to_zodi(
-                    data_to_fit, self.zodi_data, uncs_to_fit
-                )
+                gain, offset = self._segmented_fit(data_to_fit, uncs_to_fit)
+                # gain, offset = self._fit_to_zodi(
+                #     data_to_fit, self.zodi_data, uncs_to_fit
+                # )
                 data_to_fit = self._adjust_data(gain, offset, data_to_fit)
                 i += 1
         else:
@@ -465,6 +479,23 @@ class IterativeFitter:
         residual = ((data - offset) / gain) - self.zodi_data
         new_data = data - gain * residual
         return new_data
+
+    def _segmented_fit(self, orbit_data, orbit_uncs):
+        bins = [(-85, -70), (-70, -55), (-55, -40), (-40, -25), (-25, -10), (10, 25), (25, 40), (40, 55), (55, 70), (70, 85)]
+        gains = []
+        offsets = []
+        for bin in bins:
+            start_phi, end_phi = bin
+            segment_mask = (self.phi >= start_phi) & (self.phi < end_phi)
+            segment_data = orbit_data[segment_mask]
+            segment_uncs = orbit_uncs[segment_mask]
+            segment_zodi = self.zodi_data[segment_mask]
+            segment_gain, segment_offset = self._fit_to_zodi(segment_data, segment_zodi, segment_uncs)
+            gains.append(segment_gain)
+            offsets.append(segment_offset)
+        print("gains", gains)
+        print("offsets", offsets)
+
 
     def _fit_to_zodi(self, orbit_data, zodi_data, orbit_uncs):
         """
