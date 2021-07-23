@@ -516,7 +516,7 @@ class IterativeFitter:
             segment_data = orbit_data[segment_mask]
             segment_uncs = orbit_uncs[segment_mask]
             segment_zodi = self.zodi_data[segment_mask]
-            segment_offset = self._fit_offset(segment_data, segment_zodi, segment_uncs, gain)
+            segment_offset = self._fit_offset(segment_data, segment_zodi, segment_uncs, gain) if len(segment_data) > 0 else 0.0
             offsets.append(segment_offset)
         print("offsets", offsets)
         return offsets
