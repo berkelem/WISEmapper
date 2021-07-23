@@ -426,10 +426,10 @@ class IterativeFitter:
         gain = offset = 0.0
         if len(data_to_fit) > 0:
             while i < n:
-                gains, offsets = self._segmented_fit(data_to_fit, uncs_to_fit)
                 gain, offset = self._fit_to_zodi(
                     data_to_fit, self.zodi_data, uncs_to_fit
                 )
+                offsets = self._segmented_fit(data_to_fit, uncs_to_fit, gain)
                 data_to_fit = self._adjust_data(gain, offset, data_to_fit)
                 i += 1
         else:
@@ -461,6 +461,31 @@ class IterativeFitter:
         )
         return chi_sq
 
+    @staticmethod
+    def _chi_sq_gain(params, x_data, y_data, sigma, gain):
+        """
+        Calculate the chi-squared value of the residual
+
+        Parameters
+        ----------
+        :param params: numpy.array
+            Array containing initial estimates for gain and offset
+        :param x_data: numpy.array
+            Array containing WISE orbit data
+        :param y_data: numpy.array
+            Array containing zodi data generated using the Kelsall model
+        :param sigma: numpy.array
+            Array containing the WISE orbit uncertainty values
+        :return chi_sq:
+            The calculated chi-squared value
+        """
+        residual = x_data - ((y_data * gain) + params[0])
+        weighted_residual = residual / (np.mean(sigma) ** 2)
+        chi_sq = (
+            (np.sum(weighted_residual ** 2) / len(x_data)) if len(x_data) > 0 else 0.0
+        )
+        return chi_sq
+
     def _adjust_data(self, gain, offset, data):
         """
         Subtract residual from original data
@@ -480,9 +505,8 @@ class IterativeFitter:
         new_data = data - gain * residual
         return new_data
 
-    def _segmented_fit(self, orbit_data, orbit_uncs):
+    def _segmented_fit(self, orbit_data, orbit_uncs, gain):
         bins = [(-85, -70), (-70, -55), (-55, -40), (-40, -25), (-25, -10), (10, 25), (25, 40), (40, 55), (55, 70), (70, 85)]
-        gains = []
         offsets = []
         for bin in bins:
             start_phi_deg, end_phi_deg = bin
@@ -492,13 +516,21 @@ class IterativeFitter:
             segment_data = orbit_data[segment_mask]
             segment_uncs = orbit_uncs[segment_mask]
             segment_zodi = self.zodi_data[segment_mask]
-            segment_gain, segment_offset = self._fit_to_zodi(segment_data, segment_zodi, segment_uncs)
-            gains.append(segment_gain)
+            segment_offset = self._fit_offset(segment_data, segment_zodi, segment_uncs, gain)
             offsets.append(segment_offset)
-        print("gains", gains)
         print("offsets", offsets)
-        return gains, offsets
+        return offsets
 
+    def _fit_offset(self, orbit_data, zodi_data, orbit_uncs, gain):
+        init_offset = 0.0
+        popt = minimize(
+            self._chi_sq_gain,
+            np.array([init_offset]),
+            args=(orbit_data, zodi_data, orbit_uncs, gain),
+            method="Nelder-Mead",
+        ).x
+        offset = popt[0]
+        return offset
 
     def _fit_to_zodi(self, orbit_data, zodi_data, orbit_uncs):
         """
