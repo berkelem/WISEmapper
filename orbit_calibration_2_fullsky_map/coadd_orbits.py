@@ -273,7 +273,7 @@ class Orbit(BaseMapper):
             self._theta_clean_masked,
             self._phi_clean_masked,
         )
-        self.gain, self.offset = orbit_fitter.iterate_fit(1)
+        self.gain, self.offset, self.segmented_offsets = orbit_fitter.iterate_fit(1)
         return
 
     def mask_ecliptic_crossover(self):
@@ -429,12 +429,12 @@ class IterativeFitter:
                 gain, offset = self._fit_to_zodi(
                     data_to_fit, self.zodi_data, uncs_to_fit
                 )
-                offsets = self._segmented_fit(data_to_fit, uncs_to_fit, gain)
+                segmented_offsets = self._segmented_fit(data_to_fit, uncs_to_fit, gain)
                 data_to_fit = self._adjust_data(gain, offset, data_to_fit)
                 i += 1
         else:
             gain = offset = 0.0
-        return gain, offset
+        return gain, offset, segmented_offsets
 
     @staticmethod
     def _chi_sq(params, x_data, y_data, sigma):
@@ -518,7 +518,6 @@ class IterativeFitter:
             segment_zodi = self.zodi_data[segment_mask]
             segment_offset = self._fit_offset(segment_data, segment_zodi, segment_uncs, gain) if len(segment_data) > 0 else 0.0
             offsets.append(segment_offset)
-        print("offsets", offsets)
         return offsets
 
     def _fit_offset(self, orbit_data, zodi_data, orbit_uncs, gain):
@@ -872,11 +871,12 @@ class Coadder:
         all_gains = np.array([orb.gain for orb in self.all_orbits])
         all_offsets = np.array([orb.offset for orb in self.all_orbits])
         all_mjd_vals = np.array([orb.orbit_mjd_obs for orb in self.all_orbits])
+        all_segmented_offsets = np.array([orb.segmented_offsets for orb in self.all_orbits])
         with open(
             os.path.join(self.output_path, "fitvals_iter_{}.pkl".format(it)), "wb"
         ) as f:
             pickle.dump(
-                [all_gains, all_offsets, all_mjd_vals],
+                [all_gains, all_offsets, all_mjd_vals, all_segmented_offsets],
                 f,
                 protocol=pickle.HIGHEST_PROTOCOL,
             )
