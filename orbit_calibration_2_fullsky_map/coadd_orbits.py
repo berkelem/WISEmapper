@@ -642,7 +642,7 @@ class Coadder:
 
     def load_orbits(self, month="all"):
         mapping_region = 0
-        for i in range(self.num_orbits):
+        for i in range(1):#self.num_orbits):
             if mapping_region == 2:  # or i % 2 != 0:
                 continue
             print(f"Loading orbit {i}")
