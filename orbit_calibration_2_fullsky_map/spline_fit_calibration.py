@@ -56,7 +56,7 @@ class SplineFitter:
         :param plot: bool, optional
             Plot the spline fit curves. Default is True.
         """
-        all_gains, all_offsets, all_mjd_vals = self._load_fitvals()
+        all_gains, all_offsets, all_mjd_vals, all_segmented_offsets = self._load_fitvals()
 
         # apr_mask = [x[0] > 55287 for x in all_mjd_vals]
         # all_gains = all_gains[apr_mask]
@@ -64,6 +64,7 @@ class SplineFitter:
         # all_mjd_vals = all_mjd_vals[apr_mask]
 
         median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
+        self.plot_segmented_offsets(all_segmented_offsets, median_mjd_vals)
 
         # selected_data = (55228 <= median_mjd_vals) & (median_mjd_vals < 55256)
         # all_gains = all_gains[selected_data]
@@ -224,11 +225,35 @@ class SplineFitter:
 
         return
 
+    def plot_segmented_offsets(self, all_segmented_offsets, median_mjd_vals):
+        bins = [(-85, -70), (-70, -55), (-55, -40), (-40, -25), (-25, -10), (10, 25), (25, 40), (40, 55), (55, 70),
+                (70, 85)]
+        str_month_dict = OrderedDict([(55197, "Jan"), (55228, "Feb"), (55256, "Mar"), (55287, "Apr"),
+                                      (55317, "May"), (55348, "Jun"), (55378, "Jul"), (55409, "Aug")])
+        month_start_times = list(str_month_dict.keys())
+
+        x_ticks = month_start_times
+        for b in range(10):
+            bin = bins[b]
+            offsets = [orb[b] for orb in all_segmented_offsets]
+            fix, ax = plt.subplots()
+            ax.plot(median_mjd_vals, offsets, 'r.')
+            ax.set_xticks(x_ticks)
+            ax.set_xticklabels([str_month_dict[x] for x in x_ticks], rotation=45)
+            plt.xlabel("Median MJD value")
+            plt.ylabel("Fitted offsets")
+
+            plt.title("Sky region: {} < phi < {}".format(bin[0], bin[1]))
+            plt.savefig("bin_{}_offsets.png".format(b))
+            plt.close()
+
+
+
     def _load_fitvals(self):
         """Load iteration fit values from pickle file"""
         with open(self.fitvals_file, "rb") as fitval_file:
-            all_gains, all_offsets, all_mjd_vals = pickle.load(fitval_file)
-        return all_gains, all_offsets, all_mjd_vals
+            all_gains, all_offsets, all_mjd_vals, all_segmented_offsets = pickle.load(fitval_file)
+        return all_gains, all_offsets, all_mjd_vals, all_segmented_offsets
 
     def _plot_all_fitvals(self):
         """Helper method for plotting the gains and offsets before fitting a spline"""
