@@ -14,7 +14,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.use('Agg')
 import numpy as np
-from scipy.interpolate import UnivariateSpline
+from scipy.interpolate import UnivariateSpline, Rbf
 from scipy import stats
 import os
 from collections import OrderedDict
@@ -64,7 +64,12 @@ class SplineFitter:
         # all_mjd_vals = all_mjd_vals[apr_mask]
 
         median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
-        self.plot_segmented_offsets(all_segmented_offsets, median_mjd_vals)
+
+        segsplines = self.fit_segmented_splines(all_segmented_offsets, median_mjd_vals)
+
+        threed_spline = self.fit_rbf_spline(segsplines, median_mjd_vals)
+
+        # self.plot_segmented_offsets(all_segmented_offsets, median_mjd_vals)
 
         # selected_data = (55228 <= median_mjd_vals) & (median_mjd_vals < 55256)
         # all_gains = all_gains[selected_data]
@@ -80,8 +85,10 @@ class SplineFitter:
         # all_offsets = np.r_[all_offsets[1:1295:2], all_offsets[1296:5000:2], all_offsets[5001::2]]
         # all_mjd_vals = np.r_[all_mjd_vals[1:1295:2], all_mjd_vals[1296:5000:2], all_mjd_vals[5001::2]]
         #
-        times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self._clean_data(all_gains, all_offsets,
-                                                                                                all_mjd_vals)
+        # times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self._clean_data(all_gains, all_offsets,
+        #                                                                                         all_mjd_vals)
+        #
+        # spline = self.plot_3d_spline(gains_masked, offsets_masked, all_mjd_vals, all_segmented_offsets)
 
         # Off galaxy orbits
         # stripe_gains = ((55217 < times_gain_masked) & (times_gain_masked < 55225)) | (
@@ -210,20 +217,148 @@ class SplineFitter:
         #                          (55393 < times_offset_masked) & (times_offset_masked < 55402)) | (
         #                          (55407 < times_offset_masked) & (times_offset_masked < 55414))
 
-        stripe_gains = ~times_gain_masked.astype(bool)
-        stripe_offsets = ~times_offset_masked.astype(bool)
-
-        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=1000, k=3)
-        self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
-                                           s=100000, k=3)
-
-        self._save_spline()
-
-        if plot:
-            self._plot_spline(times_gain_masked, stripe_gains, gains_masked,
-                              times_offset_masked, stripe_offsets, offsets_masked)
+        # stripe_gains = ~times_gain_masked.astype(bool)
+        # stripe_offsets = ~times_offset_masked.astype(bool)
+        #
+        # self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=1000, k=3)
+        # self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
+        #                                    s=100000, k=3)
+        #
+        # self._save_spline()
+        #
+        # if plot:
+        #     self._plot_spline(times_gain_masked, stripe_gains, gains_masked,
+        #                       times_offset_masked, stripe_offsets, offsets_masked)
 
         return
+
+    def fit_segmented_splines(self, segmented_offsets, mjd_vals):
+        splines = []
+        for seg in range(segmented_offsets.shape[1]):
+            offsets = segmented_offsets[:,seg]
+            spline = UnivariateSpline(mjd_vals, offsets, s=1000000, k=3)
+
+            str_month_dict = OrderedDict([(55197, "Jan"), (55228, "Feb"), (55256, "Mar"), (55287, "Apr"),
+                                          (55317, "May"), (55348, "Jun"), (55378, "Jul"), (55409, "Aug")])
+
+            min_time = min(mjd_vals)
+            max_time = max(mjd_vals)
+            month_start_times = list(str_month_dict.keys())
+
+            start_month_ind = month_start_times.index(min(month_start_times, key=lambda x: abs(x - min_time)))
+            start_month_ind = start_month_ind if month_start_times[start_month_ind] < min_time else start_month_ind - 1
+
+            end_month_ind = month_start_times.index(min(month_start_times, key=lambda x: abs(x - max_time)))
+            end_month_ind = end_month_ind if month_start_times[end_month_ind] > max_time else end_month_ind + 1
+
+            x_ticks = month_start_times[start_month_ind:end_month_ind + 1]
+
+            fig, ax = plt.subplots()
+            ax.plot(mjd_vals, offsets, 'ro', alpha=0.2, ms=3)
+            ax.plot(mjd_vals, spline(mjd_vals), 'g', lw=2)
+            ax.set_xticks(x_ticks)
+            ax.set_xticklabels([str_month_dict[x] for x in x_ticks], rotation=45)
+            plt.subplots_adjust(bottom=0.2)
+            plt.xlabel("Orbit median timestamp")
+            plt.ylabel("Fitted Offset")
+            plt.savefig(os.path.join(self.output_path, "spline_offset_seg{}.png".format(seg)))
+            plt.close()
+
+            splines.append(spline)
+
+        return splines
+
+
+    def fit_rbf_spline(self, segsplines, mjd_vals):
+        latitude_bins = [(-85, -70), (-70, -55), (-55, -40), (-40, -25), (-25, -10), (10, 25), (25, 40), (40, 55),
+                         (55, 70),
+                         (70, 85)]
+        latitude_centerpoints = [(x[0] + x[1]) / 2. for x in latitude_bins]
+        splines = np.array([segsplines[i](mjd_vals) for i in range(len(segsplines))])
+
+        data = [(mjd_vals[i], latitude_centerpoints[j], splines[j][i]) for i in range(len(mjd_vals)) for j in range(len(latitude_centerpoints)) if splines[j][i] != 0.0]
+
+        y = [entry[0] for entry in data]
+        x = [entry[1] for entry in data]
+        z = [entry[2] for entry in data]
+
+        from mpl_toolkits.mplot3d import axes3d
+        fig = plt.figure(figsize=(10, 6))
+        ax = axes3d.Axes3D(fig)
+        ax.scatter3D(x, y, z, c='r')
+        plt.savefig("3d_scatter.png")
+        plt.close()
+
+        x_grid = np.linspace(min(x), max(x))
+        y_grid = np.linspace(min(y), max(y))
+        B1, B2 = np.meshgrid(x_grid, y_grid, indexing='xy')
+
+        spline = Rbf(x, y, z, function='thin_plate', smooth=0)
+
+        Z = spline(B1, B2)
+        fig = plt.figure(figsize=(10, 6))
+        ax = axes3d.Axes3D(fig)
+        ax.plot_wireframe(B1, B2, Z)
+        ax.plot_surface(B1, B2, Z, alpha=0.2)
+        ax.scatter3D(x, y, z, c='r')
+        plt.savefig("3d_spline.png")
+        plt.close()
+
+
+
+    def plot_3d_spline(self, all_mjd_vals, all_segmented_offsets):
+        latitude_bins = [(-85, -70), (-70, -55), (-55, -40), (-40, -25), (-25, -10), (10, 25), (25, 40), (40, 55), (55, 70),
+                (70, 85)]
+        latitude_centerpoints = [(x[0] + x[1])/2. for x in latitude_bins]
+
+
+        # all_gains, all_offsets, all_mjd_vals, all_segmented_offsets = self._load_fitvals()
+        median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
+        data = [(median_mjd_vals[i], latitude_centerpoints[j], all_segmented_offsets[i][j]) for i in
+                range(len(median_mjd_vals)) for j in range(len(latitude_centerpoints)) if all_segmented_offsets[i][j] != 0.0]
+
+        y = [entry[0] for entry in data]
+        x = [entry[1] for entry in data]
+        z = [entry[2] for entry in data]
+
+        from mpl_toolkits.mplot3d import axes3d
+        fig = plt.figure(figsize=(10, 6))
+        ax = axes3d.Axes3D(fig)
+        ax.scatter3D(x, y, z, c='r')
+        plt.savefig("3d_scatter.png")
+        plt.close()
+
+        x_grid = np.linspace(min(x), max(x))
+        y_grid = np.linspace(min(y), max(y))
+        B1, B2 = np.meshgrid(x_grid, y_grid, indexing='xy')
+
+        spline = Rbf(x, y, z, function='thin_plate', smooth=100000)
+
+        Z = spline(B1, B2)
+        fig = plt.figure(figsize=(10, 6))
+        ax = axes3d.Axes3D(fig)
+        ax.plot_wireframe(B1, B2, Z)
+        ax.plot_surface(B1, B2, Z, alpha=0.2)
+        ax.scatter3D(x, y, z, c='r')
+        plt.savefig("3d_spline.png")
+        plt.close()
+
+        for tstamp in median_mjd_vals:
+            x_coords = [x[p] for p in range(len(x)) if y[p] == tstamp]
+            y_coords = [z[p] for p in range(len(z)) if y[p] == tstamp]
+            plt.plot(x_coords, y_coords, 'b.')
+            plt.plot(x_coords, spline(x_coords, [tstamp]*len(x_coords)), 'r')
+            plt.xlabel("Latitude")
+            plt.ylabel("Offset")
+            plt.savefig("timestamp_{}.png".format(tstamp))
+            plt.close()
+
+
+
+
+        return spline
+
+
 
     def plot_segmented_offsets(self, all_segmented_offsets, median_mjd_vals):
         bins = [(-85, -70), (-70, -55), (-55, -40), (-40, -25), (-25, -10), (10, 25), (25, 40), (40, 55), (55, 70),
@@ -236,16 +371,16 @@ class SplineFitter:
         for b in range(10):
             bin = bins[b]
             offsets = [orb[b] for orb in all_segmented_offsets]
-            fix, ax = plt.subplots()
-            ax.plot(median_mjd_vals, offsets, 'r.')
-            ax.set_xticks(x_ticks)
-            ax.set_xticklabels([str_month_dict[x] for x in x_ticks], rotation=45)
-            plt.xlabel("Median MJD value")
-            plt.ylabel("Fitted offsets")
+        fix, ax = plt.subplots()
+        ax.plot(median_mjd_vals, offsets, 'r.')
+        ax.set_xticks(x_ticks)
+        ax.set_xticklabels([str_month_dict[x] for x in x_ticks], rotation=45)
+        plt.xlabel("Median MJD value")
+        plt.ylabel("Fitted offsets")
 
-            plt.title("Sky region: {} < phi < {}".format(bin[0], bin[1]))
-            plt.savefig("bin_{}_offsets.png".format(b))
-            plt.close()
+        plt.title("Sky region: {} < phi < {}".format(bin[0], bin[1]))
+        plt.savefig("bin_{}_offsets.png".format(b))
+        plt.close()
 
 
 
