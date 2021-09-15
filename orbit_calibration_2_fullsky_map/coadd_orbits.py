@@ -223,6 +223,11 @@ class Orbit(BaseMapper):
         self._phi_clean_masked = np.array(
             [self.phi[i] for i in range(len(self.phi)) if i not in entries_to_mask and i not in self._outlier_inds])
 
+        self._theta_lat_clean_masked = np.array([self.theta_lat[i] for i in range(len(self.theta_lat)) if i not in entries_to_mask and i not in self._outlier_inds])
+
+        self._phi_lat_clean_masked = np.array(
+            [self.phi_lat[i] for i in range(len(self.phi_lat)) if i not in entries_to_mask and i not in self._outlier_inds])
+
         return
 
     def apply_spline_fit(self, gain_spline, offset_spline):
@@ -270,8 +275,8 @@ class Orbit(BaseMapper):
             self._zodi_data_clean_masked,
             orbit_data_to_fit_clean_masked,
             self._orbit_uncs_clean_masked,
-            self._theta_clean_masked,
-            self._phi_clean_masked,
+            self._theta_lat_clean_masked,
+            self._phi_lat_clean_masked,
         )
         self.gain, self.offset, self.segmented_offsets = orbit_fitter.iterate_fit(1)
         return
@@ -303,6 +308,10 @@ class Orbit(BaseMapper):
         theta, phi = hp.pix2ang(self._nside, np.arange(npix))
         self.theta = theta[self._pixel_inds]
         self.phi = phi[self._pixel_inds]
+
+        theta_lat, phi_lat = hp.pix2ang(self._nside, np.arange(npix), lonlat=True)
+        self.theta_lat = theta_lat[self._pixel_inds]
+        self.phi_lat = phi_lat[self._pixel_inds]
 
         return
 
