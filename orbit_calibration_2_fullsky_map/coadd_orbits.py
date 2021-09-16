@@ -309,9 +309,9 @@ class Orbit(BaseMapper):
         self.theta = theta[self._pixel_inds]
         self.phi = phi[self._pixel_inds]
 
-        theta_lat, phi_lat = hp.pix2ang(self._nside, np.arange(npix), lonlat=True)
-        self.theta_lat = theta_lat[self._pixel_inds]
-        self.phi_lat = phi_lat[self._pixel_inds]
+        rot_data, rot_pix_inds, theta_rot, phi_rot = self.rotate_data("G", "E", self._orbit_data,
+                                                                      self._pixel_inds, self._nside)
+        self.theta_lat, self.phi_lat = hp.pix2ang(self._nside, rot_pix_inds, lonlat=True)
 
         return
 
