@@ -67,7 +67,7 @@ class SplineFitter:
 
         segsplines = self.fit_segmented_splines(all_segmented_offsets, median_mjd_vals)
 
-        threed_spline = self.fit_rbf_spline(segsplines, median_mjd_vals)
+        self.spl_offset = self.fit_rbf_spline(segsplines, median_mjd_vals)
 
         # self.plot_segmented_offsets(all_segmented_offsets, median_mjd_vals)
 
@@ -85,8 +85,8 @@ class SplineFitter:
         # all_offsets = np.r_[all_offsets[1:1295:2], all_offsets[1296:5000:2], all_offsets[5001::2]]
         # all_mjd_vals = np.r_[all_mjd_vals[1:1295:2], all_mjd_vals[1296:5000:2], all_mjd_vals[5001::2]]
         #
-        # times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self._clean_data(all_gains, all_offsets,
-        #                                                                                         all_mjd_vals)
+        times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self._clean_data(all_gains, all_offsets,
+                                                                                                all_mjd_vals)
         #
         # spline = self.plot_3d_spline(gains_masked, offsets_masked, all_mjd_vals, all_segmented_offsets)
 
@@ -217,14 +217,14 @@ class SplineFitter:
         #                          (55393 < times_offset_masked) & (times_offset_masked < 55402)) | (
         #                          (55407 < times_offset_masked) & (times_offset_masked < 55414))
 
-        # stripe_gains = ~times_gain_masked.astype(bool)
+        stripe_gains = ~times_gain_masked.astype(bool)
         # stripe_offsets = ~times_offset_masked.astype(bool)
         #
-        # self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=1000, k=3)
+        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=1000, k=3)
         # self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
         #                                    s=100000, k=3)
         #
-        # self._save_spline()
+        self._save_spline()
         #
         # if plot:
         #     self._plot_spline(times_gain_masked, stripe_gains, gains_masked,
@@ -236,7 +236,12 @@ class SplineFitter:
         splines = []
         for seg in range(segmented_offsets.shape[1]):
             offsets = segmented_offsets[:,seg]
-            spline = UnivariateSpline(mjd_vals, offsets, s=1000000, k=3)
+            mean_offset = np.mean(offsets)
+            std_offset = np.std(offsets)
+            z = np.array([(n - mean_offset)/std_offset for n in offsets])
+            mask = np.abs(z) < 1
+
+            spline = UnivariateSpline(mjd_vals[mask], offsets[mask], s=1000000, k=3)
 
             str_month_dict = OrderedDict([(55197, "Jan"), (55228, "Feb"), (55256, "Mar"), (55287, "Apr"),
                                           (55317, "May"), (55348, "Jun"), (55378, "Jul"), (55409, "Aug")])
@@ -254,7 +259,7 @@ class SplineFitter:
             x_ticks = month_start_times[start_month_ind:end_month_ind + 1]
 
             fig, ax = plt.subplots()
-            ax.plot(mjd_vals, offsets, 'ro', alpha=0.2, ms=3)
+            ax.plot(mjd_vals[mask], offsets[mask], 'ro', alpha=0.2, ms=3)
             ax.plot(mjd_vals, spline(mjd_vals), 'g', lw=2)
             ax.set_xticks(x_ticks)
             ax.set_xticklabels([str_month_dict[x] for x in x_ticks], rotation=45)
@@ -274,6 +279,9 @@ class SplineFitter:
                          (55, 70),
                          (70, 85)]
         latitude_centerpoints = [(x[0] + x[1]) / 2. for x in latitude_bins]
+        latitude_centerpoints.pop(3)
+        segsplines.pop(3)
+
         splines = np.array([segsplines[i](mjd_vals) for i in range(len(segsplines))])
 
         data = [(mjd_vals[i], latitude_centerpoints[j], splines[j][i]) for i in range(len(mjd_vals)) for j in range(len(latitude_centerpoints)) if splines[j][i] != 0.0]
@@ -293,7 +301,10 @@ class SplineFitter:
         y_grid = np.linspace(min(y), max(y))
         B1, B2 = np.meshgrid(x_grid, y_grid, indexing='xy')
 
-        spline = Rbf(x, y, z, function='thin_plate', smooth=0)
+        spline = Rbf(x, y, z, function='thin_plate', smooth=1)
+
+        with open("rbf_spline.pkl", "wb") as rbf_pkl:
+            pickle.dump(spline, rbf_pkl, pickle.HIGHEST_PROTOCOL)
 
         Z = spline(B1, B2)
         fig = plt.figure(figsize=(10, 6))
