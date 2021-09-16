@@ -303,8 +303,8 @@ class SplineFitter:
 
         spline = Rbf(x, y, z, function='thin_plate', smooth=1)
 
-        with open("rbf_spline.pkl", "wb") as rbf_pkl:
-            pickle.dump(spline, rbf_pkl, pickle.HIGHEST_PROTOCOL)
+        # with open("rbf_spline.pkl", "wb") as rbf_pkl:
+        #     pickle.dump(spline, rbf_pkl, pickle.HIGHEST_PROTOCOL)
 
         Z = spline(B1, B2)
         fig = plt.figure(figsize=(10, 6))
@@ -314,6 +314,8 @@ class SplineFitter:
         ax.scatter3D(x, y, z, c='r')
         plt.savefig("3d_spline.png")
         plt.close()
+
+        return spline
 
 
 
