@@ -316,7 +316,7 @@ class Orbit(BaseMapper):
         uncertainty values, Healpix pixel index and pixel mjd_obs timestamps for every Healpix pixel in each orbit
         coadd.
         """
-        if type(self).theta_lat is None:
+        if type(self).theta_rot is None:
             theta_lat, phi_lat = hp.pix2ang(self._nside, np.arange(npix), lonlat=True)
 
             r = Rotator(coord=["G", "E"])  # Transforms galactic to ecliptic coordinates
