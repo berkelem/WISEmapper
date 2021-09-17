@@ -182,14 +182,16 @@ class Orbit(BaseMapper):
         self.mask_ecliptic_crossover()
 
         mask = np.ones_like(self._pixel_inds, dtype=bool)
-        mask[self._mask_inds] = False
+
+
+        entries_to_mask = [
+            i
+            for i in range(len(self._pixel_inds))
+            if self._pixel_inds[i] in self._mask_inds
+        ]
+        mask[entries_to_mask] = False
         mask[self._outlier_inds] = False
 
-        # entries_to_mask = [
-        #     i
-        #     for i in range(len(self._pixel_inds))
-        #     if self._pixel_inds[i] in self._mask_inds
-        # ]
         self.pixel_inds_clean_masked = self._pixel_inds[mask]
         # self.pixel_inds_clean_masked = np.array(
         #     [
