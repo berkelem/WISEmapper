@@ -316,6 +316,7 @@ class Orbit(BaseMapper):
         uncertainty values, Healpix pixel index and pixel mjd_obs timestamps for every Healpix pixel in each orbit
         coadd.
         """
+        npix = hp.nside2npix(self._nside)
         if type(self).theta_rot is None:
             theta_lat, phi_lat = hp.pix2ang(self._nside, np.arange(npix), lonlat=True)
 
@@ -333,7 +334,6 @@ class Orbit(BaseMapper):
         self.orbit_mjd_obs = np.array(all_orbit_data["pixel_mjd_obs"])
         self.mean_mjd_obs = np.mean(self.orbit_mjd_obs)
 
-        npix = hp.nside2npix(self._nside)
         theta, phi = hp.pix2ang(self._nside, np.arange(npix))
         self.theta = theta[self._pixel_inds]
         self.phi = phi[self._pixel_inds]
