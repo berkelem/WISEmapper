@@ -188,10 +188,9 @@ class Orbit(BaseMapper):
             i
             for i in range(len(self._pixel_inds))
             if self._pixel_inds[i] in self._mask_inds
-        ]
+               or i in self._outlier_inds]
+
         mask[entries_to_mask] = False
-        if len(self._outlier_inds) > 0:
-            mask[self._outlier_inds] = False
 
         self.pixel_inds_clean_masked = self._pixel_inds[mask]
         # self.pixel_inds_clean_masked = np.array(
