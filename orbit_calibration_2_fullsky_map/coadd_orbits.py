@@ -183,7 +183,7 @@ class Orbit(BaseMapper):
         entries_to_mask = [
             i
             for i in range(len(self._pixel_inds))
-            if self._pixel_inds[i] in self._mask_inds or abs(self.phi_lat[i]) < 170.0
+            if self._pixel_inds[i] in self._mask_inds
         ]
         self.pixel_inds_clean_masked = np.array(
             [
