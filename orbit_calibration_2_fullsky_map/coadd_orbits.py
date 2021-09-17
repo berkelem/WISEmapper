@@ -101,8 +101,8 @@ class Orbit(BaseMapper):
     orbit_file_path = ""
     zodi_file_path = ""
 
-    theta_lat = None
-    phi_lat = None
+    theta_rot = None
+    phi_rot = None
 
     def __init__(self, orbit_num, band, mask, nside):
 
@@ -180,56 +180,72 @@ class Orbit(BaseMapper):
         """Remove all masked pixels along with any pixels flagged as outliers"""
 
         self.mask_ecliptic_crossover()
-        entries_to_mask = [
-            i
-            for i in range(len(self._pixel_inds))
-            if self._pixel_inds[i] in self._mask_inds
-        ]
-        self.pixel_inds_clean_masked = np.array(
-            [
-                self._pixel_inds[i]
-                for i in range(len(self._pixel_inds))
-                if i not in entries_to_mask and i not in self._outlier_inds
-            ],
-            dtype=int,
-        )
-        self._orbit_data_clean_masked = np.array(
-            [
-                self._orbit_data[i]
-                for i in range(len(self._orbit_data))
-                if i not in entries_to_mask and i not in self._outlier_inds
-            ]
-        )
-        self._orbit_uncs_clean_masked = np.array(
-            [
-                self._orbit_uncs[i]
-                for i in range(len(self._orbit_uncs))
-                if i not in entries_to_mask and i not in self._outlier_inds
-            ]
-        )
-        self._orbit_mjd_clean_masked = np.array(
-            [
-                self.orbit_mjd_obs[i]
-                for i in range(len(self.orbit_mjd_obs))
-                if i not in entries_to_mask and i not in self._outlier_inds
-            ]
-        )
-        self._zodi_data_clean_masked = np.array(
-            [
-                self._zodi_data[i]
-                for i in range(len(self._zodi_data))
-                if i not in entries_to_mask and i not in self._outlier_inds
-            ]
-        )
-        self._theta_clean_masked = np.array([self.theta[i] for i in range(len(self.theta)) if i not in entries_to_mask and i not in self._outlier_inds])
 
-        self._phi_clean_masked = np.array(
-            [self.phi[i] for i in range(len(self.phi)) if i not in entries_to_mask and i not in self._outlier_inds])
+        mask = np.ones_like(self._pixel_inds, type=bool)
+        mask[self._mask_inds] = False
+        mask[self._outlier_inds] = False
 
-        self._theta_lat_clean_masked = np.array([self.theta_lat[i] for i in range(len(self.theta_lat)) if i not in entries_to_mask and i not in self._outlier_inds])
+        # entries_to_mask = [
+        #     i
+        #     for i in range(len(self._pixel_inds))
+        #     if self._pixel_inds[i] in self._mask_inds
+        # ]
+        self.pixel_inds_clean_masked = self._pixel_inds[mask]
+        # self.pixel_inds_clean_masked = np.array(
+        #     [
+        #         self._pixel_inds[i]
+        #         for i in range(len(self._pixel_inds))
+        #         if i not in entries_to_mask and i not in self._outlier_inds
+        #     ],
+        #     dtype=int,
+        # )
+        self._orbit_data_clean_masked = self._orbit_data[mask]
+        # self._orbit_data_clean_masked = np.array(
+        #     [
+        #         self._orbit_data[i]
+        #         for i in range(len(self._orbit_data))
+        #         if i not in entries_to_mask and i not in self._outlier_inds
+        #     ]
+        # )
+        self._orbit_uncs_clean_masked = self._orbit_uncs[mask]
+        # self._orbit_uncs_clean_masked = np.array(
+        #     [
+        #         self._orbit_uncs[i]
+        #         for i in range(len(self._orbit_uncs))
+        #         if i not in entries_to_mask and i not in self._outlier_inds
+        #     ]
+        # )
+        self._orbit_mjd_clean_masked = self.orbit_mjd_obs[mask]
+        # self._orbit_mjd_clean_masked = np.array(
+        #     [
+        #         self.orbit_mjd_obs[i]
+        #         for i in range(len(self.orbit_mjd_obs))
+        #         if i not in entries_to_mask and i not in self._outlier_inds
+        #     ]
+        # )
+        self._zodi_data_clean_masked = self._zodi_data[mask]
+        # self._zodi_data_clean_masked = np.array(
+        #     [
+        #         self._zodi_data[i]
+        #         for i in range(len(self._zodi_data))
+        #         if i not in entries_to_mask and i not in self._outlier_inds
+        #     ]
+        # )
+        self._theta_clean_masked = self.theta[mask]
 
-        self._phi_lat_clean_masked = np.array(
-            [self.phi_lat[i] for i in range(len(self.phi_lat)) if i not in entries_to_mask and i not in self._outlier_inds])
+        # self._theta_clean_masked = np.array([self.theta[i] for i in range(len(self.theta)) if i not in entries_to_mask and i not in self._outlier_inds])
+
+        self._phi_clean_masked = self.phi[mask]
+
+        # self._phi_clean_masked = np.array(
+        #     [self.phi[i] for i in range(len(self.phi)) if i not in entries_to_mask and i not in self._outlier_inds])
+
+        self._theta_lat_clean_masked = self.theta_lat[mask]
+        # self._theta_lat_clean_masked = np.array([self.theta_lat[i] for i in range(len(self.theta_lat)) if i not in entries_to_mask and i not in self._outlier_inds])
+
+        self._phi_lat_clean_masked = self.phi_lat[mask]
+        # self._phi_lat_clean_masked = np.array(
+        #     [self.phi_lat[i] for i in range(len(self.phi_lat)) if i not in entries_to_mask and i not in self._outlier_inds])
 
         return
 
@@ -300,6 +316,16 @@ class Orbit(BaseMapper):
         uncertainty values, Healpix pixel index and pixel mjd_obs timestamps for every Healpix pixel in each orbit
         coadd.
         """
+        if type(self).theta_lat is None:
+            theta_lat, phi_lat = hp.pix2ang(self._nside, np.arange(npix), lonlat=True)
+
+            r = Rotator(coord=["G", "E"])  # Transforms galactic to ecliptic coordinates
+            theta_rot, phi_rot = r(theta_lat, phi_lat)  # Apply the conversion
+
+            # self.theta_lat, self.phi_lat = hp.pix2ang(self._nside, rot_pix_inds, lonlat=True)
+            type(self).theta_rot = theta_rot * 180/ np.pi
+            type(self).phi_rot = phi_rot * 180/np.pi
+
         all_orbit_data = pd.read_csv(self._filename)
         self._orbit_data = np.array(all_orbit_data["pixel_value"])
         self._orbit_uncs = np.array(all_orbit_data["pixel_unc"])
@@ -311,18 +337,12 @@ class Orbit(BaseMapper):
         theta, phi = hp.pix2ang(self._nside, np.arange(npix))
         self.theta = theta[self._pixel_inds]
         self.phi = phi[self._pixel_inds]
+        self.theta_lat = type(self).theta_rot[self._pixel_inds]
+        self.phi_lat = type(self).phi_rot[self._pixel_inds]
 
         # rot_data, rot_pix_inds, theta_rot, phi_rot = self.rotate_data("G", "E", self._orbit_data,
         #                                                               self._pixel_inds, self._nside)
-        if type(self).theta_lat is None:
-            theta_lat, phi_lat = hp.pix2ang(self._nside, np.arange(npix), lonlat=True)
 
-            r = Rotator(coord=["G", "E"])  # Transforms galactic to ecliptic coordinates
-            theta_rot, phi_rot = r(theta_lat, phi_lat)  # Apply the conversion
-
-            # self.theta_lat, self.phi_lat = hp.pix2ang(self._nside, rot_pix_inds, lonlat=True)
-            type(self).theta_lat = theta_rot * 180/ np.pi
-            type(self).phi_lat = phi_rot * 180/np.pi
 
         return
 
