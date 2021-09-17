@@ -101,6 +101,9 @@ class Orbit(BaseMapper):
     orbit_file_path = ""
     zodi_file_path = ""
 
+    theta_lat = None
+    phi_lat = None
+
     def __init__(self, orbit_num, band, mask, nside):
 
         super().__init__(band, orbit_num, self.orbit_file_path)
@@ -309,11 +312,16 @@ class Orbit(BaseMapper):
         self.theta = theta[self._pixel_inds]
         self.phi = phi[self._pixel_inds]
 
-        rot_data, rot_pix_inds, theta_rot, phi_rot = self.rotate_data("G", "E", self._orbit_data,
-                                                                      self._pixel_inds, self._nside)
-        # self.theta_lat, self.phi_lat = hp.pix2ang(self._nside, rot_pix_inds, lonlat=True)
-        self.theta_lat = theta_rot
-        self.phi_lat = phi_rot
+        # rot_data, rot_pix_inds, theta_rot, phi_rot = self.rotate_data("G", "E", self._orbit_data,
+        #                                                               self._pixel_inds, self._nside)
+        if not type(self).theta_lat:
+
+            r = Rotator(coord=["G", "E"])  # Transforms galactic to ecliptic coordinates
+            theta_rot, phi_rot = r(theta, phi)  # Apply the conversion
+
+            # self.theta_lat, self.phi_lat = hp.pix2ang(self._nside, rot_pix_inds, lonlat=True)
+            type(self).theta_lat = theta_rot
+            type(self).phi_lat = phi_rot
 
         return
 
