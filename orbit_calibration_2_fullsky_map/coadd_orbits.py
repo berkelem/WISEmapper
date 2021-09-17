@@ -315,9 +315,10 @@ class Orbit(BaseMapper):
         # rot_data, rot_pix_inds, theta_rot, phi_rot = self.rotate_data("G", "E", self._orbit_data,
         #                                                               self._pixel_inds, self._nside)
         if not type(self).theta_lat:
+            theta_lat, phi_lat = hp.pix2ang(self._nside, np.arange(npix), lonlat=True)
 
             r = Rotator(coord=["G", "E"])  # Transforms galactic to ecliptic coordinates
-            theta_rot, phi_rot = r(theta, phi)  # Apply the conversion
+            theta_rot, phi_rot = r(theta_lat, phi_lat)  # Apply the conversion
 
             # self.theta_lat, self.phi_lat = hp.pix2ang(self._nside, rot_pix_inds, lonlat=True)
             type(self).theta_lat = theta_rot
