@@ -321,8 +321,8 @@ class Orbit(BaseMapper):
             theta_rot, phi_rot = r(theta_lat, phi_lat)  # Apply the conversion
 
             # self.theta_lat, self.phi_lat = hp.pix2ang(self._nside, rot_pix_inds, lonlat=True)
-            type(self).theta_lat = theta_rot
-            type(self).phi_lat = phi_rot
+            type(self).theta_lat = theta_rot * 180/ np.pi
+            type(self).phi_lat = phi_rot * 180/np.pi
 
         return
 
