@@ -275,12 +275,10 @@ class SplineFitter:
 
 
     def fit_rbf_spline(self, segsplines, mjd_vals):
-        latitude_bins = [(-85, -70), (-70, -55), (-55, -40), (-40, -25), (-25, -10), (10, 25), (25, 40), (40, 55),
-                         (55, 70),
-                         (70, 85)]
+        latitude_bins = [(-180, -165), (-165, -150), (-150, -135), (-135, -120), (-120, -105), (-105, -90), (-90, -75),
+                (-75, -60), (-60, -45), (-45, -30), (-30, -15), (-15, 0), (0, 15), (15, 30), (30, 45), (45, 60),
+                (60, 75), (75, 90), (90, 105), (105, 120), (120, 135), (135, 150), (150, 165), (165, 180)]
         latitude_centerpoints = [(x[0] + x[1]) / 2. for x in latitude_bins]
-        latitude_centerpoints.pop(3)
-        segsplines.pop(3)
 
         splines = np.array([segsplines[i](mjd_vals) for i in range(len(segsplines))])
 
