@@ -188,7 +188,7 @@ class Orbit(BaseMapper):
             i
             for i in range(len(self._pixel_inds))
             if self._pixel_inds[i] in self._mask_inds
-               or i in self._outlier_inds]
+               or i in self._outlier_inds or self.phi_lat[i] > 0]
 
         mask[entries_to_mask] = False
 
