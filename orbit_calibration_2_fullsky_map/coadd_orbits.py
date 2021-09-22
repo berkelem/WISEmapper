@@ -319,10 +319,11 @@ class Orbit(BaseMapper):
         coadd.
         """
         npix = hp.nside2npix(self._nside)
+        r = Rotator(coord=["G", "E"])  # Transforms galactic to ecliptic coordinates
         if type(self).theta_rot is None:
             theta_lat, phi_lat = hp.pix2ang(self._nside, np.arange(npix), lonlat=True)
 
-            r = Rotator(coord=["G", "E"])  # Transforms galactic to ecliptic coordinates
+
             theta_rot, phi_rot = r(theta_lat, phi_lat)  # Apply the conversion
 
             # self.theta_lat, self.phi_lat = hp.pix2ang(self._nside, rot_pix_inds, lonlat=True)
@@ -346,7 +347,7 @@ class Orbit(BaseMapper):
         phi_map.mapdata = phi
         phi_map.save_map("G")
 
-        theta_rot, phi_rot = r(theta, phi)
+        theta_orig_rot, phi_orig_rot = r(theta, phi)
 
         phi_rot_map = HealpixMap("phi_rot_G.fits")
         phi_rot_map.mapdata = phi_rot
