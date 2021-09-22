@@ -319,7 +319,8 @@ class Orbit(BaseMapper):
         coadd.
         """
         npix = hp.nside2npix(self._nside)
-        r = Rotator(coord=["E", "G"])  # Transforms galactic to ecliptic coordinates
+        r = Rotator(coord=["G", "E"])  # Transforms galactic to ecliptic coordinates
+        # r2 = Rotator(coord=["E", "G"])
         if type(self).theta_rot is None:
             theta_lat, phi_lat = hp.pix2ang(self._nside, np.arange(npix), lonlat=True)
 
@@ -347,26 +348,42 @@ class Orbit(BaseMapper):
         phi_map.mapdata = phi
         phi_map.save_map("G")
 
+        phi_map = HealpixMap("phi_E.fits")
+        phi_map.mapdata = phi
+        phi_map.save_map("E")
+
         theta_orig_rot, phi_orig_rot = r(theta, phi)
 
         phi_rot_map = HealpixMap("phi_rot_G.fits")
-        phi_rot_map.mapdata = phi_rot
+        phi_rot_map.mapdata = phi_orig_rot
         phi_rot_map.save_map("G")
+
+        phi_rot_map = HealpixMap("phi_rot_E.fits")
+        phi_rot_map.mapdata = phi_orig_rot
+        phi_rot_map.save_map("E")
 
         phi_lat_map = HealpixMap("phi_lat_G.fits")
         phi_lat_map.mapdata = phi_lat
         phi_lat_map.save_map("G")
 
+        phi_lat_map = HealpixMap("phi_lat_E.fits")
+        phi_lat_map.mapdata = phi_lat
+        phi_lat_map.save_map("E")
+
         phi_lat_rot_map = HealpixMap("phi_lat_rot_G.fits")
         phi_lat_rot_map.mapdata = type(self).phi_rot
         phi_lat_rot_map.save_map("G")
+
+        phi_lat_rot_map = HealpixMap("phi_lat_rot_E.fits")
+        phi_lat_rot_map.mapdata = type(self).phi_rot
+        phi_lat_rot_map.save_map("E")
 
         theta_map = HealpixMap("theta_G.fits")
         theta_map.mapdata = theta
         theta_map.save_map("G")
 
         theta_rot_map = HealpixMap("theta_rot_G.fits")
-        theta_rot_map.mapdata = theta_rot
+        theta_rot_map.mapdata = theta_orig_rot
         theta_rot_map.save_map("G")
 
         theta_lat_map = HealpixMap("theta_lat_G.fits")
