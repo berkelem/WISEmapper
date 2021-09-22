@@ -346,6 +346,12 @@ class Orbit(BaseMapper):
         phi_map.mapdata = phi
         phi_map.save_map("G")
 
+        theta_rot, phi_rot = r(theta, phi)
+
+        phi_rot_map = HealpixMap("phi_rot_G.fits")
+        phi_rot_map.mapdata = phi_rot
+        phi_rot_map.save_map("G")
+
         phi_lat_map = HealpixMap("phi_lat_G.fits")
         phi_lat_map.mapdata = phi_lat
         phi_lat_map.save_map("G")
@@ -357,6 +363,10 @@ class Orbit(BaseMapper):
         theta_map = HealpixMap("theta_G.fits")
         theta_map.mapdata = theta
         theta_map.save_map("G")
+
+        theta_rot_map = HealpixMap("theta_rot_G.fits")
+        theta_rot_map.mapdata = theta_rot
+        theta_rot_map.save_map("G")
 
         theta_lat_map = HealpixMap("theta_lat_G.fits")
         theta_lat_map.mapdata = theta_lat
