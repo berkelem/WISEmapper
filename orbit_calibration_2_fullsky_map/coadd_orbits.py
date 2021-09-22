@@ -190,22 +190,6 @@ class Orbit(BaseMapper):
             if self._pixel_inds[i] in self._mask_inds
                or i in self._outlier_inds or self.phi_lat[i] > 0]
 
-        phi_map = HealpixMap("phi_G.fits")
-        phi_map.mapdata = self.phi
-        phi_map.save_map("G")
-
-        phi_lat_map = HealpixMap("phi_lat_G.fits")
-        phi_lat_map.mapdata = self.phi_lat
-        phi_lat_map.save_map("G")
-
-        theta_map = HealpixMap("theta_G.fits")
-        theta_map.mapdata = self.theta
-        theta_map.save_map("G")
-
-        theta_lat_map = HealpixMap("theta_lat_G.fits")
-        theta_lat_map.mapdata = self.theta_lat
-        theta_lat_map.save_map("G")
-
         mask[entries_to_mask] = False
 
         self.pixel_inds_clean_masked = self._pixel_inds[mask]
@@ -357,6 +341,22 @@ class Orbit(BaseMapper):
         self.phi = phi[self._pixel_inds]
         self.theta_lat = type(self).theta_rot[self._pixel_inds]
         self.phi_lat = type(self).phi_rot[self._pixel_inds]
+
+        phi_map = HealpixMap("phi_G.fits")
+        phi_map.mapdata = phi
+        phi_map.save_map("G")
+
+        phi_lat_map = HealpixMap("phi_lat_G.fits")
+        phi_lat_map.mapdata = type(self).phi_rot
+        phi_lat_map.save_map("G")
+
+        theta_map = HealpixMap("theta_G.fits")
+        theta_map.mapdata = theta
+        theta_map.save_map("G")
+
+        theta_lat_map = HealpixMap("theta_lat_G.fits")
+        theta_lat_map.mapdata = type(self).theta_rot
+        theta_lat_map.save_map("G")
 
         # rot_data, rot_pix_inds, theta_rot, phi_rot = self.rotate_data("G", "E", self._orbit_data,
         #                                                               self._pixel_inds, self._nside)
