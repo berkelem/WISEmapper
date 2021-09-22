@@ -179,7 +179,7 @@ class Orbit(BaseMapper):
     def apply_mask(self):
         """Remove all masked pixels along with any pixels flagged as outliers"""
 
-        self.mask_ecliptic_crossover()
+        # self.mask_ecliptic_crossover()
 
         mask = np.ones_like(self._pixel_inds, dtype=bool)
 
@@ -187,8 +187,7 @@ class Orbit(BaseMapper):
         entries_to_mask = [
             i
             for i in range(len(self._pixel_inds))
-            if self._pixel_inds[i] in self._mask_inds
-               or i in self._outlier_inds or self.phi[i] > 0]
+            if self._pixel_inds[i] in self._mask_inds]
 
         mask[entries_to_mask] = False
 
