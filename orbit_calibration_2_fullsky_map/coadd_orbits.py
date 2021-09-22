@@ -254,7 +254,7 @@ class Orbit(BaseMapper):
             Spline fitted to all of the offset fits after N iterations
         """
         gains = gain_spline(self._orbit_mjd_clean_masked)
-        offsets = offset_spline(self._phi_lat_clean_masked, self._orbit_mjd_clean_masked)
+        offsets = offset_spline(self._phi_clean_masked, self._orbit_mjd_clean_masked)
         self._cal_data_clean_masked = (self._orbit_data_clean_masked - offsets) / gains
         self.cal_uncs_clean_masked = self._orbit_uncs_clean_masked / abs(gains)
 
@@ -287,8 +287,8 @@ class Orbit(BaseMapper):
             self._zodi_data_clean_masked,
             orbit_data_to_fit_clean_masked,
             self._orbit_uncs_clean_masked,
-            self._theta_lat_clean_masked,
-            self._phi_lat_clean_masked,
+            self._theta_clean_masked,
+            self._phi_clean_masked,
         )
         self.gain, self.offset, self.segmented_offsets = orbit_fitter.iterate_fit(1)
         return
