@@ -188,7 +188,7 @@ class Orbit(BaseMapper):
             i
             for i in range(len(self._pixel_inds))
             if self._pixel_inds[i] in self._mask_inds
-               or i in self._outlier_inds or self.phi_lat[i] > 0]
+               or i in self._outlier_inds or self.phi[i] > 0]
 
         mask[entries_to_mask] = False
 
@@ -239,15 +239,6 @@ class Orbit(BaseMapper):
 
         self._phi_clean_masked = self.phi[mask]
 
-        # self._phi_clean_masked = np.array(
-        #     [self.phi[i] for i in range(len(self.phi)) if i not in entries_to_mask and i not in self._outlier_inds])
-
-        self._theta_lat_clean_masked = self.theta_lat[mask]
-        # self._theta_lat_clean_masked = np.array([self.theta_lat[i] for i in range(len(self.theta_lat)) if i not in entries_to_mask and i not in self._outlier_inds])
-
-        self._phi_lat_clean_masked = self.phi_lat[mask]
-        # self._phi_lat_clean_masked = np.array(
-        #     [self.phi_lat[i] for i in range(len(self.phi_lat)) if i not in entries_to_mask and i not in self._outlier_inds])
 
         return
 
@@ -320,66 +311,11 @@ class Orbit(BaseMapper):
         """
         npix = hp.nside2npix(self._nside)
         r = Rotator(coord=["G", "E"])  # Transforms galactic to ecliptic coordinates
-        r2 = Rotator(coord=["E", "G"])
         if type(self).theta_rot is None:
-            theta_lonlat, phi_lonlat = hp.pix2ang(self._nside, np.arange(npix), lonlat=True)
             theta, phi = hp.pix2ang(self._nside, np.arange(npix))
 
             theta_rot, phi_rot = r(theta, phi)  # Apply the conversion
-            theta_rot2, phi_rot2 = r2(theta, phi)
 
-            theta_lonlat_rot, phi_lonlat_rot = r(theta_lonlat, phi_lonlat)
-            theta_lonlat_rot2, phi_lonlat_rot2 = r2(theta_lonlat, phi_lonlat)
-
-            phi_map = HealpixMap("phi_G.fits")
-            phi_map.mapdata = phi
-            phi_map.save_map("G")
-
-            phi_rot_map = HealpixMap("phi_rot_G.fits")
-            phi_rot_map.mapdata = phi_rot
-            phi_rot_map.save_map("G")
-
-            phi_rot_map2 = HealpixMap("phi_rot_E.fits")
-            phi_rot_map2.mapdata = phi_rot2
-            phi_rot_map2.save_map("E")
-
-            phi_lat_map = HealpixMap("phi_lat_G.fits")
-            phi_lat_map.mapdata = phi_lonlat
-            phi_lat_map.save_map("G")
-
-            phi_lat_rot_map = HealpixMap("phi_lat_rot_G.fits")
-            phi_lat_rot_map.mapdata = phi_lonlat_rot
-            phi_lat_rot_map.save_map("G")
-
-            phi_lat_rot_map2 = HealpixMap("phi_lat_rot_E.fits")
-            phi_lat_rot_map2.mapdata = phi_lonlat_rot2
-            phi_lat_rot_map2.save_map("E")
-
-            theta_map = HealpixMap("theta_G.fits")
-            theta_map.mapdata = theta
-            theta_map.save_map("G")
-
-            theta_rot_map = HealpixMap("theta_rot_G.fits")
-            theta_rot_map.mapdata = theta_rot
-            theta_rot_map.save_map("G")
-
-            theta_rot_map2 = HealpixMap("theta_rot_E.fits")
-            theta_rot_map2.mapdata = theta_rot2
-            theta_rot_map2.save_map("E")
-
-            theta_lat_map = HealpixMap("theta_lat_G.fits")
-            theta_lat_map.mapdata = theta_lonlat
-            theta_lat_map.save_map("G")
-
-            theta_lat_rot_map = HealpixMap("theta_lat_rot_G.fits")
-            theta_lat_rot_map.mapdata = theta_lonlat_rot
-            theta_lat_rot_map.save_map("G")
-
-            theta_lat_rot_map2 = HealpixMap("theta_lat_rot_E.fits")
-            theta_lat_rot_map2.mapdata = theta_lonlat_rot2
-            theta_lat_rot_map2.save_map("E")
-
-            # self.theta_lat, self.phi_lat = hp.pix2ang(self._nside, rot_pix_inds, lonlat=True)
             type(self).theta_rot = theta_rot * 180/ np.pi
             type(self).phi_rot = phi_rot * 180/np.pi
 
@@ -390,11 +326,8 @@ class Orbit(BaseMapper):
         self.orbit_mjd_obs = np.array(all_orbit_data["pixel_mjd_obs"])
         self.mean_mjd_obs = np.mean(self.orbit_mjd_obs)
 
-        theta, phi = hp.pix2ang(self._nside, np.arange(npix))
-        self.theta = theta[self._pixel_inds]
-        self.phi = phi[self._pixel_inds]
-        self.theta_lat = type(self).theta_rot[self._pixel_inds]
-        self.phi_lat = type(self).phi_rot[self._pixel_inds]
+        self.theta = type(self).theta_rot[self._pixel_inds]
+        self.phi = type(self).phi_rot[self._pixel_inds]
 
 
 
