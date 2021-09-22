@@ -347,16 +347,24 @@ class Orbit(BaseMapper):
         phi_map.save_map("G")
 
         phi_lat_map = HealpixMap("phi_lat_G.fits")
-        phi_lat_map.mapdata = type(self).phi_rot
+        phi_lat_map.mapdata = phi_lat
         phi_lat_map.save_map("G")
+
+        phi_lat_rot_map = HealpixMap("phi_lat_rot_G.fits")
+        phi_lat_rot_map.mapdata = type(self).phi_rot
+        phi_lat_rot_map.save_map("G")
 
         theta_map = HealpixMap("theta_G.fits")
         theta_map.mapdata = theta
         theta_map.save_map("G")
 
         theta_lat_map = HealpixMap("theta_lat_G.fits")
-        theta_lat_map.mapdata = type(self).theta_rot
+        theta_lat_map.mapdata = theta_lat
         theta_lat_map.save_map("G")
+
+        theta_lat_rot_map = HealpixMap("theta_lat_rot_G.fits")
+        theta_lat_rot_map.mapdata = type(self).theta_rot
+        theta_lat_rot_map.save_map("G")
 
         # rot_data, rot_pix_inds, theta_rot, phi_rot = self.rotate_data("G", "E", self._orbit_data,
         #                                                               self._pixel_inds, self._nside)
