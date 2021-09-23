@@ -236,10 +236,15 @@ class SplineFitter:
         splines = []
         for seg in range(segmented_offsets.shape[1]):
             offsets = segmented_offsets[:,seg]
-            mean_offset = np.mean(offsets)
-            std_offset = np.std(offsets)
+            mean_offset = np.mean(offsets[offsets != 0.0])
+            std_offset = np.std(offsets[offsets != 0.0])
             z = np.array([(n - mean_offset)/std_offset for n in offsets])
-            mask = np.abs(z) < 1
+            mask = np.abs(z) < 3
+            mask[offsets == 0.0] = False
+
+            if len(offsets[mask]) < 3:
+                splines.append(None)
+                continue
 
             spline = UnivariateSpline(mjd_vals[mask], offsets[mask], s=5000, k=2)
 
@@ -280,7 +285,14 @@ class SplineFitter:
                 (60, 75), (75, 90), (90, 105), (105, 120), (120, 135), (135, 150), (150, 165), (165, 180)]
         latitude_centerpoints = [(x[0] + x[1]) / 2. for x in latitude_bins]
 
-        splines = np.array([segsplines[i](mjd_vals) for i in range(len(segsplines))])
+        splines = []
+        for spline in segsplines:
+            if spline is not None:
+                splines.append(spline(mjd_vals))
+            else:
+                splines.append(np.zeros_like(mjd_vals))
+
+        # splines = np.array([segsplines[i](mjd_vals) for i in range(len(segsplines))])
 
         data = [(mjd_vals[i], latitude_centerpoints[j], splines[j][i]) for i in range(len(mjd_vals)) for j in range(len(latitude_centerpoints)) if splines[j][i] != 0.0]
 
@@ -372,8 +384,9 @@ class SplineFitter:
 
 
     def plot_segmented_offsets(self, all_segmented_offsets, median_mjd_vals):
-        bins = [(-85, -70), (-70, -55), (-55, -40), (-40, -25), (-25, -10), (10, 25), (25, 40), (40, 55), (55, 70),
-                (70, 85)]
+        bins = [(-180, -165), (-165, -150), (-150, -135), (-135, -120), (-120, -105), (-105, -90), (-90, -75),
+                (-75, -60), (-60, -45), (-45, -30), (-30, -15), (-15, 0), (0, 15), (15, 30), (30, 45), (45, 60),
+                (60, 75), (75, 90), (90, 105), (105, 120), (120, 135), (135, 150), (150, 165), (165, 180)]
         str_month_dict = OrderedDict([(55197, "Jan"), (55228, "Feb"), (55256, "Mar"), (55287, "Apr"),
                                       (55317, "May"), (55348, "Jun"), (55378, "Jul"), (55409, "Aug")])
         month_start_times = list(str_month_dict.keys())
