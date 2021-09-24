@@ -246,7 +246,7 @@ class SplineFitter:
                 splines.append(None)
                 continue
 
-            spline = UnivariateSpline(mjd_vals[mask], offsets[mask], s=5000, k=2)
+            spline = UnivariateSpline(mjd_vals[mask], offsets[mask], s=20000, k=2)
 
             str_month_dict = OrderedDict([(55197, "Jan"), (55228, "Feb"), (55256, "Mar"), (55287, "Apr"),
                                           (55317, "May"), (55348, "Jun"), (55378, "Jul"), (55409, "Aug")])
@@ -311,7 +311,7 @@ class SplineFitter:
         y_grid = np.linspace(min(y), max(y))
         B1, B2 = np.meshgrid(x_grid, y_grid, indexing='xy')
 
-        spline = Rbf(x, y, z, function='linear', smooth=80)
+        spline = Rbf(x, y, z, function='multiquadric', smooth=100)
 
         # with open("rbf_spline.pkl", "wb") as rbf_pkl:
         #     pickle.dump(spline, rbf_pkl, pickle.HIGHEST_PROTOCOL)
