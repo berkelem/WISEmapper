@@ -69,6 +69,8 @@ class SplineFitter:
 
         self.spl_offset = self.fit_rbf_spline(segsplines, median_mjd_vals)
 
+        self.fit_segmented_splines_with_rbf(all_segmented_offsets, segsplines, median_mjd_vals)
+
         # self.plot_segmented_offsets(all_segmented_offsets, median_mjd_vals)
 
         # selected_data = (55228 <= median_mjd_vals) & (median_mjd_vals < 55256)
@@ -232,6 +234,56 @@ class SplineFitter:
 
         return
 
+    def fit_segmented_splines_with_rbf(self, segmented_offsets, segment_splines, mjd_vals):
+        latitude_bins = [(-180, -165), (-165, -150), (-150, -135), (-135, -120), (-120, -105), (-105, -90), (-90, -75),
+                         (-75, -60), (-60, -45), (-45, -30), (-30, -15), (-15, 0), (0, 15), (15, 30), (30, 45),
+                         (45, 60),
+                         (60, 75), (75, 90), (90, 105), (105, 120), (120, 135), (135, 150), (150, 165), (165, 180)]
+        latitude_centerpoints = [(x[0] + x[1]) / 2. for x in latitude_bins]
+        for s in range(len(segment_splines)):
+            offsets = segmented_offsets[:,s]
+            mean_offset = np.mean(offsets[offsets != 0.0])
+            std_offset = np.std(offsets[offsets != 0.0])
+            z = np.array([(n - mean_offset)/std_offset for n in offsets])
+            mask = np.abs(z) < 3
+            mask[offsets == 0.0] = False
+
+            spline = segment_splines[s]
+            if spline is None:
+                continue
+
+            str_month_dict = OrderedDict([(55197, "Jan"), (55228, "Feb"), (55256, "Mar"), (55287, "Apr"),
+                                          (55317, "May"), (55348, "Jun"), (55378, "Jul"), (55409, "Aug")])
+
+            min_time = min(mjd_vals)
+            max_time = max(mjd_vals)
+            month_start_times = list(str_month_dict.keys())
+
+            start_month_ind = month_start_times.index(min(month_start_times, key=lambda x: abs(x - min_time)))
+            start_month_ind = start_month_ind if month_start_times[start_month_ind] < min_time else start_month_ind - 1
+
+            end_month_ind = month_start_times.index(min(month_start_times, key=lambda x: abs(x - max_time)))
+            end_month_ind = end_month_ind if month_start_times[end_month_ind] > max_time else end_month_ind + 1
+
+            x_ticks = month_start_times[start_month_ind:end_month_ind + 1]
+
+            rbf_xdata = latitude_centerpoints[s]*np.ones_like(mjd_vals)
+
+            fig, ax = plt.subplots()
+            ax.plot(mjd_vals[mask], offsets[mask], 'ro', alpha=0.2, ms=3, label="calibrated offset")
+            ax.plot(mjd_vals, spline(mjd_vals), 'g', lw=2, label="latitude spline")
+            ax.plot(mjd_vals, self.spl_offset(rbf_xdata, mjd_vals), 'b', label="smoothed fullsky spline")
+            ax.set_xticks(x_ticks)
+            ax.set_xticklabels([str_month_dict[x] for x in x_ticks], rotation=45)
+            plt.legend()
+            plt.subplots_adjust(bottom=0.2)
+            plt.xlabel("Orbit median timestamp")
+            plt.ylabel("Fitted Offset")
+            plt.savefig(os.path.join(self.output_path, "rbf_spline_offset_seg{}.png".format(s)))
+            plt.close()
+
+        return
+
     def fit_segmented_splines(self, segmented_offsets, mjd_vals):
         splines = []
         for seg in range(segmented_offsets.shape[1]):
@@ -246,7 +298,7 @@ class SplineFitter:
                 splines.append(None)
                 continue
 
-            spline = UnivariateSpline(mjd_vals[mask], offsets[mask], s=20000, k=2)
+            spline = UnivariateSpline(mjd_vals[mask], offsets[mask], s=2000, k=2)
 
             str_month_dict = OrderedDict([(55197, "Jan"), (55228, "Feb"), (55256, "Mar"), (55287, "Apr"),
                                           (55317, "May"), (55348, "Jun"), (55378, "Jul"), (55409, "Aug")])
@@ -300,10 +352,27 @@ class SplineFitter:
         x = [entry[1] for entry in data]
         z = [entry[2] for entry in data]
 
+        str_month_dict = OrderedDict([(55197, "Jan"), (55228, "Feb"), (55256, "Mar"), (55287, "Apr"),
+                                      (55317, "May"), (55348, "Jun"), (55378, "Jul"), (55409, "Aug")])
+
+        min_time = min(mjd_vals)
+        max_time = max(mjd_vals)
+        month_start_times = list(str_month_dict.keys())
+
+        start_month_ind = month_start_times.index(min(month_start_times, key=lambda x: abs(x - min_time)))
+        start_month_ind = start_month_ind if month_start_times[start_month_ind] < min_time else start_month_ind - 1
+
+        end_month_ind = month_start_times.index(min(month_start_times, key=lambda x: abs(x - max_time)))
+        end_month_ind = end_month_ind if month_start_times[end_month_ind] > max_time else end_month_ind + 1
+
+        y_ticks = month_start_times[start_month_ind:end_month_ind + 1]
+
         from mpl_toolkits.mplot3d import axes3d
         fig = plt.figure(figsize=(10, 6))
         ax = axes3d.Axes3D(fig)
         ax.scatter3D(x, y, z, c='r')
+        ax.set_yticks(y_ticks)
+        ax.set_yticklabels([str_month_dict[y] for y in y_ticks], rotation=45)
         plt.savefig("3d_scatter.png")
         plt.close()
 
@@ -311,7 +380,7 @@ class SplineFitter:
         y_grid = np.linspace(min(y), max(y))
         B1, B2 = np.meshgrid(x_grid, y_grid, indexing='xy')
 
-        spline = Rbf(x, y, z, function='multiquadric', smooth=100)
+        spline = Rbf(x, y, z, function='linear', smooth=100)
 
         # with open("rbf_spline.pkl", "wb") as rbf_pkl:
         #     pickle.dump(spline, rbf_pkl, pickle.HIGHEST_PROTOCOL)
@@ -322,6 +391,8 @@ class SplineFitter:
         ax.plot_wireframe(B1, B2, Z)
         ax.plot_surface(B1, B2, Z, alpha=0.2)
         ax.scatter3D(x, y, z, c='r')
+        ax.set_yticks(y_ticks)
+        ax.set_yticklabels([str_month_dict[y] for y in y_ticks], rotation=45)
         plt.savefig("3d_spline.png")
         plt.close()
 
