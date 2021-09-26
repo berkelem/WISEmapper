@@ -373,7 +373,7 @@ class Orbit(BaseMapper):
 
     def plot_diff(self, output_path=os.getcwd()):
         # theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
-        plt.plot(self.phi, self._cal_data_clean_masked-self._zodi_data_clean_masked, "r.", ms=0.5)
+        plt.plot(self._phi_clean_masked, self._cal_data_clean_masked-self._zodi_data_clean_masked, "r.", ms=0.5)
         plt.title("Orbit {}".format(self.orbit_num))
         plt.xlabel("Latitude (degrees)")
         plt.ylabel("MJy/sr")
