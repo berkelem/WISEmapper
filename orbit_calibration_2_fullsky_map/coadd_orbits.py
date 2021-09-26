@@ -372,13 +372,13 @@ class Orbit(BaseMapper):
         plt.close()
 
     def plot_diff(self, output_path=os.getcwd()):
-        # theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
-        plt.plot(self._theta_clean_masked, self._cal_data_clean_masked-self._zodi_data_clean_masked, "r.", ms=0.5)
+        theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
+        plt.plot(phi, self._cal_data_clean_masked-self._zodi_data_clean_masked, "r.", ms=0.5)
         plt.title("Orbit {}".format(self.orbit_num))
         plt.xlabel("Latitude (degrees)")
         plt.ylabel("MJy/sr")
         outfile_name = (
-            "orbit_{}_diff_theta.png".format(self.orbit_num)
+            "orbit_{}_diff_phi.png".format(self.orbit_num)
         )
         plt.savefig(os.path.join(output_path, outfile_name))
         plt.close()
