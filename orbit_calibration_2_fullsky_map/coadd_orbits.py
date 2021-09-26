@@ -371,16 +371,14 @@ class Orbit(BaseMapper):
         plt.savefig(os.path.join(output_path, outfile_name))
         plt.close()
 
-    def plot_diff(self, output_path, iteration=None):
-        theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
-        plt.plot(phi, self._cal_data_clean_masked-self._zodi_data_clean_masked, "r.", ms=0.5)
+    def plot_diff(self, output_path=os.getcwd()):
+        # theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
+        plt.plot(self.phi, self._cal_data_clean_masked-self._zodi_data_clean_masked, "r.", ms=0.5)
         plt.title("Orbit {}".format(self.orbit_num))
         plt.xlabel("Latitude (degrees)")
         plt.ylabel("MJy/sr")
         outfile_name = (
-            "orbit_{}_diff_iter_{}.png".format(self.orbit_num, iteration)
-            if iteration
-            else "orbit_{}_diff.png".format(self.orbit_num)
+            "orbit_{}_diff.png".format(self.orbit_num)
         )
         plt.savefig(os.path.join(output_path, outfile_name))
         plt.close()
@@ -697,6 +695,7 @@ class Coadder:
             self._add_orbit(orbit)
             if plot:# and orbit.orbit_num % 15 == 0.0:
                 orbit.plot_fit()
+                orbit.plot_diff()
 
         self._clean_data()
         self._compile_map()
