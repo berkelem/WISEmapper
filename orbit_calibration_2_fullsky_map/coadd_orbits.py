@@ -309,7 +309,7 @@ class Orbit(BaseMapper):
         coadd.
         """
         npix = hp.nside2npix(self._nside)
-        r = Rotator(coord=["C", "G"])  # Transforms galactic to ecliptic coordinates
+        r = Rotator(coord=["G", "E"])  # Transforms galactic to ecliptic coordinates
         if type(self).theta_rot is None:
             theta, phi = hp.pix2ang(self._nside, np.arange(npix))
 
@@ -356,7 +356,7 @@ class Orbit(BaseMapper):
 
     def plot_fit(self, output_path=os.getcwd(), iteration=None, label=None):
         """Plot calibrated data along with the zodiacal light template with galactic latitude on the x-axis"""
-        theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
+        theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked)#, lonlat=True)
         plt.plot(phi, self._cal_data_clean_masked, "r.", ms=0.5, alpha=0.5, label="Calibrated data")
         plt.plot(phi, self._zodi_data_clean_masked, "b.", ms=0.5, alpha=0.5, label="Zodi model")
         plt.legend()
@@ -372,7 +372,7 @@ class Orbit(BaseMapper):
         plt.close()
 
     def plot_diff(self, output_path=os.getcwd()):
-        theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
+        theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked)#, lonlat=True)
         plt.plot(theta, self._cal_data_clean_masked-self._zodi_data_clean_masked, "r.", ms=0.5)
         plt.title("Orbit {}".format(self.orbit_num))
         plt.xlabel("Latitude (degrees)")
