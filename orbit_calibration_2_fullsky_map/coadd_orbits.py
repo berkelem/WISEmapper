@@ -315,8 +315,8 @@ class Orbit(BaseMapper):
 
             theta_rot, phi_rot = r(theta, phi)  # Apply the conversion
 
-            type(self).theta_rot = theta_rot * 180/ np.pi
-            type(self).phi_rot = phi_rot * 180/np.pi
+            type(self).theta_rot = theta * 180/ np.pi
+            type(self).phi_rot = phi * 180/np.pi
 
         all_orbit_data = pd.read_csv(self._filename)
         self._orbit_data = np.array(all_orbit_data["pixel_value"])
@@ -373,7 +373,7 @@ class Orbit(BaseMapper):
 
     def plot_fit(self, output_path=os.getcwd(), iteration=None, label=None):
         """Plot calibrated data along with the zodiacal light template with galactic latitude on the x-axis"""
-        theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
+        theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked)
         plt.plot(phi, self._cal_data_clean_masked, "r.", ms=0.5, alpha=0.5, label="Calibrated data")
         plt.plot(phi, self._zodi_data_clean_masked, "b.", ms=0.5, alpha=0.5, label="Zodi model")
         plt.legend()
@@ -389,7 +389,7 @@ class Orbit(BaseMapper):
         plt.close()
 
     def plot_diff(self, output_path=os.getcwd()):
-        theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
+        theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked)
         plt.plot(phi, self._cal_data_clean_masked-self._zodi_data_clean_masked, "r.", ms=0.5)
         plt.title("Orbit {}".format(self.orbit_num))
         plt.xlabel("Latitude (degrees)")
