@@ -315,8 +315,8 @@ class Orbit(BaseMapper):
 
             theta_rot, phi_rot = r(theta, phi)  # Apply the conversion
 
-            type(self).theta_rot = theta * 180/ np.pi
-            type(self).phi_rot = phi * 180/np.pi
+            type(self).theta_rot = theta_rot * 180/ np.pi
+            type(self).phi_rot = phi_rot * 180/np.pi
 
         all_orbit_data = pd.read_csv(self._filename)
         self._orbit_data = np.array(all_orbit_data["pixel_value"])
@@ -328,6 +328,17 @@ class Orbit(BaseMapper):
         self.theta = type(self).theta_rot[self._pixel_inds]
         self.phi = type(self).phi_rot[self._pixel_inds]
 
+        data_test = HealpixMap("data_test.fits")
+        data_test.mapdata = self._orbit_data
+        data_test.save_map("G")
+
+        theta_test = HealpixMap("theta_test.fits")
+        theta_test.mapdata = self.theta
+        theta_test.save_map("G")
+
+        phi_test = HealpixMap("phi_test.fits")
+        phi_test.mapdata = self.phi
+        phi_test.save_map("G")
 
 
         # rot_data, rot_pix_inds, theta_rot, phi_rot = self.rotate_data("G", "E", self._orbit_data,
