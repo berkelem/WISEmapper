@@ -328,16 +328,22 @@ class Orbit(BaseMapper):
         self.theta = type(self).theta_rot[self._pixel_inds]
         self.phi = type(self).phi_rot[self._pixel_inds]
 
+        map_template = np.zeros_like(theta)
+        map_template[self._pixel_inds] = self._orbit_data
         data_test = HealpixMap("data_test.fits")
-        data_test.mapdata = self._orbit_data
+        data_test.mapdata = map_template
         data_test.save_map("G")
 
+        map_template = np.zeros_like(theta)
+        map_template[self._pixel_inds] = self.theta
         theta_test = HealpixMap("theta_test.fits")
-        theta_test.mapdata = self.theta
+        theta_test.mapdata = map_template
         theta_test.save_map("G")
 
+        map_template = np.zeros_like(theta)
+        map_template[self._pixel_inds] = self.phi
         phi_test = HealpixMap("phi_test.fits")
-        phi_test.mapdata = self.phi
+        phi_test.mapdata = map_template
         phi_test.save_map("G")
 
 
