@@ -101,8 +101,10 @@ class Orbit(BaseMapper):
     orbit_file_path = ""
     zodi_file_path = ""
 
-    theta_rot = None
-    phi_rot = None
+    theta_ecl = None
+    phi_ecl = None
+    theta_gal = None
+    phi_gal = None
 
     def __init__(self, orbit_num, band, mask, nside):
 
@@ -311,12 +313,14 @@ class Orbit(BaseMapper):
         npix = hp.nside2npix(self._nside)
         r = Rotator(coord=["G", "E"])  # Transforms galactic to ecliptic coordinates
         if type(self).theta_rot is None:
-            theta, phi = hp.pix2ang(self._nside, np.arange(npix))
+            theta_gal, phi_gal = hp.pix2ang(self._nside, np.arange(npix))
 
-            theta_rot, phi_rot = r(theta, phi)  # Apply the conversion
+            theta_ecl, phi_ecl = r(theta_gal, phi_gal)  # Apply the conversion
 
-            type(self).theta_rot = theta_rot * 180/ np.pi
-            type(self).phi_rot = phi_rot * 180/np.pi
+            type(self).theta_ecl = theta_ecl * 180/ np.pi
+            type(self).phi_ecl = phi_ecl * 180/np.pi
+            type(self).theta_gal = theta_gal * 180/ np.pi
+            type(self).phi_gal = phi_gal * 180/np.pi
 
         all_orbit_data = pd.read_csv(self._filename)
         self._orbit_data = np.array(all_orbit_data["pixel_value"])
@@ -325,8 +329,8 @@ class Orbit(BaseMapper):
         self.orbit_mjd_obs = np.array(all_orbit_data["pixel_mjd_obs"])
         self.mean_mjd_obs = np.mean(self.orbit_mjd_obs)
 
-        self.theta = type(self).theta_rot[self._pixel_inds]
-        self.phi = type(self).phi_rot[self._pixel_inds]
+        self.theta = type(self).theta_gal[self._pixel_inds]
+        self.phi = type(self).phi_gal[self._pixel_inds]
 
         map_template = np.zeros(npix)
         map_template[self._pixel_inds] = self._orbit_data
