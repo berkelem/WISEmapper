@@ -393,6 +393,46 @@ class Orbit(BaseMapper):
         plt.close()
 
     def plot_diff(self, output_path=os.getcwd()):
+        diff_data = self._cal_data_clean_masked-self._zodi_data_clean_masked
+        t_data = self._orbit_mjd_clean_masked
+        ang_data = self._theta_clean_masked
+
+        from mpl_toolkits.mplot3d import axes3d
+        from scipy.interpolate import UnivariateSpline, Rbf
+
+        spline = Rbf(t_data, ang_data, diff_data, function='linear', smooth=100)
+
+        str_month_dict = OrderedDict([(55197, "Jan"), (55228, "Feb"), (55256, "Mar"), (55287, "Apr"),
+                                      (55317, "May"), (55348, "Jun"), (55378, "Jul"), (55409, "Aug")])
+        min_time = min(self._orbit_mjd_clean_masked)
+        max_time = max(self._orbit_mjd_clean_masked)
+        month_start_times = list(str_month_dict.keys())
+
+        start_month_ind = month_start_times.index(min(month_start_times, key=lambda x: abs(x - min_time)))
+        start_month_ind = start_month_ind if month_start_times[start_month_ind] < min_time else start_month_ind - 1
+
+        end_month_ind = month_start_times.index(min(month_start_times, key=lambda x: abs(x - max_time)))
+        end_month_ind = end_month_ind if month_start_times[end_month_ind] > max_time else end_month_ind + 1
+        y_ticks = month_start_times[start_month_ind:end_month_ind + 1]
+
+        x = t_data
+        y = ang_data
+        z = diff_data
+
+        x_grid = np.linspace(min(x), max(x))
+        y_grid = np.linspace(min(y), max(y))
+        B1, B2 = np.meshgrid(x_grid, y_grid, indexing='xy')
+        Z = spline(B1, B2)
+        fig = plt.figure(figsize=(10, 6))
+        ax = axes3d.Axes3D(fig)
+        ax.plot_wireframe(B1, B2, Z)
+        ax.plot_surface(B1, B2, Z, alpha=0.2)
+        ax.scatter3D(x, y, z, c='r')
+        ax.set_yticks(y_ticks)
+        ax.set_yticklabels([str_month_dict[y] for y in y_ticks], rotation=45)
+        plt.savefig("3d_offset_spline_orbit_{}.png".format(self.orbit_num))
+        plt.close()
+
         plt.plot(self._theta_clean_masked, self._cal_data_clean_masked-self._zodi_data_clean_masked, "r.", ms=0.5)
         plt.title("Orbit {}".format(self.orbit_num))
         plt.xlabel("Latitude (degrees)")
@@ -485,7 +525,7 @@ class IterativeFitter:
             gain = offset = 0.0
         return gain, offset, segmented_offsets
 
-    def fit_offset_spline(self, data, gain, offset):
+    def fit_offset_spline(self, gain, offset):
         cal_data = (self.raw_data - offset) / gain
         zs_data = (cal_data - self.zodi_data)
         plt.plot(self.theta, zs_data, "r.", ms=0.5)
