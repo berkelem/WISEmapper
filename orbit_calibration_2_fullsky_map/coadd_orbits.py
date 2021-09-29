@@ -396,7 +396,8 @@ class Orbit(BaseMapper):
         diff_data = self._cal_data_clean_masked-self._zodi_data_clean_masked
         t_data = self._orbit_mjd_clean_masked
         ang_data = self._theta_clean_masked
-        mask = 80 < self._theta_clean_masked < 100
+        mask = np.ones_like(ang_data, dtype=bool)
+        mask[(ang_data > 80) & (ang_data < 100)] = False
 
         from mpl_toolkits.mplot3d import axes3d
         from scipy.interpolate import UnivariateSpline, Rbf
@@ -416,9 +417,9 @@ class Orbit(BaseMapper):
         end_month_ind = end_month_ind if month_start_times[end_month_ind] > max_time else end_month_ind + 1
         y_ticks = month_start_times[start_month_ind:end_month_ind + 1]
 
-        x = t_data[~mask]
-        y = ang_data[~mask]
-        z = diff_data[~mask]
+        x = t_data[mask]
+        y = ang_data[mask]
+        z = diff_data[mask]
 
         x_grid = np.linspace(min(x), max(x))
         y_grid = np.linspace(min(y), max(y))
