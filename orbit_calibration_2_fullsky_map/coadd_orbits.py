@@ -315,8 +315,8 @@ class Orbit(BaseMapper):
 
             theta_rot, phi_rot = r(theta, phi)  # Apply the conversion
 
-            type(self).theta_rot = theta * 180/ np.pi
-            type(self).phi_rot = phi * 180/np.pi
+            type(self).theta_rot = theta_rot * 180/ np.pi
+            type(self).phi_rot = phi_rot * 180/np.pi
 
         all_orbit_data = pd.read_csv(self._filename)
         self._orbit_data = np.array(all_orbit_data["pixel_value"])
