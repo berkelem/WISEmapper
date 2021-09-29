@@ -402,8 +402,6 @@ class Orbit(BaseMapper):
         from mpl_toolkits.mplot3d import axes3d
         from scipy.interpolate import UnivariateSpline, Rbf
 
-        spline = Rbf(t_data, ang_data, diff_data, function='linear', smooth=100)
-
         str_month_dict = OrderedDict([(55197, "Jan"), (55228, "Feb"), (55256, "Mar"), (55287, "Apr"),
                                       (55317, "May"), (55348, "Jun"), (55378, "Jul"), (55409, "Aug")])
         min_time = min(self._orbit_mjd_clean_masked)
@@ -420,6 +418,8 @@ class Orbit(BaseMapper):
         x = t_data[mask]
         y = ang_data[mask]
         z = diff_data[mask]
+
+        spline = Rbf(x, y, z, function='linear', smooth=100)
 
         x_grid = np.linspace(min(x), max(x))
         y_grid = np.linspace(min(y), max(y))
