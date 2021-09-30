@@ -263,6 +263,13 @@ class Orbit(BaseMapper):
             self._cal_data_clean_masked - self._zodi_data_clean_masked
         )
 
+        diff_spline = self.plot_diff()
+        offsets = offsets - diff_spline
+        self._cal_data_clean_masked = (self._orbit_data_clean_masked - offsets) / gains
+        self.zs_data_clean_masked = (
+                self._cal_data_clean_masked - self._zodi_data_clean_masked
+        )
+
         return
 
     def fit(self):
@@ -400,7 +407,7 @@ class Orbit(BaseMapper):
         mask[(ang_data > 80) & (ang_data < 100)] = False
 
         from mpl_toolkits.mplot3d import axes3d
-        from scipy.interpolate import UnivariateSpline, Rbf
+        from scipy.interpolate import Rbf
 
         str_month_dict = OrderedDict([(55197, "Jan"), (55228, "Feb"), (55256, "Mar"), (55287, "Apr"),
                                       (55317, "May"), (55348, "Jun"), (55378, "Jul"), (55409, "Aug")])
@@ -425,23 +432,24 @@ class Orbit(BaseMapper):
         y_grid = np.linspace(min(y), max(y))
         B1, B2 = np.meshgrid(x_grid, y_grid, indexing='xy')
         Z = spline(B1, B2)
-        fig = plt.figure(figsize=(10, 6))
-        ax = axes3d.Axes3D(fig)
-        ax.plot_wireframe(B1, B2, Z)
-        ax.plot_surface(B1, B2, Z, alpha=0.2)
-        ax.scatter3D(x, y, z, c='r')
-        ax.set_yticks(y_ticks)
-        ax.set_yticklabels([str_month_dict[y] for y in y_ticks], rotation=45)
         for ang in range(60, 300, 60):
+            fig = plt.figure(figsize=(10, 6))
+            ax = axes3d.Axes3D(fig)
+            ax.plot_wireframe(B1, B2, Z)
+            ax.plot_surface(B1, B2, Z, alpha=0.2)
+            ax.scatter3D(x, y, z, c='r')
+            ax.set_yticks(y_ticks)
+            ax.set_yticklabels([str_month_dict[y] for y in y_ticks], rotation=45)
             ax.view_init(elev=10., azim=ang)
             plt.savefig("3d_offset_spline_orbit_{}_ang_{}.png".format(self.orbit_num, ang))
             plt.close()
 
         start_spline = spline(np.ones_like(t_data)*min(t_data), ang_data)
         end_spline = spline(np.ones_like(t_data)*max(t_data), ang_data)
+        mean_spline = np.mean([start_spline, end_spline], axis=0)
         plt.plot(self._theta_clean_masked, self._cal_data_clean_masked-self._zodi_data_clean_masked, "r.", ms=0.5, label="diff")
-        plt.plot(self._theta_clean_masked, start_spline, "b--", label="start spline")
-        plt.plot(self._theta_clean_masked, end_spline, "g--", label="end spline")
+        plt.plot(self._theta_clean_masked, mean_spline, "b--", label="mean spline")
+        # plt.plot(self._theta_clean_masked, end_spline, "g--", label="end spline")
         plt.legend()
         plt.title("Orbit {}".format(self.orbit_num))
         plt.xlabel("Latitude (degrees)")
@@ -451,6 +459,7 @@ class Orbit(BaseMapper):
         )
         plt.savefig(os.path.join(output_path, outfile_name))
         plt.close()
+        return mean_spline
 
     def reset_outliers(self):
         """Restore values that were removed for the purposes of fitting"""
@@ -777,8 +786,8 @@ class Coadder:
             orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
             self._add_orbit(orbit)
             if plot:# and orbit.orbit_num % 15 == 0.0:
-                orbit.plot_fit()
-                orbit.plot_diff()
+                orbit.plot_fit("postadjust")
+
 
         self._clean_data()
         self._compile_map()
