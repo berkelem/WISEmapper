@@ -786,7 +786,7 @@ class Coadder:
             orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
             self._add_orbit(orbit)
             if plot:# and orbit.orbit_num % 15 == 0.0:
-                orbit.plot_fit("postadjust")
+                orbit.plot_fit(label="postadjust")
 
 
         self._clean_data()
