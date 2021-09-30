@@ -435,8 +435,8 @@ class Orbit(BaseMapper):
         plt.savefig("3d_offset_spline_orbit_{}.png".format(self.orbit_num))
         plt.close()
 
-        start_spline = spline(np.ones_like(x)*min(x), y)
-        end_spline = spline(np.ones_like(x)*max(x), y)
+        start_spline = spline(np.ones_like(t_data)*min(t_data), ang_data)
+        end_spline = spline(np.ones_like(t_data)*max(t_data), ang_data)
         plt.plot(self._theta_clean_masked, self._cal_data_clean_masked-self._zodi_data_clean_masked, "r.", ms=0.5, label="diff")
         plt.plot(self._theta_clean_masked, start_spline, "b--", label="start spline")
         plt.plot(self._theta_clean_masked, end_spline, "g--", label="end spline")
