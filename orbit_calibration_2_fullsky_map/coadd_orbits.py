@@ -432,8 +432,10 @@ class Orbit(BaseMapper):
         ax.scatter3D(x, y, z, c='r')
         ax.set_yticks(y_ticks)
         ax.set_yticklabels([str_month_dict[y] for y in y_ticks], rotation=45)
-        plt.savefig("3d_offset_spline_orbit_{}.png".format(self.orbit_num))
-        plt.close()
+        for ang in range(60, 300, 60):
+            ax.view_init(elev=10., azim=ang)
+            plt.savefig("3d_offset_spline_orbit_{}_ang_{}.png".format(self.orbit_num, ang))
+            plt.close()
 
         start_spline = spline(np.ones_like(t_data)*min(t_data), ang_data)
         end_spline = spline(np.ones_like(t_data)*max(t_data), ang_data)
