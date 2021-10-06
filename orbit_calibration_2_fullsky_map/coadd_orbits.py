@@ -534,7 +534,7 @@ class IterativeFitter:
                 gain, offset = self._fit_to_zodi(
                     data_to_fit, self.zodi_data, uncs_to_fit
                 )
-                offset_spline = self.fit_offset_spline(data_to_fit, gain, offset)
+                # offset_spline = self.fit_offset_spline(data_to_fit, gain, offset)
                 segmented_offsets = self._segmented_fit(data_to_fit, uncs_to_fit, gain)
                 data_to_fit = self._adjust_data(gain, offset, data_to_fit)
                 i += 1
@@ -542,18 +542,18 @@ class IterativeFitter:
             gain = offset = 0.0
         return gain, offset, segmented_offsets
 
-    def fit_offset_spline(self, gain, offset):
-        cal_data = (self.raw_data - offset) / gain
-        zs_data = (cal_data - self.zodi_data)
-        plt.plot(self.theta, zs_data, "r.", ms=0.5)
-        plt.title("Orbit {}".format(self.orbit_num))
-        plt.xlabel("Latitude (degrees)")
-        plt.ylabel("MJy/sr")
-        outfile_name = (
-            "orbit_{}_diff_theta.png".format(self.orbit_num)
-        )
-        plt.savefig(os.path.join(output_path, outfile_name))
-        plt.close()
+    # def fit_offset_spline(self, gain, offset):
+    #     cal_data = (self.raw_data - offset) / gain
+    #     zs_data = (cal_data - self.zodi_data)
+    #     plt.plot(self.theta, zs_data, "r.", ms=0.5)
+    #     plt.title("Orbit {}".format(self.orbit_num))
+    #     plt.xlabel("Latitude (degrees)")
+    #     plt.ylabel("MJy/sr")
+    #     outfile_name = (
+    #         "orbit_{}_diff_theta.png".format(self.orbit_num)
+    #     )
+    #     plt.savefig(os.path.join(output_path, outfile_name))
+    #     plt.close()
 
     @staticmethod
     def _chi_sq(params, x_data, y_data, sigma):
