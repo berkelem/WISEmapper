@@ -637,7 +637,7 @@ class IterativeFitter:
             start_theta_deg, end_theta_deg = bin
             start_theta = start_theta_deg + 180
             end_theta = end_theta_deg + 180
-            segment_mask = (self.theta_ecl >= start_theta) & (self.theta_ecl < end_theta)
+            segment_mask = (self.theta >= start_theta) & (self.theta < end_theta)
             segment_data = orbit_data[segment_mask]
             segment_uncs = orbit_uncs[segment_mask]
             segment_zodi = self.zodi_data[segment_mask]
