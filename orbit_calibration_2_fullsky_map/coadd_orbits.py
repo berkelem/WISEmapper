@@ -189,7 +189,7 @@ class Orbit(BaseMapper):
         entries_to_mask = [
             i
             for i in range(len(self._pixel_inds))
-            if self._pixel_inds[i] in self._mask_inds]# or self.theta[i] > 10]
+            if self._pixel_inds[i] in self._mask_inds or self.theta[i] > 10]
 
         mask[entries_to_mask] = False
 
