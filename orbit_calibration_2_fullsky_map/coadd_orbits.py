@@ -335,8 +335,8 @@ class Orbit(BaseMapper):
         self.orbit_mjd_obs = np.array(all_orbit_data["pixel_mjd_obs"])
         self.mean_mjd_obs = np.mean(self.orbit_mjd_obs)
 
-        self.theta = type(self).theta_gal[self._pixel_inds]
-        self.phi = type(self).phi_gal[self._pixel_inds]
+        self.theta = type(self).theta_ecl[self._pixel_inds]
+        self.phi = type(self).phi_ecl[self._pixel_inds]
 
         map_template = np.zeros(npix)
         map_template[self._pixel_inds] = self._orbit_data
