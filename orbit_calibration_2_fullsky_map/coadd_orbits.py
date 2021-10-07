@@ -234,7 +234,8 @@ class Orbit(BaseMapper):
         #         if i not in entries_to_mask and i not in self._outlier_inds
         #     ]
         # )
-        self._theta_clean_masked = self.theta[mask]
+        self._theta_ecl_clean_masked = self.theta_ecl[mask]
+        self._theta_gal_clean_masked = self.theta_gal[mask]
 
         # self._theta_clean_masked = np.array([self.theta[i] for i in range(len(self.theta)) if i not in entries_to_mask and i not in self._outlier_inds])
 
@@ -294,7 +295,7 @@ class Orbit(BaseMapper):
             self._zodi_data_clean_masked,
             orbit_data_to_fit_clean_masked,
             self._orbit_uncs_clean_masked,
-            self._theta_clean_masked,
+            self._theta_ecl_clean_masked,
             self._phi_clean_masked,
         )
         self.gain, self.offset, self.segmented_offsets = orbit_fitter.iterate_fit(1)
@@ -335,26 +336,28 @@ class Orbit(BaseMapper):
         self.orbit_mjd_obs = np.array(all_orbit_data["pixel_mjd_obs"])
         self.mean_mjd_obs = np.mean(self.orbit_mjd_obs)
 
-        self.theta = type(self).theta_ecl[self._pixel_inds]
-        self.phi = type(self).phi_ecl[self._pixel_inds]
+        self.theta_ecl = type(self).theta_ecl[self._pixel_inds]
+        self.phi_ecl = type(self).phi_ecl[self._pixel_inds]
+        self.theta_gal = type(self).theta_gal[self._pixel_inds]
+        self.phi_gal = type(self).phi_gal[self._pixel_inds]
 
-        map_template = np.zeros(npix)
-        map_template[self._pixel_inds] = self._orbit_data
-        data_test = HealpixMap("data_test.fits")
-        data_test.mapdata = map_template
-        data_test.save_map("G")
-
-        map_template = np.zeros(npix)
-        map_template[self._pixel_inds] = self.theta
-        theta_test = HealpixMap("theta_test.fits")
-        theta_test.mapdata = map_template
-        theta_test.save_map("G")
-
-        map_template = np.zeros(npix)
-        map_template[self._pixel_inds] = self.phi
-        phi_test = HealpixMap("phi_test.fits")
-        phi_test.mapdata = map_template
-        phi_test.save_map("G")
+        # map_template = np.zeros(npix)
+        # map_template[self._pixel_inds] = self._orbit_data
+        # data_test = HealpixMap("data_test.fits")
+        # data_test.mapdata = map_template
+        # data_test.save_map("G")
+        #
+        # map_template = np.zeros(npix)
+        # map_template[self._pixel_inds] = self.theta
+        # theta_test = HealpixMap("theta_test.fits")
+        # theta_test.mapdata = map_template
+        # theta_test.save_map("G")
+        #
+        # map_template = np.zeros(npix)
+        # map_template[self._pixel_inds] = self.phi
+        # phi_test = HealpixMap("phi_test.fits")
+        # phi_test.mapdata = map_template
+        # phi_test.save_map("G")
 
 
         # rot_data, rot_pix_inds, theta_rot, phi_rot = self.rotate_data("G", "E", self._orbit_data,
@@ -384,8 +387,8 @@ class Orbit(BaseMapper):
     def plot_fit(self, output_path=os.getcwd(), iteration=None, label=None):
         """Plot calibrated data along with the zodiacal light template with galactic latitude on the x-axis"""
         # theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
-        plt.plot(self._theta_clean_masked, self._cal_data_clean_masked, "r.", ms=0.5, alpha=0.5, label="Calibrated data")
-        plt.plot(self._theta_clean_masked, self._zodi_data_clean_masked, "b.", ms=0.5, alpha=0.5, label="Zodi model")
+        plt.plot(self._theta_gal_clean_masked, self._cal_data_clean_masked, "r.", ms=0.5, alpha=0.5, label="Calibrated data")
+        plt.plot(self._theta_gal_clean_masked, self._zodi_data_clean_masked, "b.", ms=0.5, alpha=0.5, label="Zodi model")
         plt.legend()
         plt.title("Orbit {}".format(self.orbit_num))
         plt.xlabel("Latitude (degrees)")
@@ -401,7 +404,7 @@ class Orbit(BaseMapper):
     def plot_diff(self, output_path=os.getcwd()):
         diff_data = self._cal_data_clean_masked-self._zodi_data_clean_masked
         t_data = self._orbit_mjd_clean_masked
-        ang_data = self._theta_clean_masked
+        ang_data = self._theta_gal_clean_masked
         mask = np.ones_like(ang_data, dtype=bool)
         mask[(ang_data > 80) & (ang_data < 100)] = False
 
@@ -446,9 +449,9 @@ class Orbit(BaseMapper):
         start_spline = spline(np.ones_like(t_data)*min(t_data), ang_data)
         end_spline = spline(np.ones_like(t_data)*max(t_data), ang_data)
         mean_spline = np.mean([start_spline, end_spline], axis=0)
-        plt.plot(self._theta_clean_masked, self._cal_data_clean_masked-self._zodi_data_clean_masked, "r.", ms=0.5, label="diff")
-        plt.plot(self._theta_clean_masked, mean_spline, "b--", label="mean spline")
-        # plt.plot(self._theta_clean_masked, end_spline, "g--", label="end spline")
+        plt.plot(self._theta_gal_clean_masked, self._cal_data_clean_masked-self._zodi_data_clean_masked, "r.", ms=0.5, label="diff")
+        plt.plot(self._theta_gal_clean_masked, mean_spline, "b--", label="mean spline")
+        # plt.plot(self._theta_gal_clean_masked, end_spline, "g--", label="end spline")
         plt.legend()
         plt.title("Orbit {}".format(self.orbit_num))
         plt.xlabel("Latitude (degrees)")
