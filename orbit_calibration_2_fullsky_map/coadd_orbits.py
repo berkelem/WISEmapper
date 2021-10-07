@@ -239,7 +239,8 @@ class Orbit(BaseMapper):
 
         # self._theta_clean_masked = np.array([self.theta[i] for i in range(len(self.theta)) if i not in entries_to_mask and i not in self._outlier_inds])
 
-        self._phi_clean_masked = self.phi[mask]
+        self._phi_gal_clean_masked = self.phi_gal[mask]
+        self._phi_ecl_clean_masked = self.phi_ecl[mask]
 
 
         return
@@ -256,7 +257,7 @@ class Orbit(BaseMapper):
             Spline fitted to all of the offset fits after N iterations
         """
         gains = gain_spline(self._orbit_mjd_clean_masked)
-        offsets = offset_spline(self._phi_clean_masked, self._orbit_mjd_clean_masked)
+        offsets = offset_spline(self._theta_ecl_clean_masked, self._orbit_mjd_clean_masked)
         self._cal_data_clean_masked = (self._orbit_data_clean_masked - offsets) / gains
         self.cal_uncs_clean_masked = self._orbit_uncs_clean_masked / abs(gains)
 
@@ -296,7 +297,7 @@ class Orbit(BaseMapper):
             orbit_data_to_fit_clean_masked,
             self._orbit_uncs_clean_masked,
             self._theta_ecl_clean_masked,
-            self._phi_clean_masked,
+            self._phi_ecl_clean_masked,
         )
         self.gain, self.offset, self.segmented_offsets = orbit_fitter.iterate_fit(1)
         return
@@ -633,10 +634,10 @@ class IterativeFitter:
                 (60, 75), (75, 90), (90, 105), (105, 120), (120, 135), (135, 150), (150, 165), (165, 180)]
         offsets = []
         for bin in bins:
-            start_phi_deg, end_phi_deg = bin
-            start_phi = start_phi_deg
-            end_phi = end_phi_deg
-            segment_mask = (self.phi >= start_phi) & (self.phi < end_phi)
+            start_theta_deg, end_theta_deg = bin
+            start_theta = start_theta_deg + 180
+            end_theta = end_theta_deg + 180
+            segment_mask = (self.theta_ecl >= start_theta) & (self.theta_ecl < end_theta)
             segment_data = orbit_data[segment_mask]
             segment_uncs = orbit_uncs[segment_mask]
             segment_zodi = self.zodi_data[segment_mask]
