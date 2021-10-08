@@ -335,7 +335,7 @@ class SplineFitter:
         latitude_bins = [(-180, -165), (-165, -150), (-150, -135), (-135, -120), (-120, -105), (-105, -90), (-90, -75),
                 (-75, -60), (-60, -45), (-45, -30), (-30, -15), (-15, 0), (0, 15), (15, 30), (30, 45), (45, 60),
                 (60, 75), (75, 90), (90, 105), (105, 120), (120, 135), (135, 150), (150, 165), (165, 180)]
-        latitude_centerpoints = [(x[0] + x[1]) / 2. for x in latitude_bins]
+        latitude_centerpoints = [((x[0] + x[1]) / 2.)+180 for x in latitude_bins]
 
         splines = []
         for spline in segsplines:
