@@ -239,7 +239,7 @@ class SplineFitter:
                          (-75, -60), (-60, -45), (-45, -30), (-30, -15), (-15, 0), (0, 15), (15, 30), (30, 45),
                          (45, 60),
                          (60, 75), (75, 90), (90, 105), (105, 120), (120, 135), (135, 150), (150, 165), (165, 180)]
-        latitude_centerpoints = [(x[0] + x[1]) / 2. for x in latitude_bins]
+        latitude_centerpoints = [((x[0] + x[1]) / 2.)+180 for x in latitude_bins]
         for s in range(len(segment_splines)):
             offsets = segmented_offsets[:,s]
             mean_offset = np.mean(offsets[offsets != 0.0])
@@ -380,7 +380,7 @@ class SplineFitter:
         y_grid = np.linspace(min(y), max(y))
         B1, B2 = np.meshgrid(x_grid, y_grid, indexing='xy')
 
-        spline = Rbf(x, y, z, function='linear', smooth=100)
+        spline = Rbf(x, y, z, function='linear', smooth=10)
 
         # with open("rbf_spline.pkl", "wb") as rbf_pkl:
         #     pickle.dump(spline, rbf_pkl, pickle.HIGHEST_PROTOCOL)
@@ -455,9 +455,9 @@ class SplineFitter:
 
 
     def plot_segmented_offsets(self, all_segmented_offsets, median_mjd_vals):
-        bins = [(-180, -165), (-165, -150), (-150, -135), (-135, -120), (-120, -105), (-105, -90), (-90, -75),
+        bins = [(x[0]+180, x[1]+180) for x in [(-180, -165), (-165, -150), (-150, -135), (-135, -120), (-120, -105), (-105, -90), (-90, -75),
                 (-75, -60), (-60, -45), (-45, -30), (-30, -15), (-15, 0), (0, 15), (15, 30), (30, 45), (45, 60),
-                (60, 75), (75, 90), (90, 105), (105, 120), (120, 135), (135, 150), (150, 165), (165, 180)]
+                (60, 75), (75, 90), (90, 105), (105, 120), (120, 135), (135, 150), (150, 165), (165, 180)]]
         str_month_dict = OrderedDict([(55197, "Jan"), (55228, "Feb"), (55256, "Mar"), (55287, "Apr"),
                                       (55317, "May"), (55348, "Jun"), (55378, "Jul"), (55409, "Aug")])
         month_start_times = list(str_month_dict.keys())
