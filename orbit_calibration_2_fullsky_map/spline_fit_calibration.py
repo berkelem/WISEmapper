@@ -284,8 +284,20 @@ class SplineFitter:
 
         return
 
+    @staticmethod
+    def fix_segmented_lengths(segmented_offsets):
+        fixed = []
+        for item in segmented_offsets:
+            if len(item) == 1:
+                fixed_item = item[0]
+            else:
+                fixed_item = item
+            fixed.append(fixed_item)
+        return np.array(fixed)
+
     def fit_segmented_splines(self, segmented_offsets, mjd_vals):
         splines = []
+        segmented_offsets = self.fix_segmented_lengths(segmented_offsets)
         for seg in range(segmented_offsets.shape[1]):
             offsets = segmented_offsets[:,seg]
             mean_offset = np.mean(offsets[offsets != 0.0])
