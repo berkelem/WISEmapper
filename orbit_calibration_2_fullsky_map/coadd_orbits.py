@@ -544,7 +544,7 @@ class IterativeFitter:
                 i += 1
         else:
             gain = offset = 0.0
-            segmented_offsets = [[0.0]*24]
+            segmented_offsets = [0.0]*24
         return gain, offset, segmented_offsets
 
     # def fit_offset_spline(self, gain, offset):
