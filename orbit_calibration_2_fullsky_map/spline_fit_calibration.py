@@ -241,7 +241,7 @@ class SplineFitter:
                          (60, 75), (75, 90), (90, 105), (105, 120), (120, 135), (135, 150), (150, 165), (165, 180)]
         latitude_centerpoints = [((x[0] + x[1]) / 2.)+180 for x in latitude_bins]
         for s in range(len(segment_splines)):
-            offsets = segmented_offsets[:,s]
+            offsets = segmented_offsets[s]
             mean_offset = np.mean(offsets[offsets != 0.0])
             std_offset = np.std(offsets[offsets != 0.0])
             z = np.array([(n - mean_offset)/std_offset for n in offsets])
