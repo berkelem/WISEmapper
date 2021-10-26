@@ -235,13 +235,14 @@ class SplineFitter:
         return
 
     def fit_segmented_splines_with_rbf(self, segmented_offsets, segment_splines, mjd_vals):
+        segmented_offsets = np.vstack(segmented_offsets)
         latitude_bins = [(-180, -165), (-165, -150), (-150, -135), (-135, -120), (-120, -105), (-105, -90), (-90, -75),
                          (-75, -60), (-60, -45), (-45, -30), (-30, -15), (-15, 0), (0, 15), (15, 30), (30, 45),
                          (45, 60),
                          (60, 75), (75, 90), (90, 105), (105, 120), (120, 135), (135, 150), (150, 165), (165, 180)]
         latitude_centerpoints = [((x[0] + x[1]) / 2.)+180 for x in latitude_bins]
         for s in range(len(segment_splines)):
-            offsets = segmented_offsets[s]
+            offsets = segmented_offsets[:,s]
             mean_offset = np.mean(offsets[offsets != 0.0])
             std_offset = np.std(offsets[offsets != 0.0])
             z = np.array([(n - mean_offset)/std_offset for n in offsets])
