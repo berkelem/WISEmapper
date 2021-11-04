@@ -65,11 +65,11 @@ class SplineFitter:
 
         median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
 
-        segsplines = self.fit_segmented_splines(all_segmented_offsets, median_mjd_vals)
+        # segsplines = self.fit_segmented_splines(all_segmented_offsets, median_mjd_vals)
 
-        self.spl_offset = self.fit_rbf_spline(segsplines, median_mjd_vals)
-
-        self.fit_segmented_splines_with_rbf(all_segmented_offsets, segsplines, median_mjd_vals)
+        # self.spl_offset = self.fit_rbf_spline(segsplines, median_mjd_vals)
+        #
+        # self.fit_segmented_splines_with_rbf(all_segmented_offsets, segsplines, median_mjd_vals)
 
         # self.plot_segmented_offsets(all_segmented_offsets, median_mjd_vals)
 
@@ -87,7 +87,7 @@ class SplineFitter:
         # all_offsets = np.r_[all_offsets[1:1295:2], all_offsets[1296:5000:2], all_offsets[5001::2]]
         # all_mjd_vals = np.r_[all_mjd_vals[1:1295:2], all_mjd_vals[1296:5000:2], all_mjd_vals[5001::2]]
         #
-        times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self._clean_data(all_gains, all_offsets,
+        times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self.rolling_clean_data(all_gains, all_offsets,
                                                                                                 all_mjd_vals)
         #
         # spline = self.plot_3d_spline(gains_masked, offsets_masked, all_mjd_vals, all_segmented_offsets)
@@ -220,19 +220,71 @@ class SplineFitter:
         #                          (55407 < times_offset_masked) & (times_offset_masked < 55414))
 
         stripe_gains = ~times_gain_masked.astype(bool)
-        # stripe_offsets = ~times_offset_masked.astype(bool)
+        stripe_offsets = ~times_offset_masked.astype(bool)
+
+        smooth_gain = self.median_filter(gains_masked[~stripe_gains], 99)
+        smooth_offset = self.median_filter(offsets_masked[~stripe_offsets], 99)
         #
-        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], s=1000, k=3)
-        # self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets],
-        #                                    s=100000, k=3)
+        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], smooth_gain, s=100, k=3)
+        self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], smooth_offset,
+                                           s=10000, k=3)
         #
         self._save_spline()
         #
-        # if plot:
-        #     self._plot_spline(times_gain_masked, stripe_gains, gains_masked,
-        #                       times_offset_masked, stripe_offsets, offsets_masked)
+
+
+        if plot:
+            self._plot_spline(times_gain_masked, stripe_gains, gains_masked,
+                              times_offset_masked, stripe_offsets, offsets_masked)
 
         return
+
+    @staticmethod
+    def median_filter(array, size):
+        output = []
+        for p, px in enumerate(array):
+            centerpoint = int(size / 2) + 1
+            size1 = min([p, centerpoint-1])
+            size2 = min([centerpoint, len(array) - p])
+            trimmed_size = size1 + size2
+            window = np.zeros(min([size, trimmed_size]))
+
+            if p - centerpoint < 0:
+                window[:p] = array[:p]
+            else:
+                window[:centerpoint-1] = array[p - centerpoint+1:p]
+            if p + centerpoint > len(array):
+                window[-(len(array)-p)-1:] = array[-(len(array) - p)-1:]
+            else:
+                window[len(window)-centerpoint:] = array[p:p + centerpoint]
+
+            window_median = np.median(window)
+            output.append(window_median)
+        return np.array(output)
+
+    @staticmethod
+    def mean_filter(array, size):
+        output = []
+        for p, px in enumerate(array):
+            window = np.ma.zeros(size)
+            step = int(size / 2)
+            if p - step < 0:
+                undershoot = step - p
+                window[:undershoot] = array[-undershoot:]
+                window[undershoot:step] = array[:p]
+            else:
+                window[:step] = array[p - step:p]
+
+            if p + step + 1 > len(array):
+                overshoot = p + step + 1 - len(array)
+                array_roll = np.roll(array, overshoot)
+                window[step:] = array_roll[-(size - step):]
+            else:
+                window[step:] = array[p:p + step + 1]
+
+            window_mean = np.ma.mean(window)
+            output.append(window_mean)
+        return np.array(output)
 
     def fit_segmented_splines_with_rbf(self, segmented_offsets, segment_splines, mjd_vals):
         segmented_offsets = np.vstack(segmented_offsets)
@@ -311,7 +363,7 @@ class SplineFitter:
                 splines.append(None)
                 continue
 
-            spline = UnivariateSpline(mjd_vals[mask], offsets[mask], s=2000, k=2)
+            spline = UnivariateSpline(mjd_vals[mask], offsets[mask], s=2000000, k=2)
 
             str_month_dict = OrderedDict([(55197, "Jan"), (55228, "Feb"), (55256, "Mar"), (55287, "Apr"),
                                           (55317, "May"), (55348, "Jun"), (55378, "Jul"), (55409, "Aug")])
@@ -393,7 +445,7 @@ class SplineFitter:
         y_grid = np.linspace(min(y), max(y))
         B1, B2 = np.meshgrid(x_grid, y_grid, indexing='xy')
 
-        spline = Rbf(x, y, z, function='linear', smooth=10)
+        spline = Rbf(x, y, z, function='linear', smooth=10000)
 
         # with open("rbf_spline.pkl", "wb") as rbf_pkl:
         #     pickle.dump(spline, rbf_pkl, pickle.HIGHEST_PROTOCOL)
@@ -584,6 +636,34 @@ class SplineFitter:
 
         return times_gain_masked, times_offset_masked, gains_masked, offsets_masked
 
+    @staticmethod
+    def rolling_clean_data(all_gains, all_offsets, all_mjd_vals):
+        median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
+        mask_gains = np.zeros_like(all_gains, dtype=bool)
+        mask_offsets = np.zeros_like(all_offsets, dtype=bool)
+        batch_size = 1000
+        for i in range(0, len(all_gains), 1):
+            batch_gains = all_gains[i:i+batch_size]
+            batch_mask_g = mask_gains[i:i+batch_size]
+            z_gains = np.abs(stats.zscore(batch_gains[~batch_mask_g]))
+            mask_batch_gains = (z_gains > 3)
+            mask_gains[i:i+batch_size][~batch_mask_g] |= mask_batch_gains
+
+            batch_offsets = all_offsets[i:i + batch_size]
+            batch_mask_o = mask_offsets[i:i + batch_size]
+            z_offsets = np.abs(stats.zscore(batch_offsets[~batch_mask_o]))
+            mask_batch_offsets = (z_offsets > 3)
+            mask_offsets[i:i + batch_size][~batch_mask_o] |= mask_batch_offsets
+
+        times_gain_masked = median_mjd_vals[~mask_gains]
+        times_offset_masked = median_mjd_vals[~mask_offsets]
+        gains_masked = all_gains[~mask_gains]
+        offsets_masked = all_offsets[~mask_offsets]
+
+        return times_gain_masked, times_offset_masked, gains_masked, offsets_masked
+
+
+
     def _save_spline(self):
         """Save splines to pickle files, to be read in later by the Coadder object"""
 
@@ -596,7 +676,7 @@ class SplineFitter:
         return
 
     def _plot_spline(self, times_gain_masked, stripe_gains, gains_masked,
-                     times_offset_masked, stripe_offsets, offsets_masked):
+                     times_offset_masked, stripe_offsets, offsets_masked):#, smooth_gain, smooth_offset):
         """
         Plot all gains/offsets along with the fitted spline curve.
         Original data is red, masked values are blue, spline is green.
@@ -636,6 +716,7 @@ class SplineFitter:
         ax.plot(times_gain_masked[stripe_gains], gains_masked[stripe_gains], 'ko', alpha=0.2, ms=3)
         ax.plot(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], 'ro', ms=3)
         ax.plot(times_gain_masked, self.spl_gain(times_gain_masked), 'g', lw=2)
+        # ax.plot(times_gain_masked[~stripe_gains], smooth_gain, 'bo', ms=1)
         ax.set_xticks(x_ticks)
         ax.set_xticklabels([str_month_dict[x] for x in x_ticks], rotation=45)
         plt.subplots_adjust(bottom=0.2)
@@ -649,6 +730,7 @@ class SplineFitter:
         ax.plot(times_offset_masked[stripe_offsets], offsets_masked[stripe_offsets], 'ko', alpha=0.2, ms=3)
         ax.plot(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets], 'ro', ms=3)
         ax.plot(times_offset_masked, self.spl_offset(times_offset_masked), 'g', lw=2)
+        # ax.plot(times_offset_masked[~stripe_offsets], smooth_offset, 'bo', ms=1)
         ax.set_xticks(np.array(x_ticks))
         ax.set_xticklabels(np.array([str_month_dict[x] for x in x_ticks]), rotation=45)
         plt.subplots_adjust(bottom=0.2)
