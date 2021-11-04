@@ -28,7 +28,7 @@ class BaseMapper:
         self.path = path
         self.orbit_fits_name = f'fsm_w{self.band}_orbit_{self.label}.fits'
         self.orbit_unc_fits_name = self.orbit_fits_name.replace('orbit', 'unc_orbit')
-        self.orbit_csv_name = f"sband_w{self.band}_orbit_{self.label}_pixel_timestamps.csv"
+        self.orbit_csv_name = f"band_w{self.band}_orbit_{self.label}_pixel_timestamps.csv"
 
 
 class MapMaker(BaseMapper):
