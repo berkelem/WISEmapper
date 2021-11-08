@@ -79,6 +79,7 @@ class MoonStripeMask(HealpixMap):
             nbs = hp.get_all_neighbours(self.nside, stripe_pixels)
             nbs = nbs.flatten()
             stripe_pixels = np.concatenate((stripe_pixels, nbs))
+            stripe_pixels = np.array(list(set(stripe_pixels)))
             it += 1
         return stripe_pixels
 
