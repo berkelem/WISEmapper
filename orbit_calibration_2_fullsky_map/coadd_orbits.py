@@ -761,7 +761,7 @@ class Coadder:
         self.month_timestamps = OrderedDict(
             [
                 ("Jan", 55197),
-                ("Feb", 55232),#55228),
+                ("Feb", 55231),#55228),
                 ("Mar", 55234),#55256),
                 ("Apr", 55287),
                 ("May", 55317),
