@@ -741,7 +741,7 @@ class Coadder:
             self.moon_stripe_mask.mapdata.astype(bool)
         ]
 
-        self.full_mask = self.moon_stripe_mask.mapdata.astype(bool)
+        self.full_mask = np.zeros_like(self.moon_stripe_mask.mapdata.astype(bool))
         self.npix = self.moon_stripe_mask.npix
         self.nside = self.moon_stripe_mask.nside
 
@@ -761,8 +761,8 @@ class Coadder:
         self.month_timestamps = OrderedDict(
             [
                 ("Jan", 55197),
-                ("Feb", 55231),#55228),
-                ("Mar", 55235),#55256),
+                ("Feb", 55232),#55228),
+                ("Mar", 55234),#55256),
                 ("Apr", 55287),
                 ("May", 55317),
                 ("Jun", 55348),
