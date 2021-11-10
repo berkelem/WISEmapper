@@ -194,7 +194,7 @@ class Orbit(BaseMapper):
             moon_stripe_to_mask = [
                 i
                 for i in range(len(self._pixel_inds))
-                if self.phi_ecl[i] > 0]
+                if self.phi_ecl[i] < 0]
             entries_to_mask = list(set(entries_to_mask + moon_stripe_to_mask))
 
         mask[entries_to_mask] = False
