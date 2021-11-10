@@ -832,7 +832,7 @@ class Coadder:
                         mapping_region = 2
                     continue
                 else:
-                    if reason.startswith("mask"):
+                    if reason and reason.startswith("mask"):
                         rule = reason.split(":")[1]
             mapping_region = 1
             orbit.load_zodi_orbit_data()
