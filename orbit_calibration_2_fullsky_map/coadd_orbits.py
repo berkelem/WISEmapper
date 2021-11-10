@@ -769,15 +769,15 @@ class Coadder:
                 ("Jan", 55197),
                 ("Feb", 55228),
                 ("Mar", 55256),
-                ("Apr", 55288),#55287),
-                ("May", 55294),#55317),
+                ("Apr", 55287),
+                ("May", 55300),#55317),
                 ("Jun", 55348),
                 ("Jul", 55378),
                 ("Aug", 55409),
             ]
         )
-        self.mask_orbit_timestamps = [(55229, 55236), (55258, 55262)]
-        self.mask_rules_stripes = ["phi_neg", "phi_neg"]
+        self.mask_orbit_timestamps = [(55229, 55236), (55258, 55262), (55288, 55294)]
+        self.mask_rules_stripes = ["phi_neg", "phi_neg", "phi_neg"]
 
         self.all_orbits = []
 
