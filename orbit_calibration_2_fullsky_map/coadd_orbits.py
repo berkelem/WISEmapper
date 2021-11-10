@@ -761,8 +761,8 @@ class Coadder:
         self.month_timestamps = OrderedDict(
             [
                 ("Jan", 55197),
-                ("Feb", 55229),#55228),
-                ("Mar", 55236),#55256),
+                ("Feb", 55228),
+                ("Mar", 55245),#55256),
                 ("Apr", 55287),
                 ("May", 55317),
                 ("Jun", 55348),
@@ -770,7 +770,7 @@ class Coadder:
                 ("Aug", 55409),
             ]
         )
-        self.mask_orbit_timestamps = []#(55230, 55232)]
+        self.mask_orbit_timestamps = [(55229, 55236)]
 
         self.all_orbits = []
 
