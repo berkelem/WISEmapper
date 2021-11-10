@@ -761,8 +761,8 @@ class Coadder:
         self.month_timestamps = OrderedDict(
             [
                 ("Jan", 55197),
-                ("Feb", 55231),#55228),
-                ("Mar", 55232),#55256),
+                ("Feb", 55229),#55228),
+                ("Mar", 55235),#55256),
                 ("Apr", 55287),
                 ("May", 55317),
                 ("Jun", 55348),
@@ -770,6 +770,7 @@ class Coadder:
                 ("Aug", 55409),
             ]
         )
+        self.mask_orbit_timestamps = [(55231, 55232)]
 
         self.all_orbits = []
 
@@ -1067,5 +1068,10 @@ class Coadder:
                     ):
                         include = True
                     else:
+                        include = False
+            if include:
+                for chunk in self.mask_orbit_timestamps:
+                    chunk_start, chunk_end = chunk
+                    if (chunk_start <= mjd_obs) & (mjd_obs < chunk_end):
                         include = False
         return include
