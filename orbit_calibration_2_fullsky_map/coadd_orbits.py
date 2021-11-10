@@ -817,9 +817,10 @@ class Coadder:
             if month == "all":
                 pass
             else:
-                if not self._filter_timestamps(month, orbit.mean_mjd_obs):
+                include, reason = self._filter_timestamps(month, orbit.mean_mjd_obs)
+                if not include:
                     print(f"Skipping orbit {i}")
-                    if mapping_region:
+                    if reason == "oob" and mapping_region:
                         mapping_region = 2
                     continue
             mapping_region = 1
@@ -1038,6 +1039,7 @@ class Coadder:
             month_list = [month_list]
 
         include = False
+        reason = None
         for month in month_list:
             if include:
                 return include
@@ -1054,11 +1056,13 @@ class Coadder:
                         include = True
                     else:
                         include = False
+                        reason = "oob" # out of bounds
                 elif months.index(month) == 0:
                     if mjd_obs < self.month_timestamps[months[months.index(month) + 1]]:
                         include = True
                     else:
                         include = False
+                        reason = "oob"  # out of bounds
                 else:
                     current_month_num = months.index(month)
                     if (
@@ -1069,9 +1073,11 @@ class Coadder:
                         include = True
                     else:
                         include = False
+                        reason = "oob"  # out of bounds
             if include:
                 for chunk in self.mask_orbit_timestamps:
                     chunk_start, chunk_end = chunk
                     if (chunk_start <= mjd_obs) & (mjd_obs < chunk_end):
                         include = False
-        return include
+                        reason = "mask"  # moon stripe
+        return include, reason
