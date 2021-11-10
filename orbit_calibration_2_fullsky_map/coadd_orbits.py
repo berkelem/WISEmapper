@@ -770,7 +770,7 @@ class Coadder:
                 ("Aug", 55409),
             ]
         )
-        self.mask_orbit_timestamps = [(55230, 55232)]
+        self.mask_orbit_timestamps = []#(55230, 55232)]
 
         self.all_orbits = []
 
