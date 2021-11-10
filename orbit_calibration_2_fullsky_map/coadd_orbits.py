@@ -178,18 +178,24 @@ class Orbit(BaseMapper):
         )
         self.zs_data_clean_masked[self.zs_data_clean_masked < 0.0] = 0.0
 
-    def apply_mask(self):
+    def apply_mask(self, rule=None):
         """Remove all masked pixels along with any pixels flagged as outliers"""
 
         # self.mask_ecliptic_crossover()
 
         mask = np.ones_like(self._pixel_inds, dtype=bool)
 
-
         entries_to_mask = [
             i
             for i in range(len(self._pixel_inds))
-            if self._pixel_inds[i] in self._mask_inds or self.phi_ecl[i] < 0]
+            if self._pixel_inds[i] in self._mask_inds]
+
+        if rule == "phi_neg":
+            moon_stripe_to_mask = [
+                i
+                for i in range(len(self._pixel_inds))
+                if self.phi_ecl[i] > 0]
+            entries_to_mask = list(set(entries_to_mask + moon_stripe_to_mask))
 
         mask[entries_to_mask] = False
 
@@ -771,6 +777,7 @@ class Coadder:
             ]
         )
         self.mask_orbit_timestamps = [(55229, 55236)]
+        self.mask_rules_stripes = ["phi_neg"]
 
         self.all_orbits = []
 
@@ -812,6 +819,7 @@ class Coadder:
             # Initialize Orbit object and load data
             orbit = Orbit(i, self.band, self.full_mask, self.nside)
             orbit.load_orbit_data()
+            rule = None
 
             # Check if all orbits should be fitted, or only a subset by month
             if month == "all":
@@ -823,9 +831,12 @@ class Coadder:
                     if reason == "oob" and mapping_region:
                         mapping_region = 2
                     continue
+                else:
+                    if reason.startswith("mask"):
+                        rule = reason.split(":")[1]
             mapping_region = 1
             orbit.load_zodi_orbit_data()
-            orbit.apply_mask()
+            orbit.apply_mask(rule)
             self.all_orbits.append(orbit)
         return
 
@@ -1075,9 +1086,9 @@ class Coadder:
                         include = False
                         reason = "oob"  # out of bounds
             if include:
-                for chunk in self.mask_orbit_timestamps:
+                for c, chunk in enumerate(self.mask_orbit_timestamps):
                     chunk_start, chunk_end = chunk
                     if (chunk_start <= mjd_obs) & (mjd_obs < chunk_end):
-                        include = False
-                        reason = "mask"  # moon stripe
+                        include = True
+                        reason = "mask:{}".format(self.mask_rules_stripes[c])  # moon stripe
         return include, reason
