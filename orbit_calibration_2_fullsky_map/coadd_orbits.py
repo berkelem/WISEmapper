@@ -1060,7 +1060,7 @@ class Coadder:
         reason = None
         for month in month_list:
             if include:
-                return include
+                return include, reason
             if month not in self.month_timestamps:
                 print(
                     "Unrecognized time period. Please specify one of ['all', 'Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', "
