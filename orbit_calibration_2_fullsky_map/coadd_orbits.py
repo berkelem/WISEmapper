@@ -196,6 +196,12 @@ class Orbit(BaseMapper):
                 for i in range(len(self._pixel_inds))
                 if self.phi_ecl[i] < 0]
             entries_to_mask = list(set(entries_to_mask + moon_stripe_to_mask))
+        elif rule == "phi_pos":
+            moon_stripe_to_mask = [
+                i
+                for i in range(len(self._pixel_inds))
+                if self.phi_ecl[i] > 0]
+            entries_to_mask = list(set(entries_to_mask + moon_stripe_to_mask))
 
         mask[entries_to_mask] = False
 
@@ -777,7 +783,7 @@ class Coadder:
             ]
         )
         self.mask_orbit_timestamps = [(55229, 55236), (55258, 55262), (55288, 55294), (55316, 55325), (55346, 55354), (55376, 55384)]
-        self.mask_rules_stripes = ["phi_neg", "phi_neg", "phi_neg", "phi_neg", "phi_neg", "phi_neg"]
+        self.mask_rules_stripes = ["phi_neg", "phi_neg", "phi_neg", "phi_neg", "phi_neg", "phi_pos"]
 
         self.all_orbits = []
 
