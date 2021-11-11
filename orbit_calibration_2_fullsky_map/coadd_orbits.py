@@ -119,6 +119,7 @@ class Orbit(BaseMapper):
         self._mask = mask
         self._mask_inds = np.arange(len(self._mask))[self._mask.astype(bool)] if (self._mask is not None) else []
         self._outlier_inds = np.array([])
+        self.mask_rule = None
 
         self._orbit_data = None
         self._orbit_uncs = None
@@ -178,7 +179,7 @@ class Orbit(BaseMapper):
         )
         self.zs_data_clean_masked[self.zs_data_clean_masked < 0.0] = 0.0
 
-    def apply_mask(self, rule=None):
+    def apply_mask(self):
         """Remove all masked pixels along with any pixels flagged as outliers"""
 
         # self.mask_ecliptic_crossover()
@@ -190,13 +191,13 @@ class Orbit(BaseMapper):
             for i in range(len(self._pixel_inds))
             if self._pixel_inds[i] in self._mask_inds]
 
-        if rule == "phi_neg":
+        if self.rule == "phi_neg":
             moon_stripe_to_mask = [
                 i
                 for i in range(len(self._pixel_inds))
                 if self.phi_ecl[i] < 0]
             entries_to_mask = list(set(entries_to_mask + moon_stripe_to_mask))
-        elif rule == "phi_pos":
+        elif self.rule == "phi_pos":
             moon_stripe_to_mask = [
                 i
                 for i in range(len(self._pixel_inds))
@@ -841,8 +842,9 @@ class Coadder:
                     if reason and reason.startswith("mask"):
                         rule = reason.split(":")[1]
             mapping_region = 1
+            orbit.rule = rule
             orbit.load_zodi_orbit_data()
-            orbit.apply_mask(rule)
+            orbit.apply_mask()
             self.all_orbits.append(orbit)
         return
 
