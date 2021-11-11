@@ -194,14 +194,14 @@ class Orbit(BaseMapper):
         if self.rule == "phi_neg":
             moon_stripe_to_mask = [
                 i
-                for i in range(len(self._pixel_inds))
-                if self.phi_ecl[i] < 0]
+                for i in range(len(self._pixel_inds))]
+                # if self.phi_ecl[i] < 0]
             entries_to_mask = list(set(entries_to_mask + moon_stripe_to_mask))
         elif self.rule == "phi_pos":
             moon_stripe_to_mask = [
                 i
-                for i in range(len(self._pixel_inds))
-                if self.phi_ecl[i] > 0]
+                for i in range(len(self._pixel_inds))]
+                # if self.phi_ecl[i] > 0]
             entries_to_mask = list(set(entries_to_mask + moon_stripe_to_mask))
 
         mask[entries_to_mask] = False
