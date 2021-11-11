@@ -829,18 +829,15 @@ class Coadder:
             rule = None
 
             # Check if all orbits should be fitted, or only a subset by month
-            if month == "all":
-                pass
+            include, reason = self._filter_timestamps(month, orbit.mean_mjd_obs)
+            if not include:
+                print(f"Skipping orbit {i}")
+                if reason == "oob" and mapping_region:
+                    mapping_region = 2
+                continue
             else:
-                include, reason = self._filter_timestamps(month, orbit.mean_mjd_obs)
-                if not include:
-                    print(f"Skipping orbit {i}")
-                    if reason == "oob" and mapping_region:
-                        mapping_region = 2
-                    continue
-                else:
-                    if reason and reason.startswith("mask"):
-                        rule = reason.split(":")[1]
+                if reason and reason.startswith("mask"):
+                    rule = reason.split(":")[1]
             mapping_region = 1
             orbit.rule = rule
             orbit.load_zodi_orbit_data()
@@ -1053,6 +1050,8 @@ class Coadder:
         Return True if orbit timestamp is within desired time range ['Jan',...,'Aug'] or 'all'.
         Otherwise return False
         """
+        if month_list == "all":
+            month_list = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug"]
 
         if isinstance(month_list, str):
             month_list = [month_list]
