@@ -801,7 +801,7 @@ class Coadder:
         for orbit in self.all_orbits:
             print(f"Adding orbit {orbit.orbit_num}")
             orbit.reset_outliers()  # Include pixels in the galactic plane that were removed for fitting
-            # orbit.apply_mask()
+            orbit.apply_mask()
             if len(orbit._orbit_data_clean_masked) == 0:
                 print(f"Empty array for orbit {orbit.orbit_num}")
                 continue
