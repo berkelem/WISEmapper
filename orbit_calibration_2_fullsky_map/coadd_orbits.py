@@ -772,7 +772,7 @@ class Coadder:
 
         self.month_timestamps = OrderedDict(
             [
-                ("Jan", 55215),#55197),
+                ("Jan", 55217),#55197),
                 ("Feb", 55226),#55228),
                 ("Mar", 55256),
                 ("Apr", 55287),
@@ -1074,12 +1074,12 @@ class Coadder:
                     else:
                         include = False
                         reason = "oob" # out of bounds
-                elif months.index(month) == 0:
-                    if mjd_obs < self.month_timestamps[months[months.index(month) + 1]]:
-                        include = True
-                    else:
-                        include = False
-                        reason = "oob"  # out of bounds
+                # elif months.index(month) == 0:
+                #     if mjd_obs < self.month_timestamps[months[months.index(month) + 1]]:
+                #         include = True
+                #     else:
+                #         include = False
+                #         reason = "oob"  # out of bounds
                 else:
                     current_month_num = months.index(month)
                     if (
