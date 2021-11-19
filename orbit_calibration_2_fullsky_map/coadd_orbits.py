@@ -170,12 +170,12 @@ class Orbit(BaseMapper):
     def apply_fit(self):
         """Apply calibration using current values for gain and offset."""
         self._cal_data_clean_masked = (
-            self._orbit_data_clean_masked - self.offset
-        ) / self.gain
+                                              self._orbit_data_clean_masked - self.offset
+                                      ) / self.gain
         self.cal_uncs_clean_masked = self._orbit_uncs_clean_masked / abs(self.gain)
 
         self.zs_data_clean_masked = (
-            self._cal_data_clean_masked - self._zodi_data_clean_masked
+                self._cal_data_clean_masked - self._zodi_data_clean_masked
         )
         self.zs_data_clean_masked[self.zs_data_clean_masked < 0.0] = 0.0
 
@@ -195,13 +195,13 @@ class Orbit(BaseMapper):
             moon_stripe_to_mask = [
                 i
                 for i in range(len(self._pixel_inds))]
-                # if self.phi_ecl[i] < 0]
+            # if self.phi_ecl[i] < 0]
             entries_to_mask = list(set(entries_to_mask + moon_stripe_to_mask))
         elif self.rule == "phi_pos":
             moon_stripe_to_mask = [
                 i
                 for i in range(len(self._pixel_inds))]
-                # if self.phi_ecl[i] > 0]
+            # if self.phi_ecl[i] > 0]
             entries_to_mask = list(set(entries_to_mask + moon_stripe_to_mask))
 
         mask[entries_to_mask] = False
@@ -255,7 +255,6 @@ class Orbit(BaseMapper):
         self._phi_gal_clean_masked = self.phi_gal[mask]
         self._phi_ecl_clean_masked = self.phi_ecl[mask]
 
-
         return
 
     def apply_spline_fit(self, gain_spline, offset_spline):
@@ -276,7 +275,7 @@ class Orbit(BaseMapper):
         self.cal_uncs_clean_masked = self._orbit_uncs_clean_masked / abs(gains)
 
         self.zs_data_clean_masked = (
-            self._cal_data_clean_masked - self._zodi_data_clean_masked
+                self._cal_data_clean_masked - self._zodi_data_clean_masked
         )
 
         # diff_spline = self.plot_diff()
@@ -303,7 +302,7 @@ class Orbit(BaseMapper):
             prev_itermap_clean_masked = self.coadd_map[self.pixel_inds_clean_masked]
             t_gal_clean_masked = prev_itermap_clean_masked * self.gain
             orbit_data_to_fit_clean_masked = (
-                self._orbit_data_clean_masked - t_gal_clean_masked
+                    self._orbit_data_clean_masked - t_gal_clean_masked
             )
 
         orbit_fitter = IterativeFitter(
@@ -318,7 +317,7 @@ class Orbit(BaseMapper):
 
     def mask_ecliptic_crossover(self):
         rot_data, rot_pix_inds, theta_rot, phi_rot = self.rotate_data("G", "E", self._orbit_data,
-                                                                          self._pixel_inds, self._nside)
+                                                                      self._pixel_inds, self._nside)
         px_theta, px_phi = hp.pix2ang(self._nside, rot_pix_inds, lonlat=True)
         crossover_pixels = (-5 < px_phi) & (px_phi < 5)
         rerot_data, rerot_pix_inds, theta_rerot, phi_rerot = self.rotate_data("E", "G", rot_data[crossover_pixels],
@@ -339,10 +338,10 @@ class Orbit(BaseMapper):
 
             theta_ecl, phi_ecl = r(theta_gal, phi_gal)  # Apply the conversion
 
-            type(self).theta_ecl = theta_ecl * 180/ np.pi
-            type(self).phi_ecl = phi_ecl * 180/np.pi
-            type(self).theta_gal = theta_gal * 180/ np.pi
-            type(self).phi_gal = phi_gal * 180/np.pi
+            type(self).theta_ecl = theta_ecl * 180 / np.pi
+            type(self).phi_ecl = phi_ecl * 180 / np.pi
+            type(self).theta_gal = theta_gal * 180 / np.pi
+            type(self).phi_gal = phi_gal * 180 / np.pi
 
         all_orbit_data = pd.read_csv(self._filename)
         self._orbit_data = np.array(all_orbit_data["pixel_value"])
@@ -374,10 +373,8 @@ class Orbit(BaseMapper):
         # phi_test.mapdata = map_template
         # phi_test.save_map("G")
 
-
         # rot_data, rot_pix_inds, theta_rot, phi_rot = self.rotate_data("G", "E", self._orbit_data,
         #                                                               self._pixel_inds, self._nside)
-
 
         return
 
@@ -402,8 +399,10 @@ class Orbit(BaseMapper):
     def plot_fit(self, output_path=os.getcwd(), iteration=None, label=None):
         """Plot calibrated data along with the zodiacal light template with galactic latitude on the x-axis"""
         # theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
-        plt.plot(self._theta_gal_clean_masked, self._cal_data_clean_masked, "r.", ms=0.5, alpha=0.5, label="Calibrated data")
-        plt.plot(self._theta_gal_clean_masked, self._zodi_data_clean_masked, "b.", ms=0.5, alpha=0.5, label="Zodi model")
+        plt.plot(self._theta_gal_clean_masked, self._cal_data_clean_masked, "r.", ms=0.5, alpha=0.5,
+                 label="Calibrated data")
+        plt.plot(self._theta_gal_clean_masked, self._zodi_data_clean_masked, "b.", ms=0.5, alpha=0.5,
+                 label="Zodi model")
         plt.legend()
         plt.title("Orbit {}".format(self.orbit_num))
         plt.xlabel("Latitude (degrees)")
@@ -417,7 +416,7 @@ class Orbit(BaseMapper):
         plt.close()
 
     def plot_diff(self, output_path=os.getcwd()):
-        diff_data = self._cal_data_clean_masked-self._zodi_data_clean_masked
+        diff_data = self._cal_data_clean_masked - self._zodi_data_clean_masked
         t_data = self._orbit_mjd_clean_masked
         ang_data = self._theta_gal_clean_masked
         mask = np.ones_like(ang_data, dtype=bool)
@@ -461,10 +460,11 @@ class Orbit(BaseMapper):
         plt.savefig("3d_offset_spline_orbit_{}.png".format(self.orbit_num))
         plt.close()
 
-        start_spline = spline(np.ones_like(t_data)*min(t_data), ang_data)
-        end_spline = spline(np.ones_like(t_data)*max(t_data), ang_data)
+        start_spline = spline(np.ones_like(t_data) * min(t_data), ang_data)
+        end_spline = spline(np.ones_like(t_data) * max(t_data), ang_data)
         mean_spline = np.mean([start_spline, end_spline], axis=0)
-        plt.plot(self._theta_gal_clean_masked, self._cal_data_clean_masked-self._zodi_data_clean_masked, "r.", ms=0.5, label="diff")
+        plt.plot(self._theta_gal_clean_masked, self._cal_data_clean_masked - self._zodi_data_clean_masked, "r.", ms=0.5,
+                 label="diff")
         plt.plot(self._theta_gal_clean_masked, mean_spline, "b--", label="mean spline")
         # plt.plot(self._theta_gal_clean_masked, end_spline, "g--", label="end spline")
         plt.legend()
@@ -558,7 +558,7 @@ class IterativeFitter:
                 i += 1
         else:
             gain = offset = 0.0
-            segmented_offsets = [0.0]*24
+            segmented_offsets = [0.0] * 24
         return gain, offset, segmented_offsets
 
     # def fit_offset_spline(self, gain, offset):
@@ -656,7 +656,8 @@ class IterativeFitter:
             segment_data = orbit_data[segment_mask]
             segment_uncs = orbit_uncs[segment_mask]
             segment_zodi = self.zodi_data[segment_mask]
-            segment_offset = self._fit_offset(segment_data, segment_zodi, segment_uncs, gain) if len(segment_data) > 0 else 0.0
+            segment_offset = self._fit_offset(segment_data, segment_zodi, segment_uncs, gain) if len(
+                segment_data) > 0 else 0.0
             offsets.append(segment_offset)
         return offsets
 
@@ -728,13 +729,13 @@ class Coadder:
     """
 
     def __init__(
-        self,
-        band,
-        moon_stripe_file,
-        fsm_map_file,
-        orbit_file_path,
-        zodi_file_path,
-        output_path=os.getcwd(),
+            self,
+            band,
+            moon_stripe_file,
+            fsm_map_file,
+            orbit_file_path,
+            zodi_file_path,
+            output_path=os.getcwd(),
     ):
         self.band = band
         self.fsm_map_file = fsm_map_file
@@ -779,12 +780,15 @@ class Coadder:
                 ("Apr", 55287),
                 ("May", 55317),
                 ("Jun", 55348),
-                ("Jul", 55395),#55378),
-                ("Aug", 55400),#55409),
+                ("Jul", 55390),  # 55378),
+                ("Aug", 55405),  # 55409),
             ]
         )
-        self.mask_orbit_timestamps = [(55217, 55225), (55229, 55236), (55247, 55254), (55258, 55262), (55276, 55284), (55288, 55294), (55306, 55313), (55316, 55325), (55335, 55343), (55346, 55354), (55364, 55372), (55376, 55384), (55405, 56000)]
-        self.mask_rules_stripes = ["phi_pos", "phi_neg", "phi_pos", "phi_neg", "phi_pos", "phi_neg", "phi_pos", "phi_neg", "phi_pos", "phi_neg", "phi_pos", "phi_pos", "phi_pos"]
+        self.mask_orbit_timestamps = [(55217, 55225), (55229, 55236), (55247, 55254), (55258, 55262), (55276, 55284),
+                                      (55288, 55294), (55306, 55313), (55316, 55325), (55335, 55343), (55346, 55354),
+                                      (55364, 55372), (55376, 55384), (55395, 55400), (55405, 56000)]
+        self.mask_rules_stripes = ["phi_pos", "phi_neg", "phi_pos", "phi_neg", "phi_pos", "phi_neg", "phi_pos",
+                                   "phi_neg", "phi_pos", "phi_neg", "phi_pos", "phi_pos", "phi_pos", "phi_pos"]
 
         self.all_orbits = []
 
@@ -808,9 +812,8 @@ class Coadder:
                 continue
             orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
             self._add_orbit(orbit)
-            if plot:# and orbit.orbit_num % 15 == 0.0:
+            if plot:  # and orbit.orbit_num % 15 == 0.0:
                 orbit.plot_fit(label="postadjust")
-
 
         self._clean_data()
         self._compile_map()
@@ -922,8 +925,8 @@ class Coadder:
             Orbit to add
         """
         if (
-            len(orbit.cal_uncs_clean_masked[orbit.cal_uncs_clean_masked != 0.0]) > 0
-            and orbit.gain != 0.0
+                len(orbit.cal_uncs_clean_masked[orbit.cal_uncs_clean_masked != 0.0]) > 0
+                and orbit.gain != 0.0
         ):
             orbit_data = orbit.zs_data_clean_masked
             orbit_uncs = orbit.cal_uncs_clean_masked
@@ -943,9 +946,9 @@ class Coadder:
         """
 
         if (
-            len(orbit._orbit_uncs_clean_masked[orbit._orbit_uncs_clean_masked != 0.0])
-            > 0
-            and orbit.gain != 0.0
+                len(orbit._orbit_uncs_clean_masked[orbit._orbit_uncs_clean_masked != 0.0])
+                > 0
+                and orbit.gain != 0.0
         ):
             self.numerator_masked[orbit.pixel_inds_clean_masked] += np.divide(
                 orbit.zs_data_clean_masked,
@@ -1022,7 +1025,7 @@ class Coadder:
         all_mjd_vals = np.array([orb.orbit_mjd_obs for orb in self.all_orbits])
         all_segmented_offsets = np.array([orb.segmented_offsets for orb in self.all_orbits])
         with open(
-            os.path.join(self.output_path, "fitvals_iter_{}.pkl".format(it)), "wb"
+                os.path.join(self.output_path, "fitvals_iter_{}.pkl".format(it)), "wb"
         ) as f:
             pickle.dump(
                 [all_gains, all_offsets, all_mjd_vals, all_segmented_offsets],
@@ -1074,7 +1077,7 @@ class Coadder:
                         include = True
                     else:
                         include = False
-                        reason = "oob" # out of bounds
+                        reason = "oob"  # out of bounds
                 # elif months.index(month) == 0:
                 #     if mjd_obs < self.month_timestamps[months[months.index(month) + 1]]:
                 #         include = True
@@ -1084,9 +1087,9 @@ class Coadder:
                 else:
                     current_month_num = months.index(month)
                     if (
-                        self.month_timestamps[month]
-                        <= mjd_obs
-                        < self.month_timestamps[months[current_month_num + 1]]
+                            self.month_timestamps[month]
+                            <= mjd_obs
+                            < self.month_timestamps[months[current_month_num + 1]]
                     ):
                         include = True
                     else:
