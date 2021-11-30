@@ -225,8 +225,10 @@ class SplineFitter:
         smooth_gain = self.median_filter(gains_masked[~stripe_gains], 99)
         smooth_offset = self.median_filter(offsets_masked[~stripe_offsets], 99)
         #
-        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains], smooth_gain, s=100, k=3)
-        self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets], smooth_offset,
+        gain_zero_mask = smooth_gain != 0.0
+        offset_zero_mask = smooth_offset != 0.0
+        self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains][gain_zero_mask], smooth_gain[gain_zero_mask], s=100, k=3)
+        self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets][offset_zero_mask], smooth_offset[offset_zero_mask],
                                            s=10000, k=3)
         #
         self._save_spline()
@@ -641,6 +643,10 @@ class SplineFitter:
         median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
         mask_gains = np.zeros_like(all_gains, dtype=bool)
         mask_offsets = np.zeros_like(all_offsets, dtype=bool)
+
+        mask_gains[all_gains == 0.0] = True
+        mask_offsets[all_offsets == 0.0] = True
+
         batch_size = 1000
         for i in range(0, len(all_gains), 1):
             batch_gains = all_gains[i:i+batch_size]
