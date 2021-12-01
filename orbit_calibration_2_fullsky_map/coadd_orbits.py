@@ -442,6 +442,9 @@ class Orbit(BaseMapper):
         y = ang_data[mask]
         z = diff_data[mask]
 
+        if len(z) < 10:
+            return np.zeros_like(self._cal_data_clean_masked)
+
         spline = Rbf(x, y, z, function='linear', smooth=100)
 
         x_grid = np.linspace(min(x), max(x))
