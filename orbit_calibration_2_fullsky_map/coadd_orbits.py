@@ -268,9 +268,9 @@ class Orbit(BaseMapper):
         :param offset_spline: scipy UnivariateSpline object
             Spline fitted to all of the offset fits after N iterations
         """
-        gains = gain_spline(self._orbit_mjd_clean_masked)
+        gains = np.ones_like(self._cal_data_clean_masked) * 76.23335232376512 #gain_spline(self._orbit_mjd_clean_masked)
         # offsets = offset_spline(self._theta_ecl_clean_masked, self._orbit_mjd_clean_masked)
-        offsets = offset_spline(self._orbit_mjd_clean_masked)
+        offsets = np.ones_like(self._cal_data_clean_masked) * 22.75892422957626 #offset_spline(self._orbit_mjd_clean_masked)
         self._cal_data_clean_masked = (self._orbit_data_clean_masked - offsets) / gains
         self.cal_uncs_clean_masked = self._orbit_uncs_clean_masked / abs(gains)
 
@@ -817,11 +817,11 @@ class Coadder:
                 print(f"Empty array for orbit {orbit.orbit_num}")
                 continue
             orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
-            if orbit.r_squared > 0.9:
-                self._add_orbit(orbit)
-            else:
-                print("fit rsquared < 0.9; excluded")
-                continue
+            # if orbit.r_squared > 0.9:
+            #     self._add_orbit(orbit)
+            # else:
+            #     print("fit rsquared < 0.9; excluded")
+            #     continue
             if plot:  # and orbit.orbit_num % 15 == 0.0:
                 orbit.plot_fit(label="postadjust")
 
