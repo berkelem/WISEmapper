@@ -817,12 +817,12 @@ class Coadder:
                 print(f"Empty array for orbit {orbit.orbit_num}")
                 continue
             orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
-            self._add_orbit(orbit)
-            # if orbit.r_squared > 0.9:
-            #     self._add_orbit(orbit)
-            # else:
-            #     print("fit rsquared < 0.9; excluded")
-            #     continue
+            # self._add_orbit(orbit)
+            if orbit.r_squared > 0.9:
+                self._add_orbit(orbit)
+            else:
+                print("fit rsquared < 0.9; excluded")
+                continue
             if plot:  # and orbit.orbit_num % 15 == 0.0:
                 orbit.plot_fit(label="postadjust")
 
