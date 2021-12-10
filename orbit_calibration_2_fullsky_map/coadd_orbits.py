@@ -794,7 +794,7 @@ class Coadder:
                                       (55288, 55294), (55306, 55313), (55316, 55325), (55335, 55343), (55346, 55354),
                                       (55364, 55372), (55376, 55384), (55394, 55400), (55405, 56000)]
         self.mask_rules_stripes = ["phi_pos", "phi_neg", "phi_pos", "phi_neg", "phi_pos", "phi_neg", "phi_pos",
-                                   "phi_neg", "phi_pos", "phi_neg", "phi_pos", "phi_neg", "phi_neg", "phi_neg"]
+                                   "phi_neg", "phi_pos", "phi_neg", "phi_pos", "phi_pos", "phi_neg", "phi_pos"]
 
         self.all_orbits = []
 
