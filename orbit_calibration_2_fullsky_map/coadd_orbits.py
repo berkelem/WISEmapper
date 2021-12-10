@@ -817,6 +817,7 @@ class Coadder:
                 print(f"Empty array for orbit {orbit.orbit_num}")
                 continue
             orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
+            self._add_orbit(orbit)
             # if orbit.r_squared > 0.9:
             #     self._add_orbit(orbit)
             # else:
