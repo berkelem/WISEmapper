@@ -790,9 +790,10 @@ class Coadder:
                 ("Aug", 55409),
             ]
         )
-        self.mask_orbit_timestamps = [(55217, 55225), (55229, 55236), (55247, 55254), (55258, 55262), (55276, 55284),
-                                      (55288, 55294), (55306, 55313), (55316, 55325), (55335, 55343), (55346, 55354),
-                                      (55364, 55372), (55376, 55384), (55394, 55400), (55405, 56000)]
+        self.mask_orbit_timestamps = []
+        # self.mask_orbit_timestamps = [(55217, 55225), (55229, 55236), (55247, 55254), (55258, 55262), (55276, 55284),
+        #                               (55288, 55294), (55306, 55313), (55316, 55325), (55335, 55343), (55346, 55354),
+        #                               (55364, 55372), (55376, 55384), (55394, 55400), (55405, 56000)]
         self.mask_rules_stripes = ["phi_pos", "phi_neg", "phi_pos", "phi_neg", "phi_pos", "phi_neg", "phi_pos",
                                    "phi_neg", "phi_pos", "phi_neg", "phi_pos", "phi_pos", "phi_neg", "phi_pos"]
 
@@ -816,7 +817,7 @@ class Coadder:
             if len(orbit._orbit_data_clean_masked) == 0:
                 print(f"Empty array for orbit {orbit.orbit_num}")
                 continue
-            orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
+            # orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
             # self._add_orbit(orbit)
             if orbit.r_squared > 0.9:
                 self._add_orbit(orbit)
