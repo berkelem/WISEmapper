@@ -1067,6 +1067,17 @@ class Coadder:
             )
         return
 
+    def load_fitvals(self, it):
+        """Load iteration fit values from pickle file"""
+        with open("fitvals_iter_{}.pkl".format(it), "rb") as fitval_file:
+            all_gains, all_offsets, all_mjd_vals, all_segmented_offsets = pickle.load(fitval_file)
+        for i, orb in enumerate(self.all_orbits):
+            orb.gain = all_gains[i]
+            orb.offset = all_offsets[i]
+            orb.orbit_mjd_obs = all_mjd_vals[i]
+            orb.segmented_offsets = all_segmented_offsets[i]
+        return
+
     def _save_maps(self):
         """Save full-sky maps (intensity and uncertainty) to file"""
         self.fsm_masked.save_map()
