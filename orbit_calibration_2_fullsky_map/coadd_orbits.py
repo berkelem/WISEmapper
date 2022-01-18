@@ -257,6 +257,12 @@ class Orbit(BaseMapper):
 
         return
 
+    def calc_rsq(self):
+        correlation_matrix = np.corrcoef(self._cal_data_clean_masked, self._zodi_data_clean_masked)
+        correlation_xy = correlation_matrix[0, 1]
+        self.r_squared = correlation_xy ** 2
+        return
+
     def apply_spline_fit(self, gain_spline, offset_spline):
         """
         Apply calibration using gain and offset values drawn from the spline fits.
@@ -277,9 +283,7 @@ class Orbit(BaseMapper):
         self.zs_data_clean_masked = (
                 self._cal_data_clean_masked - self._zodi_data_clean_masked
         )
-        correlation_matrix = np.corrcoef(self._cal_data_clean_masked, self._zodi_data_clean_masked)
-        correlation_xy = correlation_matrix[0, 1]
-        self.r_squared = correlation_xy ** 2
+        self.calc_rsq()
 
         diff_spline = self.plot_diff()
         self._cal_data_clean_masked -= diff_spline
@@ -407,7 +411,7 @@ class Orbit(BaseMapper):
         plt.plot(self._theta_gal_clean_masked, self._zodi_data_clean_masked, "b.", ms=0.5, alpha=0.5,
                  label="Zodi model")
         plt.legend()
-        plt.title("Orbit {}".format(self.orbit_num))
+        plt.title("Orbit {}; r^2={}".format(self.orbit_num, self.r_squared))
         plt.xlabel("Latitude (degrees)")
         plt.ylabel("MJy/sr")
         outfile_name = (
@@ -820,6 +824,7 @@ class Coadder:
             # orbit.apply_spline_fit(self.gain_spline, self.offset_spline)
             # self._add_orbit(orbit)
             # if orbit.r_squared > 0.9:
+            orbit.calc_rsq()
             self._add_orbit(orbit)
             # else:
             #     print("fit rsquared < 0.9; excluded")
