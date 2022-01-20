@@ -6,7 +6,7 @@ if __name__ == "__main__":
 
     # Declare paths to important input files/directories
     moon_stripe_file = "/home/users/mberkeley/wisemapper/data/masks/moon_stripe_mask_G_thick3.fits"#south_mask.fits"#moon_stripe_mask_G_thick3.fits"  # Input file, already exists
-    orbit_file_path = "/home/users/mberkeley/wisemapper/data/output_maps/w3_days/csv_files/"#w4/csv_files_orbits/"#w3_days/csv_files/"  # Input files, path already exists
+    orbit_file_path = "/home/users/mberkeley/wisemapper/data/output_maps/w3/csv_files/"#w4/csv_files_orbits/"#w3_days/csv_files/"  # Input files, path already exists
     zodi_file_path = "/home/users/jguerraa/AME/cal_files/W3_new/"#W4/"#W3_new/"#_days_new/"#W3_days_mooncut/"  # Input files, path already exists
 
     # Declare outputs
