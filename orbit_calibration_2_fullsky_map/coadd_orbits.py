@@ -255,12 +255,14 @@ class Orbit(BaseMapper):
         self._phi_gal_clean_masked = self.phi_gal[mask]
         self._phi_ecl_clean_masked = self.phi_ecl[mask]
 
+        self.galaxy_mask = ((self._theta_gal_clean_masked < 80) | (self._theta_gal_clean_masked > 100)) & (
+                    (self._theta_ecl_clean_masked > 50) & (self._theta_ecl_clean_masked < 130))
+
         return
 
     def calc_rsq(self):
-        galaxy_mask = ((self._theta_gal_clean_masked < 80) | (self._theta_gal_clean_masked > 100)) & ((self._theta_ecl_clean_masked > 50) & (self._theta_ecl_clean_masked < 130))
 
-        correlation_matrix = np.corrcoef(self._cal_data_clean_masked[galaxy_mask], self._zodi_data_clean_masked[galaxy_mask])
+        correlation_matrix = np.corrcoef(self._cal_data_clean_masked[self.galaxy_mask], self._zodi_data_clean_masked[self.galaxy_mask])
         correlation_xy = correlation_matrix[0, 1]
         self.r_squared = correlation_xy ** 2
         return
@@ -314,14 +316,13 @@ class Orbit(BaseMapper):
                     self._orbit_data_clean_masked - t_gal_clean_masked
             )
 
-        galaxy_mask = (self._theta_gal_clean_masked < 80) | (self._theta_gal_clean_masked > 100)
 
         orbit_fitter = IterativeFitter(
-            self._zodi_data_clean_masked[galaxy_mask],
-            orbit_data_to_fit_clean_masked[galaxy_mask],
-            self._orbit_uncs_clean_masked[galaxy_mask],
-            self._theta_ecl_clean_masked[galaxy_mask],
-            self._phi_ecl_clean_masked[galaxy_mask],
+            self._zodi_data_clean_masked[self.galaxy_mask],
+            orbit_data_to_fit_clean_masked[self.galaxy_mask],
+            self._orbit_uncs_clean_masked[self.galaxy_mask],
+            self._theta_ecl_clean_masked[self.galaxy_mask],
+            self._phi_ecl_clean_masked[self.galaxy_mask],
         )
         self.gain, self.offset, self.segmented_offsets = orbit_fitter.iterate_fit(1)
         return
