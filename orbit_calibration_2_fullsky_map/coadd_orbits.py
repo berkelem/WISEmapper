@@ -258,7 +258,7 @@ class Orbit(BaseMapper):
         return
 
     def calc_rsq(self):
-        galaxy_mask = (self._theta_gal_clean_masked < 80) | (self._theta_gal_clean_masked > 100)
+        galaxy_mask = ((self._theta_gal_clean_masked < 80) | (self._theta_gal_clean_masked > 100)) & ((self._theta_ecl_clean_masked > 50) & (self._theta_ecl_clean_masked < 130))
 
         correlation_matrix = np.corrcoef(self._cal_data_clean_masked[galaxy_mask], self._zodi_data_clean_masked[galaxy_mask])
         correlation_xy = correlation_matrix[0, 1]
