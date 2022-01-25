@@ -289,8 +289,8 @@ class Orbit(BaseMapper):
         )
         self.calc_rsq()
 
-        diff_spline = self.plot_diff()
-        self._cal_data_clean_masked -= diff_spline
+        # diff_spline = self.plot_diff()
+        # self._cal_data_clean_masked -= diff_spline
         self.zs_data_clean_masked = (
                 self._cal_data_clean_masked - self._zodi_data_clean_masked
         )
