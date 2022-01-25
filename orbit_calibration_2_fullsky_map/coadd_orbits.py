@@ -442,7 +442,11 @@ class Orbit(BaseMapper):
 
         floor_vals = self.floor_spline(diff_data, 100)
 
-        interp_diff = np.interp(t_data_masked, t_data_used, floor_vals)
+        from scipy import interpolate
+
+        interp_func = interpolate.interp1d(t_data_used, floor_vals)
+
+        interp_diff = interp_func(t_data_masked)
 
         floor_spline = np.zeros_like(t_data)
         floor_spline[self.galaxy_mask] = floor_vals
