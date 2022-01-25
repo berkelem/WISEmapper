@@ -291,7 +291,7 @@ class Orbit(BaseMapper):
 
         diff_spline = self.plot_diff()
         self._cal_data_clean_masked -= diff_spline
-        self.calc_rsq()
+        # self.calc_rsq()
         self.zs_data_clean_masked = (
                 self._cal_data_clean_masked - self._zodi_data_clean_masked
         )
@@ -434,6 +434,7 @@ class Orbit(BaseMapper):
         ang_data = self._theta_gal_clean_masked
         mask = np.ones_like(ang_data, dtype=bool)
         mask[(ang_data > 80) & (ang_data < 100)] = False
+        self.calc_rsq()
 
         from mpl_toolkits.mplot3d import axes3d
         from scipy.interpolate import Rbf
