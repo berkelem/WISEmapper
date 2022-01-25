@@ -436,21 +436,7 @@ class Orbit(BaseMapper):
         mask[(ang_data > 80) & (ang_data < 100)] = False
         self.calc_rsq()
 
-        from mpl_toolkits.mplot3d import axes3d
         from scipy.interpolate import Rbf
-
-        str_month_dict = OrderedDict([(55197, "Jan"), (55228, "Feb"), (55256, "Mar"), (55287, "Apr"),
-                                      (55317, "May"), (55348, "Jun"), (55378, "Jul"), (55409, "Aug")])
-        min_time = min(self._orbit_mjd_clean_masked)
-        max_time = max(self._orbit_mjd_clean_masked)
-        month_start_times = list(str_month_dict.keys())
-
-        start_month_ind = month_start_times.index(min(month_start_times, key=lambda x: abs(x - min_time)))
-        start_month_ind = start_month_ind if month_start_times[start_month_ind] < min_time else start_month_ind - 1
-
-        end_month_ind = month_start_times.index(min(month_start_times, key=lambda x: abs(x - max_time)))
-        end_month_ind = end_month_ind if month_start_times[end_month_ind] > max_time else end_month_ind + 1
-        y_ticks = month_start_times[start_month_ind:end_month_ind + 1]
 
         x = t_data[mask]
         y = ang_data[mask]
@@ -459,30 +445,16 @@ class Orbit(BaseMapper):
         if len(z) < 10:
             return np.zeros_like(self._cal_data_clean_masked)
 
-        spline = Rbf(x, y, z, function='linear', smooth=100)
+        # spline = Rbf(x, y, z, function='linear', smooth=100)
+        #
+        # start_spline = spline(np.ones_like(t_data) * min(t_data), ang_data)
+        # end_spline = spline(np.ones_like(t_data) * max(t_data), ang_data)
+        # mean_spline = np.mean([start_spline, end_spline], axis=0)
+        floor_spline = self.floor_spline(z, 100)
 
-        # x_grid = np.linspace(min(x), max(x))
-        # y_grid = np.linspace(min(y), max(y))
-        # B1, B2 = np.meshgrid(x_grid, y_grid, indexing='xy')
-        # Z = spline(B1, B2)
-        # # for ang in range(60, 300, 60):
-        # fig = plt.figure(figsize=(10, 6))
-        # ax = axes3d.Axes3D(fig)
-        # ax.plot_wireframe(B1, B2, Z)
-        # ax.plot_surface(B1, B2, Z, alpha=0.2)
-        # ax.scatter3D(x, y, z, c='r')
-        # ax.set_yticks(y_ticks)
-        # ax.set_yticklabels([str_month_dict[y] for y in y_ticks], rotation=45)
-        # # ax.view_init(elev=10., azim=ang)
-        # plt.savefig("3d_offset_spline_orbit_{}.png".format(self.orbit_num))
-        # plt.close()
-
-        start_spline = spline(np.ones_like(t_data) * min(t_data), ang_data)
-        end_spline = spline(np.ones_like(t_data) * max(t_data), ang_data)
-        mean_spline = np.mean([start_spline, end_spline], axis=0)
-        plt.plot(self._theta_gal_clean_masked, self._cal_data_clean_masked - self._zodi_data_clean_masked, "r.", ms=0.5,
+        plt.plot(self._theta_gal_clean_masked, diff_data, "r.", ms=0.5,
                  label="diff")
-        plt.plot(self._theta_gal_clean_masked, mean_spline, "b--", label="mean spline")
+        plt.plot(self._theta_gal_clean_masked, floor_spline, "b--", label="floor spline")
         # plt.plot(self._theta_gal_clean_masked, end_spline, "g--", label="end spline")
         plt.legend()
         plt.title("Orbit {}: R^2 {}".format(self.orbit_num, self.r_squared))
@@ -493,7 +465,21 @@ class Orbit(BaseMapper):
         )
         plt.savefig(os.path.join(output_path, outfile_name))
         plt.close()
-        return mean_spline
+        return floor_spline
+
+    @staticmethod
+    def floor_spline(arr, window_size):
+        if window_size % 2 == 0:
+            window_size += 1
+        floor_arr = []
+        for i in range(len(arr)):
+            start_ind = max(0, i - int(window_size / 2))
+            end_ind = min(len(arr), i + round(window_size / 2))
+            sub_arr = arr[start_ind: end_ind]
+            floor_val = min(sub_arr)
+            floor_arr.append(floor_val)
+
+        return np.array(floor_arr)
 
     def reset_outliers(self):
         """Restore values that were removed for the purposes of fitting"""
