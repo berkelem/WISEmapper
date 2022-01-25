@@ -444,7 +444,7 @@ class Orbit(BaseMapper):
 
         from scipy import interpolate
 
-        interp_func = interpolate.interp1d(t_data_used, floor_vals)
+        interp_func = interpolate.interp1d(t_data_used, floor_vals, fill_value="extrapolate")
 
         interp_diff = interp_func(t_data_masked)
 
