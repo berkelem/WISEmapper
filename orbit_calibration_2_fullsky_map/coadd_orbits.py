@@ -453,11 +453,10 @@ class Orbit(BaseMapper):
 
     def plot_diff(self, diff_data, floor_spline, output_path=os.getcwd()):
         ang_data = self._theta_gal_clean_masked[self.galaxy_mask]
-        self._cal_data_clean_masked[self.galaxy_mask]
 
         plt.plot(ang_data, diff_data, "r.", ms=0.5,
                  label="diff")
-        plt.plot(ang_data, floor_spline, "b--", label="floor spline")
+        plt.plot(self._theta_gal_clean_masked, floor_spline, "b--", label="floor spline")
         plt.legend()
         plt.title("Orbit {}: R^2={}".format(self.orbit_num, self.r_squared))
         plt.xlabel("Latitude (degrees)")
