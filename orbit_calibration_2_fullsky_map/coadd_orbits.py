@@ -289,9 +289,10 @@ class Orbit(BaseMapper):
         )
 
 
-        diff_spline = self.plot_diff()
+        diff_data, diff_spline = self.get_diff_floor()
         self._cal_data_clean_masked -= diff_spline
-        # self.calc_rsq()
+        self.calc_rsq()
+        self.plot_diff(diff_data, diff_spline)
         self.zs_data_clean_masked = (
                 self._cal_data_clean_masked - self._zodi_data_clean_masked
         )
@@ -428,36 +429,37 @@ class Orbit(BaseMapper):
         plt.savefig(os.path.join(output_path, outfile_name))
         plt.close()
 
-    def plot_diff(self, output_path=os.getcwd()):
-        diff_data = self._cal_data_clean_masked - self._zodi_data_clean_masked
+    def get_diff_floor(self):
+        diff_data = self._cal_data_clean_masked[self.galaxy_mask] - self._zodi_data_clean_masked[self.galaxy_mask]
         t_data = self._orbit_mjd_clean_masked
-        ang_data = self._theta_gal_clean_masked
-        mask = np.ones_like(ang_data, dtype=bool)
-        mask[(ang_data > 80) & (ang_data < 100)] = False
-        self.calc_rsq()
+        t_data_used = t_data[self.galaxy_mask]
+        t_data_masked = t_data[~self.galaxy_mask]
 
-        from scipy.interpolate import Rbf
 
-        x = t_data[mask]
-        y = ang_data[mask]
-        z = diff_data[mask]
 
-        if len(z) < 10:
+        if len(diff_data) < 10:
             return np.zeros_like(self._cal_data_clean_masked)
 
-        # spline = Rbf(x, y, z, function='linear', smooth=100)
-        #
-        # start_spline = spline(np.ones_like(t_data) * min(t_data), ang_data)
-        # end_spline = spline(np.ones_like(t_data) * max(t_data), ang_data)
-        # mean_spline = np.mean([start_spline, end_spline], axis=0)
-        floor_spline = self.floor_spline(z, 100)
+        floor_vals = self.floor_spline(diff_data, 100)
 
-        plt.plot(self._theta_gal_clean_masked, diff_data, "r.", ms=0.5,
+        interp_diff = np.interp(t_data_masked, t_data_used, floor_vals)
+
+        floor_spline = np.zeros_like(t_data)
+        floor_spline[self.galaxy_mask] = floor_vals
+        floor_spline[~self.galaxy_mask] = interp_diff
+
+        return diff_data, floor_spline
+
+
+    def plot_diff(self, diff_data, floor_spline, output_path=os.getcwd()):
+        ang_data = self._theta_gal_clean_masked[self.galaxy_mask]
+        self._cal_data_clean_masked[self.galaxy_mask]
+
+        plt.plot(ang_data, diff_data, "r.", ms=0.5,
                  label="diff")
-        plt.plot(self._theta_gal_clean_masked, floor_spline, "b--", label="floor spline")
-        # plt.plot(self._theta_gal_clean_masked, end_spline, "g--", label="end spline")
+        plt.plot(ang_data, floor_spline, "b--", label="floor spline")
         plt.legend()
-        plt.title("Orbit {}: R^2 {}".format(self.orbit_num, self.r_squared))
+        plt.title("Orbit {}: R^2={}".format(self.orbit_num, self.r_squared))
         plt.xlabel("Latitude (degrees)")
         plt.ylabel("MJy/sr")
         outfile_name = (
@@ -465,7 +467,7 @@ class Orbit(BaseMapper):
         )
         plt.savefig(os.path.join(output_path, outfile_name))
         plt.close()
-        return floor_spline
+
 
     @staticmethod
     def floor_spline(arr, window_size):
