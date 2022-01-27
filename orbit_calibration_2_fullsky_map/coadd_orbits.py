@@ -292,7 +292,7 @@ class Orbit(BaseMapper):
         diff_data, diff_spline = self.get_diff_floor()
         self._cal_data_clean_masked -= diff_spline
         self.calc_rsq()
-        self.plot_diff(diff_data, diff_spline*np.ones_like(diff_data))
+        self.plot_diff(diff_data, diff_spline)
         self.zs_data_clean_masked = (
                 self._cal_data_clean_masked - self._zodi_data_clean_masked
         )
@@ -462,7 +462,7 @@ class Orbit(BaseMapper):
 
         plt.plot(ang_data, diff_data, "r.", ms=0.5,
                  label="diff")
-        plt.plot(self._theta_gal_clean_masked, floor_spline, "b--", label="floor spline")
+        plt.plot(self._theta_gal_clean_masked, floor_spline*np.ones_like(self._theta_gal_clean_masked), "b--", label="floor spline")
         plt.legend()
         plt.title("Orbit {}: R^2={}".format(self.orbit_num, self.r_squared))
         plt.xlabel("Latitude (degrees)")
