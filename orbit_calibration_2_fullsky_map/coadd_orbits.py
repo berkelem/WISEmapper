@@ -289,8 +289,8 @@ class Orbit(BaseMapper):
         )
 
 
-        diff_data, diff_spline = self.get_diff_floor()
-        self._cal_data_clean_masked -= diff_spline
+        # diff_data, diff_spline = self.get_diff_floor()
+        # self._cal_data_clean_masked -= diff_spline
         self.calc_rsq()
         self.plot_diff(diff_data, diff_spline)
         self.zs_data_clean_masked = (
