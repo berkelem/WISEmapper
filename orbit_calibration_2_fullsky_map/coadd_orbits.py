@@ -413,12 +413,14 @@ class Orbit(BaseMapper):
     def plot_fit(self, output_path=os.getcwd(), iteration=None, label=None):
         """Plot calibrated data along with the zodiacal light template with galactic latitude on the x-axis"""
         # theta, phi = hp.pix2ang(self._nside, self.pixel_inds_clean_masked, lonlat=True)
+        limits = (0, 60) if self.orbit_num % 2 == 1 else (80, 160)
         plt.plot(self._theta_gal_clean_masked[self.galaxy_mask], self._cal_data_clean_masked[self.galaxy_mask], "r.", ms=0.5, alpha=0.5,
                  label="Calibrated data")
         plt.plot(self._theta_gal_clean_masked, self._zodi_data_clean_masked, "b.", ms=0.5, alpha=0.5,
                  label="Zodi model")
+        plt.xlim(limits)
         plt.legend()
-        plt.title("Orbit {}; r^2={}".format(self.orbit_num, self.r_squared))
+        plt.title("Orbit {}; \ngain: {}, offset: {}, \nr^2={}".format(self.orbit_num, self.gain, self.offset, self.r_squared))
         plt.xlabel("Latitude (degrees)")
         plt.ylabel("MJy/sr")
         outfile_name = (

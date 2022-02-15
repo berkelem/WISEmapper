@@ -26,5 +26,5 @@ if __name__ == "__main__":
     sf.fit_spline()
 
     # Load the spline back into the Coadder and do a final calibration
-    # coadd_map.load_splines(sf.gain_spline_file, sf.offset_spline_file)
-    # coadd_map.add_calibrated_orbits(plot=True)
+    coadd_map.load_splines(sf.gain_spline_file, sf.offset_spline_file)
+    coadd_map.add_calibrated_orbits(plot=True)
