@@ -326,7 +326,7 @@ class Orbit(BaseMapper):
             self._theta_ecl_clean_masked[self.galaxy_mask],
             self._phi_ecl_clean_masked[self.galaxy_mask],
         )
-        self.gain, self.offset, self.segmented_offsets = orbit_fitter.iterate_fit(1)
+        self.gain, self.offset = orbit_fitter.iterate_fit(10)
         return
 
     def mask_ecliptic_crossover(self):
@@ -419,7 +419,7 @@ class Orbit(BaseMapper):
         plt.plot(self._theta_gal_clean_masked, self._zodi_data_clean_masked, "b.", ms=0.5, alpha=0.5,
                  label="Zodi model")
         plt.xlim(limits)
-        plt.ylim((10,35))
+        plt.ylim((10,40))
         plt.legend()
         plt.title("Orbit {}; \ngain: {}, offset: {}, \nr^2={}".format(self.orbit_num, self.gain, self.offset, self.r_squared))
         plt.xlabel("Latitude (degrees)")
@@ -566,13 +566,13 @@ class IterativeFitter:
                     data_to_fit, self.zodi_data, uncs_to_fit
                 )
                 # offset_spline = self.fit_offset_spline(data_to_fit, gain, offset)
-                segmented_offsets = self._segmented_fit(data_to_fit, uncs_to_fit, gain)
+                # segmented_offsets = self._segmented_fit(data_to_fit, uncs_to_fit, gain)
                 data_to_fit = self._adjust_data(gain, offset, data_to_fit)
                 i += 1
         else:
             gain = offset = 0.0
-            segmented_offsets = [0.0] * 24
-        return gain, offset, segmented_offsets
+            # segmented_offsets = [0.0] * 24
+        return gain, offset#, segmented_offsets
 
     # def fit_offset_spline(self, gain, offset):
     #     cal_data = (self.raw_data - offset) / gain
@@ -1058,12 +1058,12 @@ class Coadder:
         all_gains = np.array([orb.gain for orb in self.all_orbits])
         all_offsets = np.array([orb.offset for orb in self.all_orbits])
         all_mjd_vals = np.array([orb.orbit_mjd_obs for orb in self.all_orbits])
-        all_segmented_offsets = np.array([orb.segmented_offsets for orb in self.all_orbits])
+        # all_segmented_offsets = np.array([orb.segmented_offsets for orb in self.all_orbits])
         with open(
                 os.path.join(self.output_path, "fitvals_iter_{}.pkl".format(it)), "wb"
         ) as f:
             pickle.dump(
-                [all_gains, all_offsets, all_mjd_vals, all_segmented_offsets],
+                [all_gains, all_offsets, all_mjd_vals],#, all_segmented_offsets],
                 f,
                 protocol=pickle.HIGHEST_PROTOCOL,
             )
@@ -1077,7 +1077,7 @@ class Coadder:
             orb.gain = all_gains[i]
             orb.offset = all_offsets[i]
             orb.orbit_mjd_obs = all_mjd_vals[i]
-            orb.segmented_offsets = all_segmented_offsets[i]
+            # orb.segmented_offsets = all_segmented_offsets[i]
         return
 
     def _save_maps(self):
