@@ -56,7 +56,7 @@ class SplineFitter:
         :param plot: bool, optional
             Plot the spline fit curves. Default is True.
         """
-        all_gains, all_offsets, all_mjd_vals, all_segmented_offsets = self._load_fitvals()
+        all_gains, all_offsets, all_mjd_vals = self._load_fitvals()
 
         # apr_mask = [x[0] > 55287 for x in all_mjd_vals]
         # all_gains = all_gains[apr_mask]
