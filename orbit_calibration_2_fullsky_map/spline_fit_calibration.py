@@ -56,7 +56,7 @@ class SplineFitter:
         :param plot: bool, optional
             Plot the spline fit curves. Default is True.
         """
-        all_gains, all_offsets, all_mjd_vals = self._load_fitvals()
+        all_gains, all_offsets, all_mjd_vals, all_orbit_nums = self._load_fitvals()
 
         # apr_mask = [x[0] > 55287 for x in all_mjd_vals]
         # all_gains = all_gains[apr_mask]
@@ -87,8 +87,8 @@ class SplineFitter:
         # all_offsets = np.r_[all_offsets[1:1295:2], all_offsets[1296:5000:2], all_offsets[5001::2]]
         # all_mjd_vals = np.r_[all_mjd_vals[1:1295:2], all_mjd_vals[1296:5000:2], all_mjd_vals[5001::2]]
         #
-        times_gain_masked, times_offset_masked, gains_masked, offsets_masked = self.rolling_clean_data(all_gains, all_offsets,
-                                                                                                all_mjd_vals)
+        (times_gain_masked, times_offset_masked, gains_masked, offsets_masked, orbit_nums_gain_masked,
+         orbit_nums_offset_masked) = self.rolling_clean_data(all_gains, all_offsets, all_mjd_vals, all_orbit_nums)
         #
         # spline = self.plot_3d_spline(gains_masked, offsets_masked, all_mjd_vals, all_segmented_offsets)
 
@@ -237,7 +237,8 @@ class SplineFitter:
 
         if plot:
             self._plot_spline(times_gain_masked, stripe_gains, gains_masked,
-                              times_offset_masked, stripe_offsets, offsets_masked)
+                              times_offset_masked, stripe_offsets, offsets_masked,
+                              orbit_nums_gain_masked, orbit_nums_offset_masked)
 
         return
 
@@ -639,7 +640,7 @@ class SplineFitter:
         return times_gain_masked, times_offset_masked, gains_masked, offsets_masked
 
     @staticmethod
-    def rolling_clean_data(all_gains, all_offsets, all_mjd_vals):
+    def rolling_clean_data(all_gains, all_offsets, all_mjd_vals, all_orbit_nums):
         median_mjd_vals = np.array([np.median(arr) for arr in all_mjd_vals])
         mask_gains = np.zeros_like(all_gains, dtype=bool)
         mask_offsets = np.zeros_like(all_offsets, dtype=bool)
@@ -665,8 +666,10 @@ class SplineFitter:
         times_offset_masked = median_mjd_vals[~mask_offsets]
         gains_masked = all_gains[~mask_gains]
         offsets_masked = all_offsets[~mask_offsets]
+        orbit_nums_gain_masked = all_orbit_nums[~mask_gains]
+        orbit_nums_offset_masked = all_orbit_nums[~mask_offsets]
 
-        return times_gain_masked, times_offset_masked, gains_masked, offsets_masked
+        return times_gain_masked, times_offset_masked, gains_masked, offsets_masked, orbit_nums_gain_masked, orbit_nums_offset_masked
 
 
 
@@ -682,7 +685,8 @@ class SplineFitter:
         return
 
     def _plot_spline(self, times_gain_masked, stripe_gains, gains_masked,
-                     times_offset_masked, stripe_offsets, offsets_masked):#, smooth_gain, smooth_offset):
+                     times_offset_masked, stripe_offsets, offsets_masked,
+                     orbit_nums_gain_masked, orbit_nums_offset_masked):#, smooth_gain, smooth_offset):
         """
         Plot all gains/offsets along with the fitted spline curve.
         Original data is red, masked values are blue, spline is green.
@@ -718,10 +722,35 @@ class SplineFitter:
 
         x_ticks = month_start_times[start_month_ind:end_month_ind+1]
 
+        grp_mask1_gains = np.zeros_like(orbit_nums_gain_masked, dtype=bool)
+        grp_mask1_gains[orbit_nums_gain_masked % 4 == 0] = True
+        grp_mask2_gains = np.zeros_like(orbit_nums_gain_masked, dtype=bool)
+        grp_mask2_gains[orbit_nums_gain_masked % 4 == 1] = True
+        grp_mask3_gains = np.zeros_like(orbit_nums_gain_masked, dtype=bool)
+        grp_mask3_gains[orbit_nums_gain_masked % 4 == 2] = True
+        grp_mask4_gains = np.zeros_like(orbit_nums_gain_masked, dtype=bool)
+        grp_mask4_gains[orbit_nums_gain_masked % 4 == 3] = True
+
+        grp_mask1_offsets = np.zeros_like(orbit_nums_offset_masked, dtype=bool)
+        grp_mask1_offsets[orbit_nums_offset_masked % 4 == 0] = True
+        grp_mask2_offsets = np.zeros_like(orbit_nums_offset_masked, dtype=bool)
+        grp_mask2_offsets[orbit_nums_offset_masked % 4 == 1] = True
+        grp_mask3_offsets = np.zeros_like(orbit_nums_offset_masked, dtype=bool)
+        grp_mask3_offsets[orbit_nums_offset_masked % 4 == 2] = True
+        grp_mask4_offsets = np.zeros_like(orbit_nums_offset_masked, dtype=bool)
+        grp_mask4_offsets[orbit_nums_offset_masked % 4 == 3] = True
+
         fig, ax = plt.subplots()
         ax.plot(times_gain_masked[stripe_gains], gains_masked[stripe_gains], 'ko', alpha=0.2, ms=3)
         ax.plot(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], 'ro', ms=3)
-        ax.plot(times_gain_masked[~stripe_gains][3::4], gains_masked[~stripe_gains][3::4], 'bo', ms=3)
+        ax.plot(times_gain_masked[(~stripe_gains & grp_mask1_gains)], gains_masked[(~stripe_gains & grp_mask1_gains)],
+                'bo', ms=3)
+        ax.plot(times_gain_masked[(~stripe_gains & grp_mask2_gains)], gains_masked[(~stripe_gains & grp_mask2_gains)],
+                'yo', ms=3)
+        ax.plot(times_gain_masked[(~stripe_gains & grp_mask3_gains)], gains_masked[(~stripe_gains & grp_mask3_gains)],
+                'co', ms=3)
+        ax.plot(times_gain_masked[(~stripe_gains & grp_mask4_gains)], gains_masked[(~stripe_gains & grp_mask4_gains)],
+                'mo', ms=3)
         ax.plot(times_gain_masked, self.spl_gain(times_gain_masked), 'g', lw=2)
         # ax.plot(times_gain_masked[~stripe_gains], smooth_gain, 'bo', ms=1)
         ax.set_xticks(x_ticks)

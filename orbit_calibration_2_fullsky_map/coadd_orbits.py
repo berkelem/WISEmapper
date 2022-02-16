@@ -1058,12 +1058,13 @@ class Coadder:
         all_gains = np.array([orb.gain for orb in self.all_orbits])
         all_offsets = np.array([orb.offset for orb in self.all_orbits])
         all_mjd_vals = np.array([orb.orbit_mjd_obs for orb in self.all_orbits])
+        all_orbit_nums = np.array([orb.orbit_num for orb in self.all_orbits])
         # all_segmented_offsets = np.array([orb.segmented_offsets for orb in self.all_orbits])
         with open(
                 os.path.join(self.output_path, "fitvals_iter_{}.pkl".format(it)), "wb"
         ) as f:
             pickle.dump(
-                [all_gains, all_offsets, all_mjd_vals],#, all_segmented_offsets],
+                [all_gains, all_offsets, all_mjd_vals, all_orbit_nums],#, all_segmented_offsets],
                 f,
                 protocol=pickle.HIGHEST_PROTOCOL,
             )
