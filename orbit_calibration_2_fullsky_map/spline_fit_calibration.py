@@ -550,8 +550,8 @@ class SplineFitter:
     def _load_fitvals(self):
         """Load iteration fit values from pickle file"""
         with open(self.fitvals_file, "rb") as fitval_file:
-            all_gains, all_offsets, all_mjd_vals = pickle.load(fitval_file)
-        return all_gains, all_offsets, all_mjd_vals
+            all_gains, all_offsets, all_mjd_vals, all_orbit_nums = pickle.load(fitval_file)
+        return all_gains, all_offsets, all_mjd_vals, all_orbit_nums
 
     def _plot_all_fitvals(self):
         """Helper method for plotting the gains and offsets before fitting a spline"""
