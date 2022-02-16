@@ -765,7 +765,15 @@ class SplineFitter:
         fig, ax = plt.subplots()
         ax.plot(times_offset_masked[stripe_offsets], offsets_masked[stripe_offsets], 'ko', alpha=0.2, ms=3)
         ax.plot(times_offset_masked[~stripe_offsets], offsets_masked[~stripe_offsets], 'ro', ms=3)
-        ax.plot(times_offset_masked[~stripe_offsets][3::4], offsets_masked[~stripe_offsets][3::4], 'bo', ms=3)
+        ax.plot(times_offset_masked[(~stripe_offsets & grp_mask1_offsets)], offsets_masked[(~stripe_offsets & grp_mask1_offsets)],
+                'bo', ms=3)
+        ax.plot(times_offset_masked[(~stripe_offsets & grp_mask2_offsets)], offsets_masked[(~stripe_offsets & grp_mask2_offsets)],
+                'yo', ms=3)
+        ax.plot(times_offset_masked[(~stripe_offsets & grp_mask3_offsets)], offsets_masked[(~stripe_offsets & grp_mask3_offsets)],
+                'co', ms=3)
+        ax.plot(times_offset_masked[(~stripe_offsets & grp_mask4_offsets)], offsets_masked[(~stripe_offsets & grp_mask4_offsets)],
+                'mo', ms=3)
+        ax.plot(times_offset_masked, self.spl_offset(times_offset_masked), 'g', lw=2)
         ax.plot(times_offset_masked, self.spl_offset(times_offset_masked), 'g', lw=2)
         # ax.plot(times_offset_masked[~stripe_offsets], smooth_offset, 'bo', ms=1)
         ax.set_xticks(np.array(x_ticks))
