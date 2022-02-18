@@ -13,12 +13,12 @@ if __name__ == "__main__":
     output_path = os.getcwd()  # Specify where to store output files from calibration
     # Specify desired name (and path) of output full-sky map
     fsm_map_file = os.path.join(output_path, "fullskymap_band3_masked.fits")
-    iterations = 20
+    iterations = 1
 
     # Initialize Coadder object for managing calibration
     coadd_map = Coadder(3, moon_stripe_file, fsm_map_file, orbit_file_path, zodi_file_path, output_path)
     coadd_map.load_orbits(month="Jul")#["Feb", "Mar", "Apr", "May", "Jun", "Jul"])
-    coadd_map.load_fitvals(19)
+    coadd_map.load_fitvals(0)
     # coadd_map.run_iterative_fit(iterations=iterations)
 
     # Fit a spline through the converged fit values for gains and offsets
