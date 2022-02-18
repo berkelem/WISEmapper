@@ -768,7 +768,7 @@ class SplineFitter:
                 'co', ms=3)
         ax.plot(times_gain_masked[(~stripe_gains & grp_mask4_gains)], gains_masked[(~stripe_gains & grp_mask4_gains)],
                 'mo', ms=3)
-        ax.plot(times_gain_masked[(~stripe_gains & good_fits)], gains_masked[(~stripe_gains & good_fits)],
+        ax.plot(times_gain_masked[(~stripe_gains & good_fits_gains)], gains_masked[(~stripe_gains & good_fits_gains)],
                 'ko', ms=3)
         ax.plot(times_gain_masked, self.spl_gain(times_gain_masked), 'g', lw=2)
         # ax.plot(times_gain_masked[~stripe_gains], smooth_gain, 'bo', ms=1)
