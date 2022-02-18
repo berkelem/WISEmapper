@@ -754,7 +754,7 @@ class SplineFitter:
         grp_mask4_offsets = np.zeros_like(orbit_nums_offset_masked, dtype=bool)
         grp_mask4_offsets[orbit_nums_offset_masked % 4 == 3] = True
 
-        good_fits = np.array([True for i in orbit_nums_gain_masked if i in good_orbits else False])
+        good_fits = np.array([True if i in good_orbits else False for i in orbit_nums_gain_masked])
 
         fig, ax = plt.subplots()
         ax.plot(times_gain_masked[stripe_gains], gains_masked[stripe_gains], 'ko', alpha=0.2, ms=3)
