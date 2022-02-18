@@ -754,7 +754,8 @@ class SplineFitter:
         grp_mask4_offsets = np.zeros_like(orbit_nums_offset_masked, dtype=bool)
         grp_mask4_offsets[orbit_nums_offset_masked % 4 == 3] = True
 
-        good_fits = np.array([True if i in good_orbits else False for i in orbit_nums_gain_masked])
+        good_fits_gains = np.array([True if i in good_orbits else False for i in orbit_nums_gain_masked])
+        good_fits_offsets = np.array([True if i in good_orbits else False for i in orbit_nums_offset_masked])
 
         fig, ax = plt.subplots()
         ax.plot(times_gain_masked[stripe_gains], gains_masked[stripe_gains], 'ko', alpha=0.2, ms=3)
@@ -791,7 +792,7 @@ class SplineFitter:
                 'co', ms=3)
         ax.plot(times_offset_masked[(~stripe_offsets & grp_mask4_offsets)], offsets_masked[(~stripe_offsets & grp_mask4_offsets)],
                 'mo', ms=3)
-        ax.plot(times_offset_masked[(~stripe_offsets & good_fits)], offsets_masked[(~stripe_offsets & good_fits)],
+        ax.plot(times_offset_masked[(~stripe_offsets & good_fits_offsets)], offsets_masked[(~stripe_offsets & good_fits_offsets)],
                 'ko', ms=3)
         ax.plot(times_offset_masked, self.spl_offset(times_offset_masked), 'g', lw=2)
         ax.plot(times_offset_masked, self.spl_offset(times_offset_masked), 'g', lw=2)
