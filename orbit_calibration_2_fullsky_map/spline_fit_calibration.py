@@ -722,6 +722,20 @@ class SplineFitter:
 
         x_ticks = month_start_times[start_month_ind:end_month_ind+1]
 
+        good_orbits = [
+            5221, 5222, 5223, 5225, 5226, 5227, 5230, 5234, 5238, 5242, 5252, 5256, 5260, 5262, 5264, 5266, 5268, 5270,
+            5272, 5274, 5276, 5278, 5280, 5282, 5286, 5288, 5290, 5292, 5294, 5296, 5298, 5300, 5302, 5304, 5306, 5308,
+            5310, 5312, 5314, 5316, 5318, 5320, 5322, 5324, 5326, 5328, 5330, 5332, 5334, 5336, 5338, 5340, 5342, 5344,
+            5346, 5348, 5350, 5352, 5354, 5356, 5358, 5360, 5362, 5364, 5366, 5370, 5374, 5378, 5382, 5389, 5391, 5393,
+            5395, 5397, 5399, 5401, 5403, 5405, 5407, 5409, 5411, 5413, 5415, 5417, 5419, 5421, 5423, 5425, 5427, 5429,
+            5431, 5433, 5435, 5437, 5439, 5441, 5443, 5445, 5447, 5449, 5451, 5453, 5455, 5457, 5459, 5461, 5463, 5465,
+            5467, 5469, 5471, 5473, 5475, 5477, 5479, 5481, 5483, 5485, 5487, 5489, 5491, 5493, 5495, 5497, 5499, 5501,
+            5503, 5505, 5507, 5509, 5511, 5513, 5515, 5517, 5519, 5521, 5523, 5525, 5527, 5529, 5531, 5533, 5535, 5537,
+            5539, 5541, 5543, 5547, 5549, 5551, 5553, 5555, 5557, 5559, 5561, 5565, 5569, 5573, 5577, 5581, 5585, 5589,
+            5593, 5597, 5673, 5677, 5679, 5681, 5683, 5685, 5687, 5689, 5691, 5693, 5695, 5697, 5699, 5701, 5703, 5705,
+            5707, 5709, 5711, 5713, 5715, 5717, 5719, 5721, 5723, 5725, 5727, 5729, 5731, 5733, 5735, 5737, 5741, 5745
+        ]
+
         grp_mask1_gains = np.zeros_like(orbit_nums_gain_masked, dtype=bool)
         grp_mask1_gains[orbit_nums_gain_masked % 4 == 0] = True
         grp_mask2_gains = np.zeros_like(orbit_nums_gain_masked, dtype=bool)
@@ -740,6 +754,8 @@ class SplineFitter:
         grp_mask4_offsets = np.zeros_like(orbit_nums_offset_masked, dtype=bool)
         grp_mask4_offsets[orbit_nums_offset_masked % 4 == 3] = True
 
+        good_fits = np.array([True for i in orbit_nums_gain_masked if i in good_orbits else False])
+
         fig, ax = plt.subplots()
         ax.plot(times_gain_masked[stripe_gains], gains_masked[stripe_gains], 'ko', alpha=0.2, ms=3)
         ax.plot(times_gain_masked[~stripe_gains], gains_masked[~stripe_gains], 'ro', ms=3)
@@ -751,6 +767,8 @@ class SplineFitter:
                 'co', ms=3)
         ax.plot(times_gain_masked[(~stripe_gains & grp_mask4_gains)], gains_masked[(~stripe_gains & grp_mask4_gains)],
                 'mo', ms=3)
+        ax.plot(times_gain_masked[(~stripe_gains & good_fits)], gains_masked[(~stripe_gains & good_fits)],
+                'ko', ms=3)
         ax.plot(times_gain_masked, self.spl_gain(times_gain_masked), 'g', lw=2)
         # ax.plot(times_gain_masked[~stripe_gains], smooth_gain, 'bo', ms=1)
         ax.set_xticks(x_ticks)
@@ -773,6 +791,8 @@ class SplineFitter:
                 'co', ms=3)
         ax.plot(times_offset_masked[(~stripe_offsets & grp_mask4_offsets)], offsets_masked[(~stripe_offsets & grp_mask4_offsets)],
                 'mo', ms=3)
+        ax.plot(times_offset_masked[(~stripe_offsets & good_fits)], offsets_masked[(~stripe_offsets & good_fits)],
+                'ko', ms=3)
         ax.plot(times_offset_masked, self.spl_offset(times_offset_masked), 'g', lw=2)
         ax.plot(times_offset_masked, self.spl_offset(times_offset_masked), 'g', lw=2)
         # ax.plot(times_offset_masked[~stripe_offsets], smooth_offset, 'bo', ms=1)
