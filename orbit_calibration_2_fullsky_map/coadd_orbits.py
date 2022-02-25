@@ -278,9 +278,9 @@ class Orbit(BaseMapper):
         :param offset_spline: scipy UnivariateSpline object
             Spline fitted to all of the offset fits after N iterations
         """
-        gains = gain_spline(self._orbit_mjd_clean_masked)
+        gains = self.gain#gain_spline(self._orbit_mjd_clean_masked)
         # offsets = offset_spline(self._theta_ecl_clean_masked, self._orbit_mjd_clean_masked)
-        offsets = offset_spline(self._orbit_mjd_clean_masked)
+        offsets = self.offset#offset_spline(self._orbit_mjd_clean_masked)
         self._cal_data_clean_masked = (self._orbit_data_clean_masked - offsets) / gains
         self.cal_uncs_clean_masked = self._orbit_uncs_clean_masked / abs(gains)
 
