@@ -229,7 +229,7 @@ class SplineFitter:
         offset_zero_mask = smooth_offset != 0.0
         self.spl_gain = UnivariateSpline(times_gain_masked[~stripe_gains][gain_zero_mask], smooth_gain[gain_zero_mask], s=100, k=3)
         self.spl_offset = UnivariateSpline(times_offset_masked[~stripe_offsets][offset_zero_mask], smooth_offset[offset_zero_mask],
-                                           s=10000, k=3)
+                                           s=100000, k=3)
         #
         self._save_spline()
         #
