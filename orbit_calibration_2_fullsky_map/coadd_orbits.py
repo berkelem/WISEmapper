@@ -289,10 +289,10 @@ class Orbit(BaseMapper):
         )
 
 
-        # diff_data, diff_spline = self.get_diff_floor()
-        # self._cal_data_clean_masked -= diff_spline
+        diff_data, diff_spline = self.get_diff_floor()
+        self._cal_data_clean_masked -= diff_spline
         self.calc_rsq()
-        # self.plot_diff(diff_data, diff_spline)
+        self.plot_diff(diff_data, diff_spline)
         self.zs_data_clean_masked = (
                 self._cal_data_clean_masked - self._zodi_data_clean_masked
         )
@@ -434,28 +434,27 @@ class Orbit(BaseMapper):
 
     def get_diff_floor(self):
         diff_data = self._cal_data_clean_masked[self.galaxy_mask] - self._zodi_data_clean_masked[self.galaxy_mask]
-        floor_spline = np.median(diff_data)
+        # floor_spline = np.median(diff_data)
 
-        # t_data = self._orbit_mjd_clean_masked
-        # t_data_used = t_data[self.galaxy_mask]
-        # t_data_masked = t_data[~self.galaxy_mask]
-        #
-        #
-        #
-        # if len(diff_data) < 10:
-        #     return np.zeros_like(self._cal_data_clean_masked)
-        #
-        # floor_vals = self.floor_spline(diff_data, 100)
-        #
-        # from scipy import interpolate
-        #
-        # interp_func = interpolate.interp1d(t_data_used, floor_vals, fill_value="extrapolate")
-        #
-        # interp_diff = interp_func(t_data_masked)
-        #
-        # floor_spline = np.zeros_like(t_data)
-        # floor_spline[self.galaxy_mask] = floor_vals
-        # floor_spline[~self.galaxy_mask] = interp_diff
+        t_data = self._orbit_mjd_clean_masked
+        t_data_used = t_data[self.galaxy_mask]
+        t_data_masked = t_data[~self.galaxy_mask]
+
+
+        if len(diff_data) < 10:
+            return np.zeros_like(self._cal_data_clean_masked)
+
+        floor_vals = self.floor_spline(diff_data, 100)
+
+        from scipy import interpolate
+
+        interp_func = interpolate.interp1d(t_data_used, floor_vals, fill_value="extrapolate")
+
+        interp_diff = interp_func(t_data_masked)
+
+        floor_spline = np.zeros_like(t_data)
+        floor_spline[self.galaxy_mask] = floor_vals
+        floor_spline[~self.galaxy_mask] = interp_diff
 
         return diff_data, floor_spline
 
