@@ -835,7 +835,7 @@ class Coadder:
             if plot:  # and orbit.orbit_num % 15 == 0.0:
                 orbit.plot_fit(label="postadjust")
 
-        self._clean_data()
+        # self._clean_data()
         self._compile_map()
         self._normalize()
         self._save_maps()
