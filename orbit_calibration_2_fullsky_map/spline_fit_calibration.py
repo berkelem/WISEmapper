@@ -648,19 +648,19 @@ class SplineFitter:
         mask_gains[all_gains == 0.0] = True
         mask_offsets[all_offsets == 0.0] = True
 
-        batch_size = 1000
-        for i in range(0, len(all_gains), 1):
-            batch_gains = all_gains[i:i+batch_size]
-            batch_mask_g = mask_gains[i:i+batch_size]
-            z_gains = np.abs(stats.zscore(batch_gains[~batch_mask_g]))
-            mask_batch_gains = (z_gains > 3)
-            mask_gains[i:i+batch_size][~batch_mask_g] |= mask_batch_gains
-
-            batch_offsets = all_offsets[i:i + batch_size]
-            batch_mask_o = mask_offsets[i:i + batch_size]
-            z_offsets = np.abs(stats.zscore(batch_offsets[~batch_mask_o]))
-            mask_batch_offsets = (z_offsets > 3)
-            mask_offsets[i:i + batch_size][~batch_mask_o] |= mask_batch_offsets
+        # batch_size = 1000
+        # for i in range(0, len(all_gains), 1):
+        #     batch_gains = all_gains[i:i+batch_size]
+        #     batch_mask_g = mask_gains[i:i+batch_size]
+        #     z_gains = np.abs(stats.zscore(batch_gains[~batch_mask_g]))
+        #     mask_batch_gains = (z_gains > 3)
+        #     mask_gains[i:i+batch_size][~batch_mask_g] |= mask_batch_gains
+        #
+        #     batch_offsets = all_offsets[i:i + batch_size]
+        #     batch_mask_o = mask_offsets[i:i + batch_size]
+        #     z_offsets = np.abs(stats.zscore(batch_offsets[~batch_mask_o]))
+        #     mask_batch_offsets = (z_offsets > 3)
+        #     mask_offsets[i:i + batch_size][~batch_mask_o] |= mask_batch_offsets
 
         times_gain_masked = median_mjd_vals[~mask_gains]
         times_offset_masked = median_mjd_vals[~mask_offsets]
