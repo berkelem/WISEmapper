@@ -873,7 +873,7 @@ class Coadder:
             #     continue
 
             # Check if all orbits should be fitted, or only a subset by month
-            include, reason = self._filter_timestamps(month, orbit.mean_mjd_obs)
+            include, reason = self._filter_timestamps(month, orbit.mean_mjd_obs, orbit.orbit_num)
             if not include:
                 print(f"Skipping orbit {i}")
                 if reason == "oob" and mapping_region:
@@ -1101,7 +1101,7 @@ class Coadder:
             self.unc_fsm_map_file.replace(".fits", f"_{label}.fits"), self.band
         )
 
-    def _filter_timestamps(self, month_list, mjd_obs):
+    def _filter_timestamps(self, month_list, mjd_obs, orbit_num):
         """
         Return True if orbit timestamp is within desired time range ['Jan',...,'Aug'] or 'all'.
         Otherwise return False
@@ -1168,7 +1168,7 @@ class Coadder:
             5593, 5597, 5673, 5677, 5679, 5681, 5683, 5685, 5687, 5689, 5691, 5693, 5695, 5697, 5699, 5701, 5703, 5705,
             5707, 5709, 5711, 5713, 5715, 5717, 5719, 5721, 5723, 5725, 5727, 5729, 5731, 5733, 5735, 5737, 5741, 5745
         ]
-        if include and self.orbit_num not in good_orbits:
+        if include and orbit_num not in good_orbits:
             include = False
             reason = "Not a good fit"
 
