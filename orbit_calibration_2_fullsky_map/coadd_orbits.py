@@ -434,27 +434,32 @@ class Orbit(BaseMapper):
 
     def get_diff_floor(self):
         diff_data = self._cal_data_clean_masked[self.galaxy_mask] - self._zodi_data_clean_masked[self.galaxy_mask]
-        floor_spline = np.median(diff_data)
+        # floor_spline = np.median(diff_data)
 
-        # t_data = self._orbit_mjd_clean_masked
-        # t_data_used = t_data[self.galaxy_mask]
-        # t_data_masked = t_data[~self.galaxy_mask]
-        #
-        #
-        # if len(diff_data) < 10:
-        #     return np.zeros_like(self._cal_data_clean_masked)
-        #
-        # floor_vals = self.floor_spline(diff_data, 100)
-        #
-        # from scipy import interpolate
-        #
-        # interp_func = interpolate.interp1d(t_data_used, floor_vals, fill_value="extrapolate")
-        #
-        # interp_diff = interp_func(t_data_masked)
-        #
-        # floor_spline = np.zeros_like(t_data)
-        # floor_spline[self.galaxy_mask] = floor_vals
-        # floor_spline[~self.galaxy_mask] = interp_diff
+        t_data = self._orbit_mjd_clean_masked
+        t_data_used = t_data[self.galaxy_mask]
+        t_data_masked = t_data[~self.galaxy_mask]
+
+
+        if len(diff_data) < 10:
+            return np.zeros_like(self._cal_data_clean_masked)
+
+        floor_vals = self.floor_spline(diff_data, 100)
+
+        from scipy import interpolate
+
+        interp_func = interpolate.interp1d(t_data_used, floor_vals, fill_value="extrapolate")
+        plt.plot(t_data_used, floor_vals, 'r.')
+        plt.plot(t_data_used, interp_func(t_data_used), 'b.')
+        plt.plot(t_data_masked, interp_func(t_data_masked), 'g.')
+        plt.savefig("interp_diff_orbit_{}.png".format(self.orbit_num))
+        plt.close()
+
+        interp_diff = interp_func(t_data_masked)
+
+        floor_spline = np.zeros_like(t_data)
+        floor_spline[self.galaxy_mask] = floor_vals
+        floor_spline[~self.galaxy_mask] = interp_diff
 
         return diff_data, floor_spline
 
