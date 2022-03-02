@@ -288,7 +288,7 @@ class Orbit(BaseMapper):
                 self._cal_data_clean_masked - self._zodi_data_clean_masked
         )
 
-
+        self.calc_rsq()
         # diff_data, diff_spline = self.get_diff_floor()
         diff_spline = self.fit_diff_spline()
         self._cal_data_clean_masked -= diff_spline
@@ -422,7 +422,8 @@ class Orbit(BaseMapper):
         plt.xlim(limits)
         plt.ylim((10,40))
         plt.legend()
-        plt.title("Orbit {}; \ngain: {}, offset: {}, \nr^2={}".format(self.orbit_num, self.gain, self.offset, self.r_squared))
+        plt.title("Orbit {}; \ngain: {}, offset: {}, \nr^2={}".format(self.orbit_num, self.gain, self.offset,
+                                                                      self.r_squared))
         plt.xlabel("Latitude (degrees)")
         plt.ylabel("MJy/sr")
         outfile_name = (
