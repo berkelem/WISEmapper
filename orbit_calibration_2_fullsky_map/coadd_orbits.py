@@ -1080,10 +1080,12 @@ class Coadder:
         """Load iteration fit values from pickle file"""
         with open("fitvals_iter_{}.pkl".format(it), "rb") as fitval_file:
             all_gains, all_offsets, all_mjd_vals, all_orbit_nums = pickle.load(fitval_file)
+        start_orb = self.all_orbits[0].orbit_num
         for i, orb in enumerate(self.all_orbits):
-            orb.gain = all_gains[i]
-            orb.offset = all_offsets[i]
-            orb.orbit_mjd_obs = all_mjd_vals[i]
+
+            orb.gain = all_gains[orb.orbit_num - start_orb]
+            orb.offset = all_offsets[orb.orbit_num - start_orb]
+            orb.orbit_mjd_obs = all_mjd_vals[orb.orbit_num - start_orb]
             # orb.segmented_offsets = all_segmented_offsets[i]
         return
 
