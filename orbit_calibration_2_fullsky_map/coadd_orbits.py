@@ -1170,7 +1170,7 @@ class Coadder:
             5593, 5597, 5673, 5677, 5679, 5681, 5683, 5685, 5687, 5689, 5691, 5693, 5695, 5697, 5699, 5701, 5703, 5705,
             5707, 5709, 5711, 5713, 5715, 5717, 5719, 5721, 5723, 5725, 5727, 5729, 5731, 5733, 5735, 5737, 5741, 5745
         ]
-        if include and orbit_num not in good_orbits:
+        if include and orbit_num in good_orbits:
             include = False
             reason = "Not a good fit"
 
