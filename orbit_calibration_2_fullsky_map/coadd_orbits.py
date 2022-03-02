@@ -495,7 +495,7 @@ class Orbit(BaseMapper):
         if len(z) < 10:
             return np.zeros_like(self._cal_data_clean_masked)
 
-        spline = Rbf(x, y, z, function='linear', smooth=100)
+        spline = Rbf(x, y, z, function='linear', smooth=1000)
 
         # x_grid = np.linspace(min(x), max(x))
         # y_grid = np.linspace(min(y), max(y))
