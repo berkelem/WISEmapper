@@ -267,7 +267,7 @@ class Orbit(BaseMapper):
         self.r_squared = correlation_xy ** 2
         return
 
-    def apply_spline_fit(self, gain_spline, offset_spline):
+    def apply_spline_fit(self):#, gain_spline, offset_spline):
         """
         Apply calibration using gain and offset values drawn from the spline fits.
 
@@ -635,11 +635,11 @@ class IterativeFitter:
         gain = offset = 0.0
         if len(data_to_fit) > 0:
             while i < n:
-                gain = 75.0
-                offset = self._fit_offset(data_to_fit, self.zodi_data, uncs_to_fit, gain)
-                # gain, offset = self._fit_to_zodi(
-                #     data_to_fit, self.zodi_data, uncs_to_fit
-                # )
+                # gain = 75.0
+                # offset = self._fit_offset(data_to_fit, self.zodi_data, uncs_to_fit, gain)
+                gain, offset = self._fit_to_zodi(
+                    data_to_fit, self.zodi_data, uncs_to_fit
+                )
                 # offset_spline = self.fit_offset_spline(data_to_fit, gain, offset)
                 # segmented_offsets = self._segmented_fit(data_to_fit, uncs_to_fit, gain)
                 data_to_fit = self._adjust_data(gain, offset, data_to_fit)
