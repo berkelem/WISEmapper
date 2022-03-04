@@ -289,10 +289,12 @@ class Orbit(BaseMapper):
         )
 
         self.calc_rsq()
+        diff_data = self._cal_data_clean_masked[self.galaxy_mask] - self._zodi_data_clean_masked[self.galaxy_mask]
+        self._cal_data_clean_masked[self.galaxy_mask] -= diff_data
         # diff_data, diff_spline = self.get_diff_floor()
         # diff_spline = self.fit_diff_spline()
         # self._cal_data_clean_masked -= diff_spline
-        # self.calc_rsq()
+        self.calc_rsq()
         # self.plot_diff(diff_data, diff_spline)
         self.zs_data_clean_masked = (
                 self._cal_data_clean_masked - self._zodi_data_clean_masked
@@ -901,10 +903,10 @@ class Coadder:
                 continue
             orbit.apply_spline_fit()#self.gain_spline, self.offset_spline)
             # self._add_orbit(orbit)
-            if orbit.r_squared > 0.99:
+            if orbit.r_squared > 0.9:
                 self._add_orbit(orbit)
             else:
-                print("fit rsquared < 0.99; excluded")
+                print("fit rsquared < 0.9; excluded")
                 continue
             if plot:  # and orbit.orbit_num % 15 == 0.0:
                 orbit.plot_fit(label="postadjust")
