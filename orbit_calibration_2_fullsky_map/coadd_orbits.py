@@ -284,21 +284,22 @@ class Orbit(BaseMapper):
         self._cal_data_clean_masked = (self._orbit_data_clean_masked - offsets) / gains
         self.cal_uncs_clean_masked = self._orbit_uncs_clean_masked / abs(gains)
 
-        self.zs_data_clean_masked = (
-                self._cal_data_clean_masked - self._zodi_data_clean_masked
-        )
+        # self.zs_data_clean_masked = (
+        #         self._cal_data_clean_masked - self._zodi_data_clean_masked
+        # )
 
         self.calc_rsq()
         diff_data = self._cal_data_clean_masked[self.galaxy_mask] - self._zodi_data_clean_masked[self.galaxy_mask]
-        self._cal_data_clean_masked[self.galaxy_mask] -= diff_data
+        # self._cal_data_clean_masked[self.galaxy_mask] -= diff_data
         # diff_data, diff_spline = self.get_diff_floor()
         # diff_spline = self.fit_diff_spline()
         # self._cal_data_clean_masked -= diff_spline
-        self.calc_rsq()
+        # self.calc_rsq()
         # self.plot_diff(diff_data, diff_spline)
-        self.zs_data_clean_masked = (
-                self._cal_data_clean_masked - self._zodi_data_clean_masked
-        )
+        # self.zs_data_clean_masked = (
+        #         self._cal_data_clean_masked - self._zodi_data_clean_masked
+        # )
+        self.zs_data_clean_masked = diff_data
 
         return
 
