@@ -289,18 +289,18 @@ class Orbit(BaseMapper):
         # )
 
         self.calc_rsq()
-        diff_data = self._cal_data_clean_masked[self.galaxy_mask] - self._zodi_data_clean_masked[self.galaxy_mask]
+        # diff_data = self._cal_data_clean_masked[self.galaxy_mask] - self._zodi_data_clean_masked[self.galaxy_mask]
         # self._cal_data_clean_masked[self.galaxy_mask] -= diff_data
         # diff_data, diff_spline = self.get_diff_floor()
         # diff_spline = self.fit_diff_spline()
         # self._cal_data_clean_masked -= diff_spline
         # self.calc_rsq()
         # self.plot_diff(diff_data, diff_spline)
-        # self.zs_data_clean_masked = (
-        #         self._cal_data_clean_masked - self._zodi_data_clean_masked
+        self.zs_data_clean_masked = (
+                self._cal_data_clean_masked - self._zodi_data_clean_masked
         # )
-        self.zs_data_clean_masked = np.zeros_like(self._cal_data_clean_masked)
-        self.zs_data_clean_masked[self.galaxy_mask] = diff_data
+        # self.zs_data_clean_masked = np.zeros_like(self._cal_data_clean_masked)
+        # self.zs_data_clean_masked[self.galaxy_mask] = diff_data
 
         return
 
