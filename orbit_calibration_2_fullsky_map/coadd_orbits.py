@@ -1097,8 +1097,8 @@ class Coadder:
         Add cleaned values for each pixel into the Healpix map orbit by orbit.
         As each image is added, uncertainties are propagated as follows (x = data, s = uncertainty (sigma)):
 
-        x_bar = ∑(x/s^2) / ∑(1/x^2)
-        s_bar = 1 / ∑(1/x^2)
+        x_bar = ∑(x/s^2) / ∑(1/s^2)
+        s_bar = 1 / ∑(1/s^2)
 
         The numerator and denominator for x_bar are recorded separately and a running count is maintained as each new
         orbit is added. This method divides the numerator by the denominator to give x_bar, and inverts the
