@@ -175,7 +175,7 @@ class Orbit(BaseMapper):
         self.cal_uncs_clean_masked = self._orbit_uncs_clean_masked / abs(self.gain)
 
         self.zs_data_clean_masked = (
-                self._cal_data_clean_masked - self._zodi_data_clean_masked
+                self._cal_data_clean_masked[:len(self._cal_data_clean_masked) - self.shift] - self._zodi_data_clean_masked[self.shift:]
         )
         self.zs_data_clean_masked[self.zs_data_clean_masked < 0.0] = 0.0
 
@@ -297,7 +297,7 @@ class Orbit(BaseMapper):
         # self.calc_rsq()
         # self.plot_diff(diff_data, diff_spline)
         self.zs_data_clean_masked = (
-                self._cal_data_clean_masked - self._zodi_data_clean_masked
+                self._cal_data_clean_masked[:len(self._cal_data_clean_masked) - self.shift] - self._zodi_data_clean_masked[self.shift:]
         )
         # self.zs_data_clean_masked = np.zeros_like(self._cal_data_clean_masked)
         # self.zs_data_clean_masked[self.galaxy_mask] = diff_data
@@ -331,7 +331,7 @@ class Orbit(BaseMapper):
             self._theta_ecl_clean_masked[self.galaxy_mask],
             self._phi_ecl_clean_masked[self.galaxy_mask],
         )
-        self.gain, self.offset = orbit_fitter.iterate_fit(10)
+        self.gain, self.offset, self.shift = orbit_fitter.iterate_fit(10)
         return
 
     def mask_ecliptic_crossover(self):
@@ -641,7 +641,7 @@ class IterativeFitter:
             while i < n:
                 # gain = 75.0
                 # offset = self._fit_offset(data_to_fit, self.zodi_data, uncs_to_fit, gain)
-                gain, offset = self._fit_to_zodi(
+                gain, offset, shift = self._fit_to_zodi(
                     data_to_fit, self.zodi_data, uncs_to_fit
                 )
                 # offset_spline = self.fit_offset_spline(data_to_fit, gain, offset)
@@ -649,9 +649,9 @@ class IterativeFitter:
                 data_to_fit = self._adjust_data(gain, offset, data_to_fit)
                 i += 1
         else:
-            gain = offset = 0.0
+            gain = offset = shift = 0.0
             # segmented_offsets = [0.0] * 24
-        return gain, offset#, segmented_offsets
+        return gain, offset, int(shift)#, segmented_offsets
 
     # def fit_offset_spline(self, gain, offset):
     #     cal_data = (self.raw_data - offset) / gain
@@ -684,7 +684,7 @@ class IterativeFitter:
         :return chi_sq:
             The calculated chi-squared value
         """
-        residual = x_data - ((y_data * params[0]) + params[1])
+        residual = x_data[:len(x_data) - int(params[2])] - ((y_data[int(params[2]):] * params[0]) + params[1])
         weighted_residual = residual / (np.mean(sigma) ** 2)
         chi_sq = (
             (np.sum(weighted_residual ** 2) / len(x_data)) if len(x_data) > 0 else 0.0
@@ -781,14 +781,15 @@ class IterativeFitter:
         """
         init_gain = 1.0
         init_offset = 0.0
+        init_shift = 0
         popt = minimize(
             self._chi_sq,
-            np.array([init_gain, init_offset]),
+            np.array([init_gain, init_offset, init_shift]),
             args=(orbit_data, zodi_data, orbit_uncs),
             method="Nelder-Mead",
         ).x
-        gain, offset = popt
-        return gain, offset
+        gain, offset, shift = popt
+        return gain, offset, shift
 
 
 class Coadder:
@@ -1064,17 +1065,17 @@ class Coadder:
                 > 0
                 and orbit.gain != 0.0
         ):
-            self.numerator_masked[orbit.pixel_inds_clean_masked] += np.divide(
+            self.numerator_masked[orbit.pixel_inds_clean_masked[:len(orbit.pixel_inds_clean_masked) - orbit.shift]] += np.divide(
                 orbit.zs_data_clean_masked,
-                np.square(orbit.cal_uncs_clean_masked),
-                where=orbit.cal_uncs_clean_masked != 0.0,
-                out=np.zeros_like(orbit.cal_uncs_clean_masked),
+                np.square(orbit.cal_uncs_clean_masked[:len(orbit.cal_uncs_clean_masked) - orbit.shift]),
+                where=orbit.cal_uncs_clean_masked[:len(orbit.cal_uncs_clean_masked) - orbit.shift] != 0.0,
+                out=np.zeros_like(orbit.cal_uncs_clean_masked[:len(orbit.cal_uncs_clean_masked) - orbit.shift]),
             )
-            self.denominator_masked[orbit.pixel_inds_clean_masked] += np.divide(
+            self.denominator_masked[orbit.pixel_inds_clean_masked[:len(orbit.pixel_inds_clean_masked) - orbit.shift]] += np.divide(
                 1,
-                np.square(orbit.cal_uncs_clean_masked),
-                where=orbit.cal_uncs_clean_masked != 0.0,
-                out=np.zeros_like(orbit.cal_uncs_clean_masked),
+                np.square(orbit.cal_uncs_clean_masked[:len(orbit.cal_uncs_clean_masked) - orbit.shift]),
+                where=orbit.cal_uncs_clean_masked[:len(orbit.cal_uncs_clean_masked) - orbit.shift] != 0.0,
+                out=np.zeros_like(orbit.cal_uncs_clean_masked[:len(orbit.cal_uncs_clean_masked) - orbit.shift]),
             )
 
         return
@@ -1138,12 +1139,13 @@ class Coadder:
         all_offsets = np.array([orb.offset for orb in self.all_orbits])
         all_mjd_vals = np.array([orb.orbit_mjd_obs for orb in self.all_orbits])
         all_orbit_nums = np.array([orb.orbit_num for orb in self.all_orbits])
+        all_shifts = np.array([orb.shift for orb in self.all_orbits])
         # all_segmented_offsets = np.array([orb.segmented_offsets for orb in self.all_orbits])
         with open(
                 os.path.join(self.output_path, "fitvals_iter_{}.pkl".format(it)), "wb"
         ) as f:
             pickle.dump(
-                [all_gains, all_offsets, all_mjd_vals, all_orbit_nums],#, all_segmented_offsets],
+                [all_gains, all_offsets, all_mjd_vals, all_orbit_nums, all_shifts],#, all_segmented_offsets],
                 f,
                 protocol=pickle.HIGHEST_PROTOCOL,
             )
@@ -1152,13 +1154,14 @@ class Coadder:
     def load_fitvals(self, it):
         """Load iteration fit values from pickle file"""
         with open("fitvals_iter_{}.pkl".format(it), "rb") as fitval_file:
-            all_gains, all_offsets, all_mjd_vals, all_orbit_nums = pickle.load(fitval_file)
+            all_gains, all_offsets, all_mjd_vals, all_orbit_nums, all_shifts = pickle.load(fitval_file)
         start_orb = 0
         for i, orb in enumerate(self.all_orbits):
 
             orb.gain = all_gains[orb.orbit_num - start_orb]
             orb.offset = all_offsets[orb.orbit_num - start_orb]
             orb.orbit_mjd_obs = all_mjd_vals[orb.orbit_num - start_orb]
+            orb.shift = all_shifts[orb.orbit_num - start_orb]
             # orb.segmented_offsets = all_segmented_offsets[i]
         return
 
