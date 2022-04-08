@@ -646,7 +646,7 @@ class IterativeFitter:
                 )
                 # offset_spline = self.fit_offset_spline(data_to_fit, gain, offset)
                 # segmented_offsets = self._segmented_fit(data_to_fit, uncs_to_fit, gain)
-                data_to_fit = self._adjust_data(gain, offset, data_to_fit)
+                data_to_fit = self._adjust_data(gain, offset, int(shift), data_to_fit)
                 i += 1
         else:
             gain = offset = shift = 0.0
@@ -716,7 +716,7 @@ class IterativeFitter:
         )
         return chi_sq
 
-    def _adjust_data(self, gain, offset, data):
+    def _adjust_data(self, gain, offset, shift, data):
         """
         Subtract residual from original data
 
@@ -731,8 +731,8 @@ class IterativeFitter:
         :return new_data: numpy.array
             Array containing original data with fitted residual subtracted
         """
-        residual = ((data - offset) / gain) - self.zodi_data
-        new_data = data - gain * residual
+        residual = ((data[:len(data) - shift] - offset) / gain) - self.zodi_data[shift:]
+        new_data = data[:len(data) - shift] - gain * residual
         return new_data
 
     def _segmented_fit(self, orbit_data, orbit_uncs, gain):
