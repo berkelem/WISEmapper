@@ -636,13 +636,13 @@ class IterativeFitter:
         i = 0
         data_to_fit = self.raw_data
         uncs_to_fit = self.raw_uncs
-        gain = offset = 0.0
+        gain = offset = shift = 0.0
         if len(data_to_fit) > 0:
             while i < n:
                 # gain = 75.0
                 # offset = self._fit_offset(data_to_fit, self.zodi_data, uncs_to_fit, gain)
                 gain, offset, shift = self._fit_to_zodi(
-                    data_to_fit, self.zodi_data, uncs_to_fit
+                    data_to_fit, self.zodi_data[len(self.zodi_data) - int(shift)], uncs_to_fit[len(uncs_to_fit) - shift]
                 )
                 # offset_spline = self.fit_offset_spline(data_to_fit, gain, offset)
                 # segmented_offsets = self._segmented_fit(data_to_fit, uncs_to_fit, gain)
