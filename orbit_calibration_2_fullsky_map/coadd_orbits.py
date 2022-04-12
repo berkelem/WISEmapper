@@ -636,17 +636,18 @@ class IterativeFitter:
         i = 0
         data_to_fit = self.raw_data
         uncs_to_fit = self.raw_uncs
+        zodi_to_fit = self.zodi_data
         gain = offset = shift = 0.0
         if len(data_to_fit) > 0:
             while i < n:
                 # gain = 75.0
                 # offset = self._fit_offset(data_to_fit, self.zodi_data, uncs_to_fit, gain)
                 gain, offset, shift = self._fit_to_zodi(
-                    data_to_fit, self.zodi_data[:len(self.zodi_data) - int(shift)], uncs_to_fit[:len(uncs_to_fit) - int(shift)]
+                    data_to_fit, zodi_to_fit[:len(zodi_to_fit) - int(shift)], uncs_to_fit[:len(uncs_to_fit) - int(shift)]
                 )
                 # offset_spline = self.fit_offset_spline(data_to_fit, gain, offset)
                 # segmented_offsets = self._segmented_fit(data_to_fit, uncs_to_fit, gain)
-                data_to_fit = self._adjust_data(gain, offset, int(shift), data_to_fit)
+                data_to_fit, zodi_to_fit = self._adjust_data(gain, offset, int(shift), data_to_fit, zodi_to_fit)
                 i += 1
         else:
             gain = offset = shift = 0.0
@@ -716,7 +717,7 @@ class IterativeFitter:
         )
         return chi_sq
 
-    def _adjust_data(self, gain, offset, shift, data):
+    def _adjust_data(self, gain, offset, shift, data, zodi):
         """
         Subtract residual from original data
 
@@ -731,9 +732,10 @@ class IterativeFitter:
         :return new_data: numpy.array
             Array containing original data with fitted residual subtracted
         """
-        residual = ((data[:len(data) - shift] - offset) / gain) - self.zodi_data[shift:]
+        new_zodi = zodi[shift:]
+        residual = ((data[:len(data) - shift] - offset) / gain) - new_zodi
         new_data = data[:len(data) - shift] - gain * residual
-        return new_data
+        return new_data, new_zodi
 
     def _segmented_fit(self, orbit_data, orbit_uncs, gain):
         bins = [(-180, -165), (-165, -150), (-150, -135), (-135, -120), (-120, -105), (-105, -90), (-90, -75),
