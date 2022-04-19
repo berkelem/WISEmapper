@@ -638,6 +638,7 @@ class IterativeFitter:
         uncs_to_fit = self.raw_uncs
         zodi_to_fit = self.zodi_data
         gain = offset = 0.0
+        total_shift = 0
         if len(data_to_fit) > 0:
             while i < n:
                 shift = 0
@@ -649,11 +650,12 @@ class IterativeFitter:
                 # offset_spline = self.fit_offset_spline(data_to_fit, gain, offset)
                 # segmented_offsets = self._segmented_fit(data_to_fit, uncs_to_fit, gain)
                 data_to_fit, uncs_to_fit, zodi_to_fit = self._adjust_data(gain, offset, int(shift), data_to_fit, uncs_to_fit, zodi_to_fit)
+                total_shift += int(shift)
                 i += 1
         else:
-            gain = offset = shift = 0.0
+            gain = offset = 0.0
             # segmented_offsets = [0.0] * 24
-        return gain, offset, int(shift)#, segmented_offsets
+        return gain, offset, int(total_shift)#, segmented_offsets
 
     # def fit_offset_spline(self, gain, offset):
     #     cal_data = (self.raw_data - offset) / gain
