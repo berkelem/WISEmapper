@@ -25,7 +25,7 @@ def main(band, filename, output_path):
 
     # Create batches of raw WISE images corresponding to individual WISE scans/half-orbits.
     batch = FileBatcher(filename)
-    RunLinear(batch.group_orbits)
+    RunLinear(batch.group_days)#orbits)
     n_orbits = len(batch.groups)
     print("{} orbits".format(n_orbits))
 
@@ -37,11 +37,11 @@ def main(band, filename, output_path):
     orbit_num = None
     while n < n_orbits:
         # If coadd map for this orbit already exists, skip
-        if os.path.exists(os.path.join(output_path, f"fsm_w{band}_orbit_{n}.fits")):
-            RunRankZero(print, data=f"Already mapped orbit {n + 1} of {n_orbits}")
-            filelist, mjd_list, orbit_num = next(filelist_gen)
-            n += 1
-            continue
+        if os.path.exists(os.path.join(output_path, f"fsm_w{band}_orbit_{n}.fits")) or n < 150:
+                RunRankZero(print, data=f"Already mapped orbit {n + 1} of {n_orbits}")
+                filelist, mjd_list, orbit_num = next(filelist_gen)
+                n += 1
+                continue
 
 
         RunRankZero(print, data=f"Mapping orbit {n + 1} of {n_orbits}")
@@ -51,6 +51,10 @@ def main(band, filename, output_path):
         # Generate next batch of files
         while orbit_num != n:
             filelist, mjd_list, orbit_num = next(filelist_gen)
+
+        # if not ((max(mjd_list) < 55378) and (min(mjd_list) > 55348)):  # Select June
+        #     n += 1
+        #     continue
 
         # Create coadd map of all files in batch
         mapmaker = MapMaker(band, n, output_path)

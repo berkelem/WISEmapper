@@ -89,7 +89,7 @@ class FileSelector(MetaDataReader):
 
 
 if __name__ == '__main__':
-    for band in [2,3,4]:
+    for band in [3]:#[2,3,4]:
         # band = 2
         filename = f"all_band{band}.tbl"
         fileselector = FileSelector(filename)

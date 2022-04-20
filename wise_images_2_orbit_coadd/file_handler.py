@@ -171,6 +171,12 @@ class HealpixMap(File):
         else:
             self.mapdata = np.zeros(self.npix, dtype=float)
 
+    def plot_mollweide(self, title=None, **kwargs):
+        import matplotlib.pyplot as plt
+        hp.mollview(self.mapdata, title=title, **kwargs)
+        plt.savefig(self.filename.replace(".fits", ".png"))
+        plt.close()
+
     def rotate_map(self, old_coord='G', new_coord='E'):
         """
         Rotate Healpix pixel numbering by applying a coordinate system transformation
