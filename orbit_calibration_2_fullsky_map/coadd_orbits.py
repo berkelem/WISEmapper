@@ -649,8 +649,8 @@ class IterativeFitter:
                 )
                 # offset_spline = self.fit_offset_spline(data_to_fit, gain, offset)
                 # segmented_offsets = self._segmented_fit(data_to_fit, uncs_to_fit, gain)
-                data_to_fit, uncs_to_fit, zodi_to_fit = self._adjust_data(gain, offset, round(shift), data_to_fit, uncs_to_fit, zodi_to_fit)
-                total_shift += round(shift)
+                data_to_fit, uncs_to_fit, zodi_to_fit = self._adjust_data(gain, offset, int(round(shift)), data_to_fit, uncs_to_fit, zodi_to_fit)
+                total_shift += int(round(shift))
                 i += 1
         else:
             gain = offset = 0.0
