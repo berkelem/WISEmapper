@@ -174,9 +174,18 @@ class Orbit(BaseMapper):
                                       ) / self.gain
         self.cal_uncs_clean_masked = self._orbit_uncs_clean_masked / abs(self.gain)
 
-        self.zs_data_clean_masked = (
-                self._cal_data_clean_masked[:len(self._cal_data_clean_masked) - self.shift] - self._zodi_data_clean_masked[self.shift:]
-        )
+        if self.shift >= 0:
+            self._cal_data_clean_masked = self._cal_data_clean_masked[:len(self._cal_data_clean_masked) - self.shift]
+            self._cal_uncs_clean_masked = self._cal_uncs_clean_masked[:len(self._cal_uncs_clean_masked) - self.shift]
+            self._zodi_data_clean_masked = self._zodi_data_clean_masked[self.shift:]
+            self.pixel_inds_clean_masked = self.pixel_inds_clean_masked[:len(self.pixel_inds_clean_masked) - self.shift]
+        else:
+            self._cal_data_clean_masked = self._cal_data_clean_masked[abs(self.shift):]
+            self._cal_uncs_clean_masked = self._cal_uncs_clean_masked[abs(self.shift):]
+            self._zodi_data_clean_masked = self._zodi_data_clean_masked[:len(self._zodi_data_clean_masked) + self.shift]
+            self.pixel_inds_clean_masked = self.pixel_inds_clean_masked[abs(self.shift)]
+
+        self.zs_data_clean_masked = (self._cal_data_clean_masked - self._zodi_data_clean_masked)
         self.zs_data_clean_masked[self.zs_data_clean_masked < 0.0] = 0.0
 
     def apply_mask(self):
@@ -297,7 +306,7 @@ class Orbit(BaseMapper):
         # self.calc_rsq()
         # self.plot_diff(diff_data, diff_spline)
         self.zs_data_clean_masked = (
-                self._cal_data_clean_masked[:len(self._cal_data_clean_masked) - self.shift] - self._zodi_data_clean_masked[self.shift:]
+                self._cal_data_clean_masked - self._zodi_data_clean_masked
         )
         # self.zs_data_clean_masked = np.zeros_like(self._cal_data_clean_masked)
         # self.zs_data_clean_masked[self.galaxy_mask] = diff_data
@@ -735,10 +744,16 @@ class IterativeFitter:
         :return new_data: numpy.array
             Array containing original data with fitted residual subtracted
         """
-        new_zodi = zodi[shift:]
-        residual = ((data[:len(data) - shift] - offset) / gain) - new_zodi
-        new_data = data[:len(data) - shift] - gain * residual
-        new_uncs = uncs[:len(uncs) - shift]
+        if shift >= 0:
+            new_zodi = zodi[shift:]
+            residual = ((data[:len(data) - shift] - offset) / gain) - new_zodi
+            new_data = data[:len(data) - shift] - gain * residual
+            new_uncs = uncs[:len(uncs) - shift]
+        else:
+            new_zodi = zodi[:len(zodi) + shift]
+            residual = ((data[abs(shift):] - offset) / gain) - new_zodi
+            new_data = data[abs(shift):] - gain * residual
+            new_uncs = uncs[abs(shift):]
         return new_data, new_uncs, new_zodi
 
     def _segmented_fit(self, orbit_data, orbit_uncs, gain):
@@ -1071,17 +1086,17 @@ class Coadder:
                 > 0
                 and orbit.gain != 0.0
         ):
-            self.numerator_masked[orbit.pixel_inds_clean_masked[:len(orbit.pixel_inds_clean_masked) - orbit.shift]] += np.divide(
+            self.numerator_masked[orbit.pixel_inds_clean_masked] += np.divide(
                 orbit.zs_data_clean_masked,
-                np.square(orbit.cal_uncs_clean_masked[:len(orbit.cal_uncs_clean_masked) - orbit.shift]),
-                where=orbit.cal_uncs_clean_masked[:len(orbit.cal_uncs_clean_masked) - orbit.shift] != 0.0,
-                out=np.zeros_like(orbit.cal_uncs_clean_masked[:len(orbit.cal_uncs_clean_masked) - orbit.shift]),
+                np.square(orbit.cal_uncs_clean_masked),
+                where=orbit.cal_uncs_clean_masked != 0.0,
+                out=np.zeros_like(orbit.cal_uncs_clean_masked),
             )
-            self.denominator_masked[orbit.pixel_inds_clean_masked[:len(orbit.pixel_inds_clean_masked) - orbit.shift]] += np.divide(
+            self.denominator_masked[orbit.pixel_inds_clean_masked] += np.divide(
                 1,
-                np.square(orbit.cal_uncs_clean_masked[:len(orbit.cal_uncs_clean_masked) - orbit.shift]),
-                where=orbit.cal_uncs_clean_masked[:len(orbit.cal_uncs_clean_masked) - orbit.shift] != 0.0,
-                out=np.zeros_like(orbit.cal_uncs_clean_masked[:len(orbit.cal_uncs_clean_masked) - orbit.shift]),
+                np.square(orbit.cal_uncs_clean_masked),
+                where=orbit.cal_uncs_clean_masked != 0.0,
+                out=np.zeros_like(orbit.cal_uncs_clean_masked),
             )
 
         return
