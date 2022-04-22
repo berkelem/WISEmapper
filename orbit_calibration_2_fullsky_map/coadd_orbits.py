@@ -183,7 +183,7 @@ class Orbit(BaseMapper):
             self._cal_data_clean_masked = self._cal_data_clean_masked[abs(self.shift):]
             self.cal_uncs_clean_masked = self.cal_uncs_clean_masked[abs(self.shift):]
             self._zodi_data_clean_masked = self._zodi_data_clean_masked[:len(self._zodi_data_clean_masked) + self.shift]
-            self.pixel_inds_clean_masked = self.pixel_inds_clean_masked[abs(self.shift)]
+            self.pixel_inds_clean_masked = self.pixel_inds_clean_masked[abs(self.shift):]
 
         self.zs_data_clean_masked = (self._cal_data_clean_masked - self._zodi_data_clean_masked)
         self.zs_data_clean_masked[self.zs_data_clean_masked < 0.0] = 0.0
