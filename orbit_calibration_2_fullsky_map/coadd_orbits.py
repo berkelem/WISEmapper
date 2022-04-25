@@ -435,8 +435,8 @@ class Orbit(BaseMapper):
         plt.xlim(limits)
         plt.ylim((10,40))
         plt.legend()
-        plt.title("Orbit {}; \ngain: {}, offset: {}, \nr^2={}".format(self.orbit_num, self.gain, self.offset,
-                                                                      self.r_squared))
+        plt.title("Orbit {}; \ngain: {}, offset: {}, shift: {} \nr^2={}".format(self.orbit_num, self.gain, self.offset,
+                                                                      self.shift, self.r_squared))
         plt.xlabel("Latitude (degrees)")
         plt.ylabel("MJy/sr")
         outfile_name = (
@@ -932,7 +932,7 @@ class Coadder:
             else:
                 print("fit rsquared < 0.9; excluded")
                 continue
-            if plot:  # and orbit.orbit_num % 15 == 0.0:
+            if plot and orbit.shift != 0:  # and orbit.orbit_num % 15 == 0.0:
                 orbit.plot_fit(label="postadjust")
 
         # self._clean_data()
