@@ -803,13 +803,17 @@ class IterativeFitter:
         init_gain = 1.0
         init_offset = 0.0
         init_shift = 0
-        popt = minimize(
-            self._chi_sq,
-            np.array([init_gain, init_offset, init_shift]),
-            args=(orbit_data, zodi_data, orbit_uncs),
-            method="Nelder-Mead",
-        ).x
-        gain, offset, shift = popt
+        try:
+            popt = minimize(
+                self._chi_sq,
+                np.array([init_gain, init_offset, init_shift]),
+                args=(orbit_data, zodi_data, orbit_uncs),
+                method="Nelder-Mead",
+            ).x
+            gain, offset, shift = popt
+        except ValueError:
+            print("valueerror")
+            raise
         return gain, offset, shift
 
 
