@@ -697,7 +697,10 @@ class IterativeFitter:
         :return chi_sq:
             The calculated chi-squared value
         """
-        residual = x_data[:len(x_data) - int(params[2])] - ((y_data[int(params[2]):] * params[0]) + params[1])
+        if params[2] >= 0:
+            residual = x_data[:len(x_data) - int(params[2])] - ((y_data[int(params[2]):] * params[0]) + params[1])
+        else:
+            residual = x_data[abs(int(params[2])):] - ((y_data[:len(y_data) - abs(int(params[2]))] * params[0]) + params[1])
         weighted_residual = residual / (np.mean(sigma) ** 2)
         chi_sq = (
             (np.sum(weighted_residual ** 2) / len(x_data)) if len(x_data) > 0 else 0.0
